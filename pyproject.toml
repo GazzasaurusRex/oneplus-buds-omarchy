@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oneplus-buds"
+version = "0.0.1"
+description = "Experimental Linux CLI for OPO-compatible OnePlus earbuds"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+oneplus-buds = "oneplus_buds.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
