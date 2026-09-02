@@ -1,6 +1,6 @@
 import unittest
 
-from oneplus_buds.protocol import BUDS_PRO_ANC_MODES, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
+from oneplus_buds.protocol import BUDS_PRO_ANC_SET_MODES, HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
 
 
 class ProtocolTests(unittest.TestCase):
@@ -50,10 +50,12 @@ class ProtocolTests(unittest.TestCase):
 
     def test_buds_pro_anc_set_frames(self):
         self.assertEqual(
-            encode_frame(0x0404, 0xF0, bytes((1, 1, BUDS_PRO_ANC_MODES["on"]))).hex(),
-            "aa0a00000404f00300010108",
+            encode_frame(0x0404, 0x42, bytes((1, 1, BUDS_PRO_ANC_SET_MODES["on"]))).hex(),
+            "aa0a00000404420300010108",
         )
-        self.assertEqual(BUDS_PRO_ANC_MODES, {"off": 1, "transparency": 2, "on": 8})
+        self.assertEqual(BUDS_PRO_ANC_SET_MODES, {"off": 1, "transparency": 2, "on": 8})
+        self.assertEqual(HELLO.hex(), "aa070000000123000012")
+        self.assertEqual(REGISTER.hex(), "aa0c0000008541050000b550a069")
         self.assertEqual(parse_broadcast_codes(Frame(0x8200, 1, b"\x00\x03\x01\x02\x03")), b"\x01\x02\x03")
         self.assertEqual(
             encode_frame(0x010D, 0, STATUS_QUERY_PAYLOAD).hex(),

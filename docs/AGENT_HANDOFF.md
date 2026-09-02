@@ -1,10 +1,10 @@
 # Agent handoff
 
-Last updated: 2026-09-02, Phase 1 in progress.
+Last updated: 2026-09-02. First Phase 1 practical milestone complete.
 
 ## Current status
 
-The repository began empty except for `PROJECT.md`. A dependency-free Python proof of concept now separates BlueZ discovery, RFCOMM transport, OPO framing/parsing, and CLI behavior. Unit fixtures cover framing, fragmented streams, product ID, battery, and ANC parsing. ANC writes are hard-gated on product ID `060C14` and require query-after-write verification.
+The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM transport, OPO framing/parsing, and CLI behavior. It reliably detects and identifies the connected original OnePlus Buds Pro, reads component batteries, queries ANC, and switches among Off, Transparency, and deep ANC On. ANC writes are hard-gated on product ID `060C14`, authenticated, and require fresh-session query-after-write verification.
 
 ## Verified discoveries
 
@@ -18,15 +18,19 @@ The repository began empty except for `PROJECT.md`. A dependency-free Python pro
 - Real responses arrive in bursts and may concatenate acknowledgements with unsolicited notifications; the transport drains each burst and the framer separates it by outer length.
 - A user-initiated physical switch to ANC On returned bitmap `08`, proving the query parser and revealing the original Buds Pro's profile-specific ANC mapping. Earlier write attempts used an incompatible generic mapping.
 - The parser now maps Buds Pro Off=`01`, Transparency=`02`, and ANC levels light=`04`, deep=`08`, smart=`10`. The physical transition verified deep ANC `08`.
-- Corrected Off writes with fixed sequence `F0` produced no response and did not change a fresh query from Transparency. After control sessions, RFCOMM channel 15 remained `EBUSY` for over 20 seconds; ordinary query sessions released sooner.
+- Control requires HELLO, a 2-second wait, REGISTER with the observed token, and a 1.5-second wait. Unauthenticated writes were ignored or misleading.
+- Authenticated writes use the Buds Pro profile bitmap, not the newer-device set enum. Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, smart ANC=`10`.
+- Authenticated SET returned `0x8404:00`; Off, Transparency, and deep ANC On were each verified by a fresh read-only session. The final hardware state was ANC On.
 
 ## Unresolved problems
 
-- Reconnect the earbuds cleanly, then determine whether writes fail because of session initialization/order, another client holding the vendor endpoint, or a missing Buds Pro-specific prerequisite.
-- Case presence and charging bits behaved consistently across live state changes, but should be tested deliberately later.
+- The CLI currently has conservative multi-second delays and busy retries. Timing can be optimized only after repeated reliability testing.
+- `anc status` reports On without exposing light/deep/smart detail; preserve that detail in a future structured state model.
+- Case presence and charging bits should be tested deliberately later.
+- Discovery currently shells out to `bluetoothctl`; replace with a direct BlueZ D-Bus layer when choosing the long-term backend API.
 - Enable ANC writes only after product ID `060C14` is returned and each mode can be queried back.
 - Current CLI shells out to `bluetoothctl`; a future backend should use D-Bus directly when dependency/API choices are settled.
 
 ## Next recommended task
 
-After a clean reconnect, query the starting state and attempt one Off write while capturing the RFCOMM exchange. Do not test the other modes until Off is acknowledged or confirmed by fresh read-back.
+Add integration-test logging/fixtures for the verified authenticated exchange without recording the device address. Then improve CLI ergonomics and repeated-operation reliability while remaining within the Buds Pro Phase 1 scope; do not begin QML or Buds Pro 2 work yet.

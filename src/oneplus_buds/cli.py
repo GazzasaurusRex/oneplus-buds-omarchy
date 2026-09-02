@@ -5,7 +5,7 @@ import json
 import time
 
 from .bluez import connected_devices, select_device
-from .protocol import BUDS_PRO_ANC_MODES, QUERY_ANC, QUERY_BATTERY, QUERY_BROADCAST_CODES, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_STATUS, SET_ANC, STATUS_QUERY_PAYLOAD, SUBSCRIBE_BROADCAST, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
+from .protocol import BUDS_PRO_ANC_SET_MODES, HELLO, QUERY_ANC, QUERY_BATTERY, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, REGISTER, SET_ANC, parse_anc, parse_battery, parse_product_id
 from .transport import RfcommTransport
 
 
@@ -41,20 +41,13 @@ def set_anc(mode: str) -> dict[str, object]:
         product_id = next((value for frame in product_frames if (value := parse_product_id(frame))), None)
         if product_id != "060C14":
             raise RuntimeError(f"refusing ANC write: expected verified Buds Pro product 060C14, got {product_id or 'no ID'}")
-        broadcast_frames = transport.query(QUERY_BROADCAST_CODES)
-        broadcast_codes = next(
-            (value for frame in broadcast_frames if (value := parse_broadcast_codes(frame)) is not None),
-            None,
-        )
-        if broadcast_codes is None:
-            raise RuntimeError("refusing ANC write: device did not return notification capabilities")
-        transport.query(SUBSCRIBE_BROADCAST, bytes((len(broadcast_codes),)) + broadcast_codes)
-        transport.query(QUERY_STATUS, STATUS_QUERY_PAYLOAD, sequence=0, wait=0.3)
+        transport.exchange_raw(HELLO, wait=2.0)
+        register_frames = transport.exchange_raw(REGISTER, wait=1.5)
         write_frames = transport.query(
             SET_ANC,
-            bytes((1, 1, BUDS_PRO_ANC_MODES[mode])),
-            sequence=0xF0,
-            wait=0.3,
+            bytes((1, 1, BUDS_PRO_ANC_SET_MODES[mode])),
+            sequence=0x40 if mode == "off" else 0x42,
+            wait=1.0,
         )
 
     # Buds Pro stops answering the ANC query in the control session. Verify in
@@ -71,12 +64,25 @@ def set_anc(mode: str) -> dict[str, object]:
                 responses = ", ".join(
                     f"0x{frame.command:04x}:{frame.payload.hex()}" for frame in write_frames
                 ) or "none"
+                registration = ", ".join(
+                    f"0x{frame.command:04x}:{frame.payload.hex()}" for frame in register_frames
+                ) or "none"
                 raise RuntimeError(
-                    f"ANC write sent but verification channel stayed busy; write responses: {responses}"
+                    "ANC write sent but verification channel stayed busy; "
+                    f"register responses: {registration}; write responses: {responses}"
                 ) from error
     observed = next((value for frame in state_frames if (value := parse_anc(frame))), None)
     if observed != mode:
-        raise RuntimeError(f"ANC verification failed: requested {mode}, device reported {observed or 'no state'}")
+        registration = ", ".join(
+            f"0x{frame.command:04x}:{frame.payload.hex()}" for frame in register_frames
+        ) or "none"
+        responses = ", ".join(
+            f"0x{frame.command:04x}:{frame.payload.hex()}" for frame in write_frames
+        ) or "none"
+        raise RuntimeError(
+            f"ANC verification failed: requested {mode}, device reported {observed or 'no state'}; "
+            f"register responses: {registration}; write responses: {responses}"
+        )
     return {"name": device.name, "product_id": product_id, "anc": observed, "verified": True}
 
 

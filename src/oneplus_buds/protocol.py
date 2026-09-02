@@ -21,8 +21,15 @@ RESPONSE_BROADCAST_CODES = 0x8200
 
 # Product 060C14 (original Buds Pro) uses a model-specific mode bitmap. ANC
 # level values were recovered from its profile and 0x08 was hardware-observed.
-BUDS_PRO_ANC_MODES = {"off": 0x01, "transparency": 0x02, "on": 0x08}
+BUDS_PRO_ANC_SET_MODES = {"off": 0x01, "transparency": 0x02, "on": 0x08}
+BUDS_PRO_ANC_STATE_OFF = 0x01
+BUDS_PRO_ANC_STATE_TRANSPARENCY = 0x02
 BUDS_PRO_ANC_LEVELS = {0x04: "light", 0x08: "deep", 0x10: "smart"}
+
+# Authentication frames have a legacy envelope that is not representable by
+# encode_frame: HELLO carries a trailing 0x12 beyond its zero inner length.
+HELLO = bytes.fromhex("AA 07 00 00 00 01 23 00 00 12")
+REGISTER = bytes.fromhex("AA 0C 00 00 00 85 41 05 00 00 B5 50 A0 69")
 STATUS_QUERY_PAYLOAD = bytes.fromhex("0B 05 04 0B 11 13 18 06 1B 1C 27 28")
 
 
@@ -138,9 +145,9 @@ def parse_anc(frame: Frame) -> str | None:
     for offset in range(len(payload) - 2):
         if payload[offset : offset + 2] == b"\x01\x01":
             value = payload[offset + 2]
-            if value == BUDS_PRO_ANC_MODES["off"]:
+            if value == BUDS_PRO_ANC_STATE_OFF:
                 return "off"
-            if value == BUDS_PRO_ANC_MODES["transparency"]:
+            if value == BUDS_PRO_ANC_STATE_TRANSPARENCY:
                 return "transparency"
             if value in BUDS_PRO_ANC_LEVELS:
                 return "on"

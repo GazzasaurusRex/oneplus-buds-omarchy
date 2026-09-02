@@ -40,6 +40,17 @@ class RfcommTransport:
         if sequence is None:
             self._sequence = 1 if frame_sequence == 0xFE else frame_sequence + 1
         self._socket.sendall(encode_frame(command, frame_sequence, payload))
+        return self._receive_burst(wait)
+
+    def exchange_raw(self, packet: bytes, wait: float) -> list[Frame]:
+        if self._socket is None:
+            raise RuntimeError("transport is not connected")
+        self._socket.sendall(packet)
+        return self._receive_burst(wait)
+
+    def _receive_burst(self, wait: float) -> list[Frame]:
+        if self._socket is None:
+            raise RuntimeError("transport is not connected")
         time.sleep(wait)
         frames: list[Frame] = []
         deadline = time.monotonic() + self.timeout

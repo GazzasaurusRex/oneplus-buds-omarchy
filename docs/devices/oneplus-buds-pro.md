@@ -1,6 +1,6 @@
 # OnePlus Buds Pro (test device)
 
-Compatibility status: **verification in progress**. Hardware detection and read-only protocol queries were verified on 2026-09-02; no state-changing command has yet been sent.
+Compatibility status: **Verified for the Phase 1 basic milestone** on real OnePlus Buds Pro hardware, 2026-09-02.
 
 ## Verified locally
 
@@ -14,6 +14,7 @@ Compatibility status: **verification in progress**. Hardware detection and read-
 - OPO product query returns ID `060C14`
 - Per-component battery query initially returned left 100%, right 100%, case 80% with both earbuds' charging bits set. A later query omitted the case and cleared both charging bits, consistent with live in/out-of-case state.
 - ANC query returned Off initially. After the user physically enabled ANC, it returned bitmap `08`, matching the registry's deep-ANC profile index.
+- Authenticated ANC writes were acknowledged and independently verified for Off=`01`, Transparency=`02`, and deep ANC On=`08`.
 
 The Bluetooth address is deliberately not recorded.
 
@@ -24,5 +25,5 @@ A recovered HeyMelody registry maps product ID `060C14` to OnePlus Buds Pro, `su
 ## Still to verify
 
 - State changes and query-after-write for Off, ANC, and Transparency
-- Corrected product-specific Off=`01` writes still produced no acknowledgement and did not change the device from Transparency. The RFCOMM endpoint remained busy for more than 20 seconds after each control session even though read-only sessions released sooner.
-- Physical ANC transition comparison to validate state reporting independently of writes
+- Determine whether shorter safe authentication/cooldown timings work across firmware versions; current conservative timings favor reliability.
+- Deliberately test case-open/case-closed battery behavior later.

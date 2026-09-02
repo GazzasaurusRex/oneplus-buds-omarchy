@@ -33,9 +33,24 @@ Battery component IDs are 1=left, 2=right, 3=case. `raw & 0x7f` is percentage an
 
 The Buds Pro response observed on 2026-09-02 prefixes the pairs with a one-byte component count. Its capability response `0x8100` reports an inner payload length one byte shorter than the payload bounded by the valid outer frame length. An unsolicited `0x0204` snapshot following subscription reported an inner length three bytes larger than its outer-bounded payload. The outer length still separated concatenated frames exactly, so it is authoritative for these observed quirks.
 
-For product `060C14` (original OnePlus Buds Pro), ANC is a model-profile bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. Deep ANC `08` was observed after a physical stem-control transition to ANC On. Writes must remain gated on product ID because newer devices use different indices.
+For product `060C14` (original OnePlus Buds Pro), queried ANC state is a model-profile bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. Deep ANC `08` was observed after a physical stem-control transition to ANC On.
 
-The recovered Buds Pro profile uses fixed sequence `F0` for mode commands. The hardware also stops returning ANC-query state in the same RFCOMM control session, so verification must close that socket and query in a fresh session after channel teardown.
+Authenticated writes on product `060C14` use the same model bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. An authenticated `04` write returned success (`0x8404`, status `00`) and read back as light ANC. Community implementations for newer devices use a different set enum, so writes must remain product-gated.
+
+Control requires the legacy HELLO frame, a two-second wait, REGISTER with the observed token, and a 1.5-second wait before SET. The hardware also stops returning ANC-query state in the same RFCOMM control session, so verification closes that socket and queries in a fresh session after channel teardown.
+
+## Verified Buds Pro control flow
+
+1. Connect RFCOMM channel 15.
+2. Query product ID and refuse writes unless it is `060C14`.
+3. Send raw HELLO `AA 07 00 00 00 01 23 00 00 12`; wait 2 seconds.
+4. Send raw REGISTER `AA 0C 00 00 00 85 41 05 00 00 B5 50 A0 69`; wait 1.5 seconds.
+5. Send `0x0404` with payload `01 01 bitmap`.
+6. Require successful `0x8404` status `00` when present.
+7. Close the control socket, allow channel teardown, open a fresh socket, and query `0x010c`.
+8. Treat the operation as successful only if the queried state matches.
+
+This sequence was verified for Off, Transparency, and deep ANC On on 2026-09-02.
 
 The connection initialization flow negotiates and subscribes to the device's notification event IDs before control writes.
 
