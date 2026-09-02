@@ -33,9 +33,11 @@ Battery component IDs are 1=left, 2=right, 3=case. `raw & 0x7f` is percentage an
 
 The Buds Pro response observed on 2026-09-02 prefixes the pairs with a one-byte component count. Its capability response `0x8100` reports an inner payload length one byte shorter than the payload bounded by the valid outer frame length. An unsolicited `0x0204` snapshot following subscription reported an inner length three bytes larger than its outer-bounded payload. The outer length still separated concatenated frames exactly, so it is authoritative for these observed quirks.
 
-For the OnePlus Buds Pro profile only, researched ANC values are Off=`01`, noise cancellation=`02`, Transparency=`04`. These will not be enabled for writing until the device returns product ID `060C14` and read-back behavior is verified.
+For product `060C14` (original OnePlus Buds Pro), ANC is a model-profile bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. Deep ANC `08` was observed after a physical stem-control transition to ANC On. Writes must remain gated on product ID because newer devices use different indices.
 
-The connection initialization flow must also negotiate and subscribe to the device's notification event IDs before control writes. A write attempted without this step was ignored and ANC remained Off.
+The recovered Buds Pro profile uses fixed sequence `F0` for mode commands. The hardware also stops returning ANC-query state in the same RFCOMM control session, so verification must close that socket and query in a fresh session after channel teardown.
+
+The connection initialization flow negotiates and subscribes to the device's notification event IDs before control writes.
 
 ## Handshake variants
 

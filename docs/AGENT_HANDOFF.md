@@ -16,16 +16,17 @@ The repository began empty except for `PROJECT.md`. A dependency-free Python pro
 - Research identifies product ID `060C14` as the OnePlus Buds Pro and corroborates OPO 0xAA framing, battery query `0x0106`, ANC query `0x010c`, and ANC set `0x0404`.
 - Hardware read-only queries returned product ID `060C14`, per-component battery values (L=100%, R=100%, case=80%), and ANC Off. Both earbuds had the protocol charging bit set.
 - Real responses arrive in bursts and may concatenate acknowledgements with unsolicited notifications; the transport drains each burst and the framer separates it by outer length.
-- ANC On writes were sent only after product ID gating. Attempts without subscription, with negotiated subscription, and after the fixed-sequence batch wake query were ignored; a fresh connection still reported Off. No other mode write was attempted.
+- A user-initiated physical switch to ANC On returned bitmap `08`, proving the query parser and revealing the original Buds Pro's profile-specific ANC mapping. Earlier write attempts used an incompatible generic mapping.
+- The parser now maps Buds Pro Off=`01`, Transparency=`02`, and ANC levels light=`04`, deep=`08`, smart=`10`. The physical transition verified deep ANC `08`.
+- Corrected Off writes with fixed sequence `F0` produced no response and did not change a fresh query from Transparency. After control sessions, RFCOMM channel 15 remained `EBUSY` for over 20 seconds; ordinary query sessions released sooner.
 
 ## Unresolved problems
 
-- Determine why Buds Pro accepts queries but ignores `0x0404` ANC writes. Current hypotheses: an unobserved authentication/session prerequisite, another model-specific command encoding, or a physical-state prerequisite.
-- Capture a known hardware-initiated ANC transition: ask the user to change mode on the earbuds, then run `anc status`. This validates the query parser before further writes.
+- Reconnect the earbuds cleanly, then determine whether writes fail because of session initialization/order, another client holding the vendor endpoint, or a missing Buds Pro-specific prerequisite.
 - Case presence and charging bits behaved consistently across live state changes, but should be tested deliberately later.
 - Enable ANC writes only after product ID `060C14` is returned and each mode can be queried back.
 - Current CLI shells out to `bluetoothctl`; a future backend should use D-Bus directly when dependency/API choices are settled.
 
 ## Next recommended task
 
-Have the user switch from ANC Off to ANC On using the earbud stem controls, then immediately run `PYTHONPATH=src python -m oneplus_buds.cli anc status`. If that reports On, capture the raw response and investigate HeyMelody/Buds Pro write initialization or command differences before sending more controls.
+After a clean reconnect, query the starting state and attempt one Off write while capturing the RFCOMM exchange. Do not test the other modes until Off is acknowledged or confirmed by fresh read-back.

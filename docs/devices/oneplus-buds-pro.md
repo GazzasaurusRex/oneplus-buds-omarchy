@@ -13,7 +13,7 @@ Compatibility status: **verification in progress**. Hardware detection and read-
 - RFCOMM channel 15 accepts a connection
 - OPO product query returns ID `060C14`
 - Per-component battery query initially returned left 100%, right 100%, case 80% with both earbuds' charging bits set. A later query omitted the case and cleared both charging bits, consistent with live in/out-of-case state.
-- ANC query returned Off
+- ANC query returned Off initially. After the user physically enabled ANC, it returned bitmap `08`, matching the registry's deep-ANC profile index.
 
 The Bluetooth address is deliberately not recorded.
 
@@ -24,5 +24,5 @@ A recovered HeyMelody registry maps product ID `060C14` to OnePlus Buds Pro, `su
 ## Still to verify
 
 - State changes and query-after-write for Off, ANC, and Transparency
-- Exact prerequisite or packet variation required for control writes. ANC On was attempted first without subscription, then with negotiated notifications, then after the fixed-sequence batch wake query; fresh read-back remained Off each time.
+- Corrected product-specific Off=`01` writes still produced no acknowledgement and did not change the device from Transparency. The RFCOMM endpoint remained busy for more than 20 seconds after each control session even though read-only sessions released sooner.
 - Physical ANC transition comparison to validate state reporting independently of writes

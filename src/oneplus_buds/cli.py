@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 
 from .bluez import connected_devices, select_device
-from .protocol import ANC_MODES, QUERY_ANC, QUERY_BATTERY, QUERY_BROADCAST_CODES, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_STATUS, SET_ANC, STATUS_QUERY_PAYLOAD, SUBSCRIBE_BROADCAST, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
+from .protocol import BUDS_PRO_ANC_MODES, QUERY_ANC, QUERY_BATTERY, QUERY_BROADCAST_CODES, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_STATUS, SET_ANC, STATUS_QUERY_PAYLOAD, SUBSCRIBE_BROADCAST, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
 from .transport import RfcommTransport
 
 
@@ -49,8 +50,30 @@ def set_anc(mode: str) -> dict[str, object]:
             raise RuntimeError("refusing ANC write: device did not return notification capabilities")
         transport.query(SUBSCRIBE_BROADCAST, bytes((len(broadcast_codes),)) + broadcast_codes)
         transport.query(QUERY_STATUS, STATUS_QUERY_PAYLOAD, sequence=0, wait=0.3)
-        transport.query(SET_ANC, bytes((1, 1, ANC_MODES[mode])), wait=0.3)
-        state_frames = transport.query(QUERY_ANC, b"\x01\x01", wait=0.3)
+        write_frames = transport.query(
+            SET_ANC,
+            bytes((1, 1, BUDS_PRO_ANC_MODES[mode])),
+            sequence=0xF0,
+            wait=0.3,
+        )
+
+    # Buds Pro stops answering the ANC query in the control session. Verify in
+    # a new socket after BlueZ releases channel 15.
+    state_frames = []
+    for attempt in range(12):
+        time.sleep(1.0)
+        try:
+            with RfcommTransport(device.address) as verifier:
+                state_frames = verifier.query(QUERY_ANC, b"\x01\x01", sequence=0xF0, wait=0.3)
+            break
+        except OSError as error:
+            if error.errno != 16 or attempt == 11:
+                responses = ", ".join(
+                    f"0x{frame.command:04x}:{frame.payload.hex()}" for frame in write_frames
+                ) or "none"
+                raise RuntimeError(
+                    f"ANC write sent but verification channel stayed busy; write responses: {responses}"
+                ) from error
     observed = next((value for frame in state_frames if (value := parse_anc(frame))), None)
     if observed != mode:
         raise RuntimeError(f"ANC verification failed: requested {mode}, device reported {observed or 'no state'}")

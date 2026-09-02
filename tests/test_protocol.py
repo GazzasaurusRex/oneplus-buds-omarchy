@@ -1,6 +1,6 @@
 import unittest
 
-from oneplus_buds.protocol import ANC_MODES, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
+from oneplus_buds.protocol import BUDS_PRO_ANC_MODES, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
 
 
 class ProtocolTests(unittest.TestCase):
@@ -26,7 +26,7 @@ class ProtocolTests(unittest.TestCase):
                 "case": {"percentage": 50, "charging": False},
             },
         )
-        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x01\x01\x04")), "transparency")
+        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x01\x01\x04")), "on")
 
     def test_observed_buds_pro_responses(self):
         capability = bytes.fromhex("aa0d0000008101050000bf17682604")
@@ -50,15 +50,21 @@ class ProtocolTests(unittest.TestCase):
 
     def test_buds_pro_anc_set_frames(self):
         self.assertEqual(
-            encode_frame(0x0404, 0x42, bytes((1, 1, ANC_MODES["on"]))).hex(),
-            "aa0a00000404420300010102",
+            encode_frame(0x0404, 0xF0, bytes((1, 1, BUDS_PRO_ANC_MODES["on"]))).hex(),
+            "aa0a00000404f00300010108",
         )
-        self.assertEqual(ANC_MODES, {"off": 1, "on": 2, "transparency": 4})
+        self.assertEqual(BUDS_PRO_ANC_MODES, {"off": 1, "transparency": 2, "on": 8})
         self.assertEqual(parse_broadcast_codes(Frame(0x8200, 1, b"\x00\x03\x01\x02\x03")), b"\x01\x02\x03")
         self.assertEqual(
             encode_frame(0x010D, 0, STATUS_QUERY_PAYLOAD).hex(),
             "aa1300000d01000c000b05040b111318061b1c2728",
         )
+
+    def test_buds_pro_anc_bitmap_parser(self):
+        for value in (4, 8, 16):
+            self.assertEqual(parse_anc(Frame(0x810C, 1, bytes((0, 1, 1, value)))), "on")
+        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x00\x01\x01\x02")), "transparency")
+        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x00\x01\x01\x01")), "off")
 
 
 if __name__ == "__main__":

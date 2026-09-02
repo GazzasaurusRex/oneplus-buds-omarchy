@@ -19,8 +19,10 @@ RESPONSE_ANC = 0x810C
 NOTIFY_STATE = 0x0204
 RESPONSE_BROADCAST_CODES = 0x8200
 
-ANC_MODES = {"off": 0x01, "on": 0x02, "transparency": 0x04}
-ANC_NAMES = {value: name for name, value in ANC_MODES.items()}
+# Product 060C14 (original Buds Pro) uses a model-specific mode bitmap. ANC
+# level values were recovered from its profile and 0x08 was hardware-observed.
+BUDS_PRO_ANC_MODES = {"off": 0x01, "transparency": 0x02, "on": 0x08}
+BUDS_PRO_ANC_LEVELS = {0x04: "light", 0x08: "deep", 0x10: "smart"}
 STATUS_QUERY_PAYLOAD = bytes.fromhex("0B 05 04 0B 11 13 18 06 1B 1C 27 28")
 
 
@@ -135,7 +137,13 @@ def parse_anc(frame: Frame) -> str | None:
     payload = frame.payload
     for offset in range(len(payload) - 2):
         if payload[offset : offset + 2] == b"\x01\x01":
-            return ANC_NAMES.get(payload[offset + 2])
+            value = payload[offset + 2]
+            if value == BUDS_PRO_ANC_MODES["off"]:
+                return "off"
+            if value == BUDS_PRO_ANC_MODES["transparency"]:
+                return "transparency"
+            if value in BUDS_PRO_ANC_LEVELS:
+                return "on"
     return None
 
 
