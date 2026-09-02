@@ -1,6 +1,7 @@
 import unittest
 
-from oneplus_buds.protocol import BUDS_PRO_ANC_SET_MODES, HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_battery, parse_broadcast_codes, parse_product_id
+from oneplus_buds.profiles import PROFILES
+from oneplus_buds.protocol import HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_anc_state, parse_battery, parse_broadcast_codes, parse_product_id
 
 
 class ProtocolTests(unittest.TestCase):
@@ -26,7 +27,7 @@ class ProtocolTests(unittest.TestCase):
                 "case": {"percentage": 50, "charging": False},
             },
         )
-        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x01\x01\x04")), "on")
+        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x01\x01\x04"), PROFILES["060C14"].anc), "on")
 
     def test_observed_buds_pro_responses(self):
         capability = bytes.fromhex("aa0d0000008101050000bf17682604")
@@ -49,11 +50,13 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual([frame.command for frame in frames], [0x8205, 0x0204])
 
     def test_buds_pro_anc_set_frames(self):
+        anc = PROFILES["060C14"].anc
         self.assertEqual(
-            encode_frame(0x0404, 0x42, bytes((1, 1, BUDS_PRO_ANC_SET_MODES["on"]))).hex(),
+            encode_frame(0x0404, 0x42, anc.payload_for("on")).hex(),
             "aa0a00000404420300010108",
         )
-        self.assertEqual(BUDS_PRO_ANC_SET_MODES, {"off": 1, "transparency": 2, "on": 8})
+        self.assertEqual(anc.payload_for("off"), b"\x01\x01\x01")
+        self.assertEqual(anc.payload_for("transparency"), b"\x01\x01\x02")
         self.assertEqual(HELLO.hex(), "aa070000000123000012")
         self.assertEqual(REGISTER.hex(), "aa0c0000008541050000b550a069")
         self.assertEqual(parse_broadcast_codes(Frame(0x8200, 1, b"\x00\x03\x01\x02\x03")), b"\x01\x02\x03")
@@ -63,10 +66,30 @@ class ProtocolTests(unittest.TestCase):
         )
 
     def test_buds_pro_anc_bitmap_parser(self):
+        anc = PROFILES["060C14"].anc
         for value in (4, 8, 16):
-            self.assertEqual(parse_anc(Frame(0x810C, 1, bytes((0, 1, 1, value)))), "on")
-        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x00\x01\x01\x02")), "transparency")
-        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x00\x01\x01\x01")), "off")
+            self.assertEqual(parse_anc(Frame(0x810C, 1, bytes((0, 1, 1, value))), anc), "on")
+        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x00\x01\x01\x02"), anc), "transparency")
+        self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x00\x01\x01\x01"), anc), "off")
+
+    def test_buds_pro_2_profile_and_observed_transparency(self):
+        profile = PROFILES["062014"]
+        anc = profile.anc
+        self.assertTrue(profile.verified)
+        observed = Frame(0x810C, 0xF0, bytes.fromhex("00 01 01 00 01"))
+        self.assertEqual(parse_anc_state(observed, anc).mode, "transparency")
+        self.assertEqual(anc.payload_for("off"), bytes.fromhex("01 01 01"))
+        self.assertEqual(anc.payload_for("on"), bytes.fromhex("01 01 02"))
+        self.assertEqual(anc.payload_for("transparency"), bytes.fromhex("01 01 04"))
+        self.assertEqual(anc.payload_for("deep"), bytes.fromhex("01 01 10"))
+        self.assertEqual(anc.payload_for("medium"), bytes.fromhex("01 01 20"))
+        self.assertEqual(anc.payload_for("light"), bytes.fromhex("01 01 40"))
+        self.assertEqual(anc.payload_for("smart"), bytes.fromhex("01 01 80"))
+        expected_levels = {4: "deep", 5: "medium", 6: "light", 7: "smart"}
+        for index, level in expected_levels.items():
+            bitmap = (1 << index).to_bytes(2, "little")
+            state = parse_anc_state(Frame(0x810C, 1, b"\x00\x01\x01" + bitmap), anc)
+            self.assertEqual((state.mode, state.level), ("on", level))
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .profiles import AncProfile
+
 SOF = 0xAA
 
 QUERY_CAPABILITIES = 0x0100
@@ -19,13 +21,6 @@ RESPONSE_ANC = 0x810C
 NOTIFY_STATE = 0x0204
 RESPONSE_BROADCAST_CODES = 0x8200
 
-# Product 060C14 (original Buds Pro) uses a model-specific mode bitmap. ANC
-# level values were recovered from its profile and 0x08 was hardware-observed.
-BUDS_PRO_ANC_SET_MODES = {"off": 0x01, "transparency": 0x02, "on": 0x08}
-BUDS_PRO_ANC_STATE_OFF = 0x01
-BUDS_PRO_ANC_STATE_TRANSPARENCY = 0x02
-BUDS_PRO_ANC_LEVELS = {0x04: "light", 0x08: "deep", 0x10: "smart"}
-
 # Authentication frames have a legacy envelope that is not representable by
 # encode_frame: HELLO carries a trailing 0x12 beyond its zero inner length.
 HELLO = bytes.fromhex("AA 07 00 00 00 01 23 00 00 12")
@@ -38,6 +33,13 @@ class Frame:
     command: int
     sequence: int
     payload: bytes
+
+
+@dataclass(frozen=True)
+class AncState:
+    mode: str
+    level: str | None
+    index: int
 
 
 def encode_frame(command: int, sequence: int, payload: bytes = b"") -> bytes:
@@ -138,20 +140,28 @@ def parse_battery(frame: Frame) -> dict[str, dict[str, int | bool]] | None:
     return result
 
 
-def parse_anc(frame: Frame) -> str | None:
+def parse_anc_state(frame: Frame, profile: AncProfile) -> AncState | None:
     if frame.command not in (RESPONSE_ANC, NOTIFY_STATE):
         return None
     payload = frame.payload
     for offset in range(len(payload) - 2):
         if payload[offset : offset + 2] == b"\x01\x01":
-            value = payload[offset + 2]
-            if value == BUDS_PRO_ANC_STATE_OFF:
-                return "off"
-            if value == BUDS_PRO_ANC_STATE_TRANSPARENCY:
-                return "transparency"
-            if value in BUDS_PRO_ANC_LEVELS:
-                return "on"
+            bitmap = int.from_bytes(payload[offset + 2 :], "little")
+            if bitmap == 0:
+                return None
+            index = (bitmap & -bitmap).bit_length() - 1
+            mode = profile.read_modes.get(index)
+            level = profile.read_levels.get(index)
+            if mode is None and level is not None:
+                mode = "on"
+            if mode is not None:
+                return AncState(mode=mode, level=level, index=index)
     return None
+
+
+def parse_anc(frame: Frame, profile: AncProfile) -> str | None:
+    state = parse_anc_state(frame, profile)
+    return state.mode if state else None
 
 
 def parse_broadcast_codes(frame: Frame) -> bytes | None:

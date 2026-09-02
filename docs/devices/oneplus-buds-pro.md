@@ -24,6 +24,5 @@ A recovered HeyMelody registry maps product ID `060C14` to OnePlus Buds Pro, `su
 
 ## Still to verify
 
-- State changes and query-after-write for Off, ANC, and Transparency
 - Determine whether shorter safe authentication/cooldown timings work across firmware versions; current conservative timings favor reliability.
 - Deliberately test case-open/case-closed battery behavior later.

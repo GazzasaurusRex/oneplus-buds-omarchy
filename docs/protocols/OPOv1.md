@@ -52,7 +52,18 @@ Control requires the legacy HELLO frame, a two-second wait, REGISTER with the ob
 
 This sequence was verified for Off, Transparency, and deep ANC On on 2026-09-02.
 
-The connection initialization flow negotiates and subscribes to the device's notification event IDs before control writes.
+## Verified Buds Pro 2 differences
+
+Product `062014` uses the same RFCOMM channel, 0xAA packet format, queries, authentication frames, token, and SET command. Its advertised OPO service is `0000079a...` instead of `00001107...`.
+
+Its ANC bitmap can span two bytes and needs a product profile with separate write indices and read aliases:
+
+- Main writes: Off index 0, ANC On index 1, Transparency index 2.
+- Levels: Deep index 4, Medium index 5, Light index 6, Smart index 7.
+- Observed Transparency report: index 8 (`00 01` little-endian bitmap).
+- Registry read aliases: Off may also report index 3; Transparency may report index 8.
+
+Main ANC On preserves the last selected level. All three main modes and all four levels were verified on hardware with query-after-write. This confirms that framing is generic but ANC interpretation belongs in the device capability/profile layer.
 
 ## Handshake variants
 
