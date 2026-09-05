@@ -6,7 +6,7 @@ Last updated: 2026-09-05. Phase 1 protocol proof, backend hardening, two-model v
 
 The no-PyPI-dependency Python proof of concept separates direct BlueZ D-Bus discovery, RFCOMM transport, OPO framing/parsing, product/capability profiles, typed backend orchestration, privacy-safe sessions, serialized cached control, service lifecycle policy, and CLI JSON presentation. It uses the system-provided `dbus-python` binding. `BudsBackend` is the typed public boundary; `BudsController` owns at most one `OpoSession`, serializes operations, caches `ControllerSnapshot`, and reconnects once after polling transport failure. `BudsServiceRunner` adds interruptible polling, connection-state/snapshot callbacks, and capped exponential reconnect backoff without owning a thread or event loop. Both the original OnePlus Buds Pro and Buds Pro 2 are hardware-verified for detection, identity, firmware, component batteries, ANC state, Off, Transparency, and ANC On. The Pro 2 is additionally verified for Deep, Medium, Light, and Smart ANC levels. Writes require a known hardware-verified product profile, authentication, SET-status recording, and fresh-session query-after-write verification.
 
-Repository checkpoint: commit `ea4bb6f` (`feat: add resilient service runner`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 36 tests on Python 3.14.7.
+Repository checkpoint: commit `7314cca` (`fix: redact service connection errors`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 37 tests on Python 3.14.7.
 
 ## Verified discoveries
 
@@ -45,14 +45,16 @@ Repository checkpoint: commit `ea4bb6f` (`feat: add resilient service runner`). 
 - A live Pro 2 session authenticated/subscribed once, retained the ten advertised event codes, returned redacted notifications for event codes 6 and 2, counted four ignored setup frames, and leaked no raw payload. Unit fixtures prove peer-identifying text cannot escape through `EventBatch`.
 - `BudsController` now serializes access, caches typed snapshots, closes/reopens the event session around one-shot refreshes and verified writes, applies safe events, bounds notification-code history, reconnects once after polling transport failure, and shuts down deterministically. It intentionally owns no thread/event loop.
 - `BudsServiceRunner` now wraps the controller with a blocking, thread-agnostic run loop. It publishes connecting/connected/disconnected/reconnecting/stopped states and snapshots, retries expected connection failures with interruptible exponential delays capped at 30 seconds, resets backoff after connection, and always shuts down on cancellation or unexpected exit.
+- A live Pro 2 service-runner test detected the closed-case disconnect, backed off at 1, 2, then capped 4-second intervals, recovered automatically through the same runner when the earbuds reconnected, re-authenticated/subscribed, and resumed polling. Cancellation published `stopped`, returned a disconnected snapshot, and released the RFCOMM socket.
+- Live testing revealed that BlueZ selection failures include the selected Bluetooth address in their message. Service callback errors now redact that address; a regression test protects this privacy boundary.
 - Live Pro 2 controller tests passed start → subscribe → poll → shutdown and start → verified ANC write → resubscribe → shutdown. The latter began at ANC On/Deep and generic `on` read back On/Smart, disproving the earlier claim that main On always preserves the visible level; explicit levels remain deterministic. Final hardware state is ANC On/Smart.
 
 ## Current hardware and repository state
 
 - Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`.
 - Last verified state: ANC On with Smart level; the controller's final shutdown released the RFCOMM socket.
-- Latest implementation commit: `ea4bb6f`.
-- Automated status: 36 tests passing; compilation and `git diff --check` pass with the service-runner milestone.
+- Latest implementation commit: `7314cca`.
+- Automated status: 37 tests passing; compilation and `git diff --check` pass with the live-verification follow-up.
 - No Omarchy/QML UI has been started.
 
 ## Unresolved problems
@@ -63,8 +65,8 @@ Repository checkpoint: commit `ea4bb6f` (`feat: add resilient service runner`). 
 - Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
 - `0x0204` notification schemas are not mapped yet. The event API exposes only their numeric code until each payload is validated.
 - The device exposes one RFCOMM control channel. `BudsServiceRunner` uses `BudsController` as its sole serialized session owner rather than opening concurrent sessions directly.
-- Live disconnect/reconnect behavior of the service runner has not yet been hardware-verified. Automated tests cover capped backoff, reset-after-success, cancellation during backoff, callbacks, and deterministic shutdown.
+- Service callbacks are synchronous and must remain cheap; the future bridge should marshal them onto its own event loop rather than doing UI work in the polling thread.
 
 ## Next recommended task
 
-Hardware-validate the service runner's disconnect/reconnect path on the connected Buds Pro 2. After that, define the minimal user-level service/frontend bridge contract while keeping `BudsController` as the only RFCOMM owner; do not begin a polished QML interface before the service behavior is proven.
+Define the minimal user-level service/frontend bridge contract around the now hardware-verified runner, including snapshot serialization and command routing, while keeping `BudsController` as the only RFCOMM owner. Do not begin a polished QML interface until that boundary is tested.
