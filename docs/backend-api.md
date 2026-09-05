@@ -54,3 +54,21 @@ snapshot = controller.shutdown()
 It caches an immutable `ControllerSnapshot`, serializes every operation with one lock, and owns at most one `OpoSession`. A refresh or verified write closes the event socket first and restores notification subscription afterward. A polling transport error triggers one immediate reconnect; repeated failures propagate to the caller for service-level backoff. Shutdown always releases the RFCOMM socket.
 
 Safe battery, ANC, and named feature-switch events update cached typed state. Redacted notification codes are retained in a bounded 32-item history, ignored-frame counts are cumulative, and `generation` changes whenever meaningful state/event data is applied. The controller does not start threads or prescribe an event loop; a future daemon, QML bridge, or test harness controls polling cadence and backoff.
+
+## Service runner
+
+`BudsServiceRunner` adds connection lifecycle policy without taking transport ownership away from `BudsController`. Its blocking `run(cancelled)` method can be hosted by a daemon thread, service process, or future frontend bridge:
+
+```python
+from threading import Event
+from oneplus_buds import BudsServiceRunner
+
+cancelled = Event()
+runner = BudsServiceRunner(
+    on_state=lambda state: print(state.connection),
+    on_snapshot=lambda snapshot: render(snapshot),
+)
+runner.run(cancelled)
+```
+
+Connection failures publish a `disconnected` state with the attempt number, retry delay, and error text. Retries start at one second, double to a 30-second ceiling, and reset after a successful connection. The cancellation event interrupts backoff immediately; steady-state cancellation latency is bounded by the configured poll interval (0.5 seconds by default). `run()` always shuts down the controller and publishes a final `stopped` state and disconnected snapshot. The runner creates no thread or event loop itself.
