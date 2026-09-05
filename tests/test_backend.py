@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import patch
 
-from oneplus_buds.backend import diagnostics_report, query_capabilities, query_status, set_anc
+from oneplus_buds.backend import diagnostics_report, query_capabilities, query_feature_switches, query_status, set_anc
 from oneplus_buds.bluez import Device
 from oneplus_buds.profiles import PROFILES
-from oneplus_buds.protocol import QUERY_ANC, QUERY_BATTERY, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_REMOTE_VERSION, SET_ANC, Frame
+from oneplus_buds.protocol import QUERY_ANC, QUERY_BATTERY, QUERY_BROADCAST_CODES, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_REMOTE_VERSION, QUERY_STATUS, SET_ANC, SUBSCRIBE_BROADCAST, Frame
 
 
 DEVICE = Device(
@@ -28,17 +28,35 @@ STATUS = {
 
 
 class BackendTests(unittest.TestCase):
-    def test_firmware_capability_is_verified_only_on_original_buds_pro(self):
+    def test_firmware_capability_is_verified_on_both_reference_models(self):
         self.assertIn("firmware", PROFILES["060C14"].capabilities)
-        self.assertNotIn("firmware", PROFILES["062014"].capabilities)
+        self.assertIn("firmware", PROFILES["062014"].capabilities)
 
+    @patch("oneplus_buds.backend.query_feature_switches", return_value={"wear_detection": True})
     @patch("oneplus_buds.backend.query_status", return_value=STATUS)
-    def test_capabilities_are_profile_driven(self, _status):
+    def test_capabilities_combine_profile_and_device_switches(self, _status, _switches):
         result = query_capabilities()
         self.assertEqual(result["compatibility"], "verified")
         self.assertIn("smart_anc", result["capabilities"])
         self.assertNotIn("adaptive_anc", result["capabilities"])
+        self.assertIn("wear_detection", result["capabilities"])
+        self.assertEqual(result["feature_switches"], {"wear_detection": True})
         self.assertIn("smart", result["anc_modes"])
+
+    @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
+    def test_feature_switch_probe_subscribes_only_to_advertised_codes(self, _device):
+        transport = FakeTransport(
+            {
+                QUERY_CAPABILITIES: [],
+                QUERY_BROADCAST_CODES: [Frame(0x8200, 1, b"\x00\x02\x04\x06")],
+                SUBSCRIBE_BROADCAST: [Frame(0x8205, 2, b"\x00")],
+                QUERY_STATUS: [Frame(0x810D, 0, b"\x00\x02\x04\x01\x06\x00")],
+            }
+        )
+        with patch("oneplus_buds.backend.RfcommTransport", return_value=transport):
+            result = query_feature_switches()
+        self.assertEqual(result, {"wear_detection": True, "low_latency": False})
+        self.assertIn((SUBSCRIBE_BROADCAST, b"\x02\x04\x06"), transport.queries)
 
     @patch("oneplus_buds.backend.query_status", return_value=STATUS)
     @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
@@ -93,6 +111,7 @@ class BackendTests(unittest.TestCase):
 class FakeTransport:
     def __init__(self, responses):
         self.responses = responses
+        self.queries = []
 
     def __enter__(self):
         return self
@@ -101,6 +120,8 @@ class FakeTransport:
         return None
 
     def query(self, command, *_args, **_kwargs):
+        payload = _args[0] if _args else b""
+        self.queries.append((command, payload))
         return self.responses.get(command, [])
 
     def exchange_raw(self, *_args, **_kwargs):

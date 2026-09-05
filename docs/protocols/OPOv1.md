@@ -48,9 +48,15 @@ The original Buds Pro returned `status=00`, `count=08`, followed by comma-separa
 
 Component IDs 1/2/3 align with left/right/case. Joining kind-2 values in that order produces `541.541.510`, which the user independently confirmed against the phone's firmware display. The parser retains all records, rejects malformed/count-mismatched payloads, and formats firmware only when both left and right kind-2 records exist.
 
+The Buds Pro 2 uses the same structure. It returned kind-2 values `196`, `196`, and `101`, independently confirmed as phone-displayed firmware `196.196.101`. It additionally returned kind-4 value `0` for all three components; kind 4 remains uninterpreted.
+
 ### Notification negotiation
 
 After HELLO and REGISTER, the original Buds Pro returned `0x8200` payload `00 07 01 02 03 04 06 08 0a`. Sending `0x0205` with that exact advertised set returned `0x8205` status `00` and echoed each event code as a little status pair, followed by an immediate `0x0204` state snapshot. No unsupported event was requested. The profile's existing `0x010d` batch query still produced no response, so its feature state is not inferred.
+
+The Buds Pro 2 advertised ten codes (`01 02 03 04 08 0b f1 f2 f3 0a`). Its subscription response used a different leading byte/shape but was followed by an immediate snapshot and working batch response, so the backend does not assume the original model's acknowledgement layout. One unsolicited pre-handshake notification contained peer-device information; raw notifications are deliberately excluded from CLI capability/diagnostic output.
+
+The Pro 2 `0x810d` payload was `00 06 05 01 04 01 0b 01 11 00 18 00 06 00`: success, six `(feature ID, boolean)` pairs. Corroborated IDs map to wear detection `0x04`, low latency/game mode `0x06`, hearing enhancement `0x0b`, multipoint `0x11`, and high-quality audio `0x18`; `0x05` remains unknown. A returned ID demonstrates support even when its current value is false.
 
 For product `060C14` (original OnePlus Buds Pro), queried ANC state is a model-profile bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. Deep ANC `08` was observed after a physical stem-control transition to ANC On.
 

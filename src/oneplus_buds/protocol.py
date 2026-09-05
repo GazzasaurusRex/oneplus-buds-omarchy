@@ -21,6 +21,7 @@ RESPONSE_PRODUCT_ID = 0x8103
 RESPONSE_REMOTE_VERSION = 0x8105
 RESPONSE_BATTERY = 0x8106
 RESPONSE_ANC = 0x810C
+RESPONSE_STATUS = 0x810D
 NOTIFY_STATE = 0x0204
 RESPONSE_BROADCAST_CODES = 0x8200
 
@@ -218,6 +219,21 @@ def parse_broadcast_codes(frame: Frame) -> bytes | None:
     if status != 0 or len(frame.payload) < 2 + count:
         return None
     return frame.payload[2 : 2 + count]
+
+
+def parse_feature_switches(frame: Frame) -> dict[int, bool] | None:
+    if frame.command != RESPONSE_STATUS or len(frame.payload) < 2:
+        return None
+    status, count = frame.payload[:2]
+    if status != 0 or len(frame.payload) < 2 + count * 2:
+        return None
+    result: dict[int, bool] = {}
+    for offset in range(2, 2 + count * 2, 2):
+        feature, value = frame.payload[offset : offset + 2]
+        if value not in (0, 1):
+            return None
+        result[feature] = bool(value)
+    return result
 
 
 def parse_set_anc_status(frame: Frame) -> int | None:

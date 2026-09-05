@@ -1,7 +1,7 @@
 import unittest
 
 from oneplus_buds.profiles import PROFILES
-from oneplus_buds.protocol import HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, VersionRecord, decode_frame, encode_frame, format_firmware_version, parse_anc, parse_anc_state, parse_battery, parse_broadcast_codes, parse_product_id, parse_remote_version, parse_set_anc_status
+from oneplus_buds.protocol import HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, VersionRecord, decode_frame, encode_frame, format_firmware_version, parse_anc, parse_anc_state, parse_battery, parse_broadcast_codes, parse_feature_switches, parse_product_id, parse_remote_version, parse_set_anc_status
 
 
 class ProtocolTests(unittest.TestCase):
@@ -51,6 +51,12 @@ class ProtocolTests(unittest.TestCase):
         )
         self.assertEqual(format_firmware_version(records), "541.541.510")
         self.assertIsNone(format_firmware_version((VersionRecord(1, 2, "541"),)))
+
+    def test_feature_switch_parser(self):
+        frame = Frame(0x810D, 0, bytes.fromhex("00 03 04 01 11 00 18 00"))
+        self.assertEqual(parse_feature_switches(frame), {0x04: True, 0x11: False, 0x18: False})
+        self.assertIsNone(parse_feature_switches(Frame(0x810D, 0, b"\x00\x02\x04\x01")))
+        self.assertIsNone(parse_feature_switches(Frame(0x810D, 0, b"\x00\x01\x04\x02")))
 
     def test_observed_buds_pro_responses(self):
         capability = bytes.fromhex("aa0d0000008101050000bf17682604")

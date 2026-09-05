@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from oneplus_buds.profiles import PROFILES
-from oneplus_buds.protocol import FrameStream, format_firmware_version, parse_anc_state, parse_battery, parse_product_id, parse_remote_version
+from oneplus_buds.protocol import FrameStream, format_firmware_version, parse_anc_state, parse_battery, parse_broadcast_codes, parse_feature_switches, parse_product_id, parse_remote_version
 
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "opo_sessions.json"
@@ -38,6 +38,15 @@ class FixtureTests(unittest.TestCase):
         session = self.sessions["buds_pro_2"]
         profile = PROFILES[session["product_id"]]
         self.assertEqual(parse_product_id(self.frame("buds_pro_2", "rx_product")), "062014")
+        records = parse_remote_version(self.frame("buds_pro_2", "rx_version"))
+        self.assertEqual(format_firmware_version(records), "196.196.101")
+        self.assertEqual(
+            parse_broadcast_codes(self.frame("buds_pro_2", "rx_notification_capabilities")),
+            bytes.fromhex("01 02 03 04 08 0b f1 f2 f3 0a"),
+        )
+        switches = parse_feature_switches(self.frame("buds_pro_2", "rx_feature_switches"))
+        self.assertEqual(switches[0x04], True)
+        self.assertEqual(switches[0x11], False)
         state = parse_anc_state(self.frame("buds_pro_2", "rx_anc_transparency"), profile.anc)
         self.assertEqual((state.mode, state.index), ("transparency", 8))
 

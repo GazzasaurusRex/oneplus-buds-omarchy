@@ -13,7 +13,9 @@ Status: Phase 1 backend-hardening milestone, 2026-09-05.
 
 Unknown products may be queried safely, but ANC writes require a known profile marked hardware-verified. SET response status `00` is observed on successful changes, while Buds Pro 2 returned `0e` for an already-active mode. Status values are reported but not treated as proof of success or failure: a fresh state query must match the requested mode or level.
 
-`status` also sends the read-only `0x0105` remote-version query. Valid responses retain every numeric component/kind/value record. Firmware display is derived only from kind-2 left/right records, with the case appended when present. On the original Buds Pro this produced `541.541.510`, exactly matching HeyMelody; firmware remains unverified for other profiles.
+`status` also sends the read-only `0x0105` remote-version query. Valid responses retain every numeric component/kind/value record. Firmware display is derived only from kind-2 left/right records, with the case appended when present. This produced `541.541.510` on Buds Pro and `196.196.101` on Buds Pro 2, exactly matching HeyMelody for both verified profiles.
+
+`capabilities` performs authenticated notification negotiation, subscribes only to event codes advertised by the selected device, and requests the profile's read-only feature-switch list. Recognised returned IDs are exposed twice: their presence extends the capability set, while `feature_switches` reports current boolean state. Unrecognised IDs and unsolicited payloads are not included, preventing peer-device data from leaking into reports.
 
 Discovery uses the system `dbus-python` binding already supplied by Omarchy/Arch rather than parsing `bluetoothctl` output. One ObjectManager snapshot provides Device1 and Battery1 properties, including connection state, UUIDs, aggregate battery, modalias, and service-resolution state. The Python package itself adds no PyPI dependency.
 

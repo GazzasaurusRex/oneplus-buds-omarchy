@@ -1,6 +1,6 @@
 # Agent handoff
 
-Last updated: 2026-09-05. Phase 1 basic control, backend hardening, reliability, direct BlueZ discovery, and original Buds Pro firmware milestones complete.
+Last updated: 2026-09-05. Phase 1 basic control, backend hardening, reliability, direct BlueZ discovery, firmware, and safe dynamic capability milestones complete for both reference models.
 
 ## Current status
 
@@ -36,14 +36,17 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - A repeated original Buds Pro `0x0100` query returned capability payload `00bf17682604`. Its feature bits remain unmapped. The existing read-only `0x010d` batch-status request returned no frame in that unauthenticated session, so dynamic feature state remains deliberately unreported.
 - Read-only remote-version command `0x0105` returned eight structured ASCII records on product `060C14`. Kind-2 values for left/right/case format as `541.541.510`, exactly matching the version the user checked on the phone. The normal status and diagnostics APIs now expose both this verified firmware string and the lossless records. Firmware capability is marked verified only for the original Buds Pro.
 - Authenticated notification discovery on `060C14` advertised seven event codes (`01 02 03 04 06 08 0a`). Subscribing only to those codes returned a successful `0x8205` response and an immediate `0x0204` snapshot. The same session's `0x010d` query still returned no frame, so batch feature state remains unresolved.
+- Buds Pro 2 `0x0105` returned nine records, including extra kind-4 records. Kind-2 left/right/case values format as `196.196.101`, exactly matching the phone. Firmware is now verified for both reference profiles.
+- Pro 2 notification discovery advertised ten event codes (`01 02 03 04 08 0b f1 f2 f3 0a`), and its subscription response shape differs from the original model. A subsequent `0x810d` returned six feature switches. The capability API safely reports recognised support/current state for wear detection, hearing enhancement, multipoint, high-quality audio, and low latency; ID `0x05` remains unnamed.
+- An unsolicited Pro 2 notification contained peer-device information. Raw notification payloads are never surfaced by the capability API or privacy-safe diagnostics; only explicitly recognised boolean feature fields are returned.
 
 ## Unresolved problems
 
 - Authentication still uses conservative multi-second delays. Timing can be optimized only after repeated control-cycle evidence on both models.
 - Case presence and charging bits should be tested deliberately later.
-- Dynamic `0x8100` capability-bit semantics and `0x810d` feature status remain unresolved; do not infer features from them yet.
+- Dynamic `0x8100` bit semantics, original Buds Pro `0x810d` silence, Pro 2 feature ID `0x05`, and additional notification payloads remain unresolved. Do not infer names for unknown fields.
 - Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
 
 ## Next recommended task
 
-Connect the Buds Pro 2, query `0x0105`, and compare the formatted version with the phone to verify whether firmware reporting is generic. Repeat notification negotiation and record model differences. Then formalize the stable backend API needed by the future frontend; do not begin QML yet.
+Formalize the stable backend API and long-lived connection/event model needed by the future frontend. Separate cheap cached discovery, one-shot status queries, authenticated feature probing, verified writes, and privacy-safe notifications. Add typed result objects without beginning QML yet.

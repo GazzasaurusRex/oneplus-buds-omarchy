@@ -10,16 +10,22 @@ from .protocol import (
     HELLO,
     QUERY_ANC,
     QUERY_BATTERY,
+    QUERY_BROADCAST_CODES,
     QUERY_CAPABILITIES,
     QUERY_PRODUCT_ID,
     QUERY_REMOTE_VERSION,
+    QUERY_STATUS,
     REGISTER,
     SET_ANC,
+    STATUS_QUERY_PAYLOAD,
+    SUBSCRIBE_BROADCAST,
     AncState,
     Frame,
     format_firmware_version,
     parse_anc_state,
     parse_battery,
+    parse_broadcast_codes,
+    parse_feature_switches,
     parse_product_id,
     parse_remote_version,
     parse_set_anc_status,
@@ -27,6 +33,14 @@ from .protocol import (
 from .transport import RfcommTransport
 
 T = TypeVar("T")
+
+FEATURE_SWITCH_NAMES = {
+    0x04: "wear_detection",
+    0x06: "low_latency",
+    0x0B: "hearing_enhancement",
+    0x11: "multipoint",
+    0x18: "high_quality_audio",
+}
 
 
 def _first_parsed(frames: list[Frame], parser: Callable[[Frame], T | None]) -> T | None:
@@ -89,12 +103,41 @@ def query_capabilities(address: str | None = None) -> dict[str, object]:
     status = query_status(address)
     product_id = status.get("product_id")
     profile = profile_for_product(product_id if isinstance(product_id, str) else None)
+    feature_switches = query_feature_switches(address)
+    capabilities = set(profile.capabilities) if profile else set()
+    capabilities.update(feature_switches)
     return {
         "model": status["model"],
         "product_id": product_id,
         "compatibility": "verified" if profile and profile.verified else "experimental",
-        "capabilities": sorted(profile.capabilities) if profile else [],
+        "capabilities": sorted(capabilities),
         "anc_modes": sorted(profile.anc.write_indices) if profile else [],
+        "feature_switches": feature_switches,
+    }
+
+
+def query_feature_switches(address: str | None = None) -> dict[str, bool]:
+    device = select_device(address)
+    with RfcommTransport(device.address, connect_attempts=4) as transport:
+        transport.query(QUERY_CAPABILITIES)
+        transport.exchange_raw(HELLO, wait=2.0)
+        transport.exchange_raw(REGISTER, wait=1.5)
+        advertised_frames = transport.query(QUERY_BROADCAST_CODES, wait=0.5)
+        advertised = _first_parsed(advertised_frames, parse_broadcast_codes)
+        if advertised:
+            payload = bytes((len(advertised),)) + advertised
+            transport.query(SUBSCRIBE_BROADCAST, payload, wait=0.5)
+        status_frames = transport.query(
+            QUERY_STATUS,
+            STATUS_QUERY_PAYLOAD,
+            sequence=0,
+            wait=0.8,
+        )
+    switches = _first_parsed(status_frames, parse_feature_switches) or {}
+    return {
+        name: switches[feature]
+        for feature, name in FEATURE_SWITCH_NAMES.items()
+        if feature in switches
     }
 
 
