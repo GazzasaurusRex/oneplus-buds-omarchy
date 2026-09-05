@@ -48,6 +48,7 @@ PROFILES = {
             {
                 "battery",
                 "case_battery",
+                "firmware",
                 "anc",
                 "transparency",
                 "anc_levels",

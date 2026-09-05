@@ -10,6 +10,7 @@ QUERY_CAPABILITIES = 0x0100
 QUERY_BROADCAST_CODES = 0x0200
 SUBSCRIBE_BROADCAST = 0x0205
 QUERY_PRODUCT_ID = 0x0103
+QUERY_REMOTE_VERSION = 0x0105
 QUERY_BATTERY = 0x0106
 QUERY_ANC = 0x010C
 QUERY_STATUS = 0x010D
@@ -17,6 +18,7 @@ SET_ANC = 0x0404
 RESPONSE_SET_ANC = 0x8404
 
 RESPONSE_PRODUCT_ID = 0x8103
+RESPONSE_REMOTE_VERSION = 0x8105
 RESPONSE_BATTERY = 0x8106
 RESPONSE_ANC = 0x810C
 NOTIFY_STATE = 0x0204
@@ -41,6 +43,16 @@ class AncState:
     mode: str
     level: str | None
     index: int
+
+
+@dataclass(frozen=True)
+class VersionRecord:
+    component: int
+    kind: int
+    value: str
+
+
+VERSION_COMPONENTS = {1: "left", 2: "right", 3: "case"}
 
 
 def encode_frame(command: int, sequence: int, payload: bytes = b"") -> bytes:
@@ -119,6 +131,40 @@ def parse_product_id(frame: Frame) -> str | None:
     if frame.payload[0] != 0:
         return None
     return frame.payload[1:4][::-1].hex().upper()
+
+
+def parse_remote_version(frame: Frame) -> tuple[VersionRecord, ...] | None:
+    if frame.command != RESPONSE_REMOTE_VERSION or len(frame.payload) < 2:
+        return None
+    status, count = frame.payload[:2]
+    if status != 0:
+        return None
+    try:
+        fields = frame.payload[2:].decode("ascii").split(",")
+    except UnicodeDecodeError:
+        return None
+    if len(fields) != count * 3:
+        return None
+    records: list[VersionRecord] = []
+    for offset in range(0, len(fields), 3):
+        component, kind, value = fields[offset : offset + 3]
+        if not component.isdecimal() or not kind.isdecimal() or not value.isdecimal():
+            return None
+        records.append(VersionRecord(int(component), int(kind), value))
+    return tuple(records)
+
+
+def format_firmware_version(records: tuple[VersionRecord, ...] | None) -> str | None:
+    if not records:
+        return None
+    components = {
+        record.component: record.value
+        for record in records
+        if record.kind == 2 and record.component in VERSION_COMPONENTS
+    }
+    if 1 not in components or 2 not in components:
+        return None
+    return ".".join(components[component] for component in (1, 2, 3) if component in components)
 
 
 def parse_battery(frame: Frame) -> dict[str, dict[str, int | bool]] | None:

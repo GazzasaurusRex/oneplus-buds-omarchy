@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from oneplus_buds.profiles import PROFILES
-from oneplus_buds.protocol import FrameStream, parse_anc_state, parse_battery, parse_product_id
+from oneplus_buds.protocol import FrameStream, format_firmware_version, parse_anc_state, parse_battery, parse_product_id, parse_remote_version
 
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "opo_sessions.json"
@@ -28,6 +28,8 @@ class FixtureTests(unittest.TestCase):
         session = self.sessions["buds_pro"]
         profile = PROFILES[session["product_id"]]
         self.assertEqual(parse_product_id(self.frame("buds_pro", "rx_product")), "060C14")
+        records = parse_remote_version(self.frame("buds_pro", "rx_version"))
+        self.assertEqual(format_firmware_version(records), "541.541.510")
         self.assertEqual(parse_anc_state(self.frame("buds_pro", "rx_anc_off"), profile.anc).mode, "off")
         self.assertEqual(parse_battery(self.frame("buds_pro", "rx_battery"))["case"]["percentage"], 80)
         self.assertEqual(self.frame("buds_pro", "rx_set_success").payload, b"\x00")

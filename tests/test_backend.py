@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 from oneplus_buds.backend import diagnostics_report, query_capabilities, query_status, set_anc
 from oneplus_buds.bluez import Device
-from oneplus_buds.protocol import QUERY_ANC, QUERY_BATTERY, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, SET_ANC, Frame
+from oneplus_buds.profiles import PROFILES
+from oneplus_buds.protocol import QUERY_ANC, QUERY_BATTERY, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_REMOTE_VERSION, SET_ANC, Frame
 
 
 DEVICE = Device(
@@ -18,6 +19,8 @@ DEVICE = Device(
 STATUS = {
     "model": "OnePlus Buds Pro 2",
     "product_id": "062014",
+    "remote_version": [{"component": 1, "kind": 2, "value": "123"}],
+    "firmware_version": "123.123",
     "battery": {"left": {"percentage": 80, "charging": False}},
     "anc": "on",
     "anc_level": "smart",
@@ -25,6 +28,10 @@ STATUS = {
 
 
 class BackendTests(unittest.TestCase):
+    def test_firmware_capability_is_verified_only_on_original_buds_pro(self):
+        self.assertIn("firmware", PROFILES["060C14"].capabilities)
+        self.assertNotIn("firmware", PROFILES["062014"].capabilities)
+
     @patch("oneplus_buds.backend.query_status", return_value=STATUS)
     def test_capabilities_are_profile_driven(self, _status):
         result = query_capabilities()
@@ -40,6 +47,7 @@ class BackendTests(unittest.TestCase):
         rendered = repr(report)
         self.assertNotIn(DEVICE.address, rendered)
         self.assertEqual(report["device"]["product_id"], "062014")
+        self.assertEqual(report["device"]["firmware_version"], "123.123")
         self.assertEqual(report["device"]["discovery"], "BlueZ D-Bus ObjectManager")
         self.assertTrue(report["device"]["services_resolved"])
         self.assertEqual(report["state"]["anc_level"], "smart")
@@ -51,6 +59,9 @@ class BackendTests(unittest.TestCase):
             {
                 QUERY_CAPABILITIES: [],
                 QUERY_PRODUCT_ID: [Frame(0x8103, 1, b"\x00\x14\x20\x06")],
+                QUERY_REMOTE_VERSION: [
+                    Frame(0x8105, 2, b"\x00\x02" + b"1,2,123,2,2,123")
+                ],
                 QUERY_BATTERY: [Frame(0x8106, 2, b"\x02\x01\x50\x02\x4f")],
                 QUERY_ANC: [Frame(0x810C, 3, bytes.fromhex("00 01 01 80"))],
             }
@@ -58,6 +69,8 @@ class BackendTests(unittest.TestCase):
         with patch("oneplus_buds.backend.RfcommTransport", return_value=transport):
             result = query_status()
         self.assertEqual(result["product_id"], "062014")
+        self.assertEqual(result["remote_version"][0]["value"], "123")
+        self.assertEqual(result["firmware_version"], "123.123")
         self.assertEqual(result["battery"]["left"]["percentage"], 80)
         self.assertEqual((result["anc"], result["anc_level"]), ("on", "smart"))
 

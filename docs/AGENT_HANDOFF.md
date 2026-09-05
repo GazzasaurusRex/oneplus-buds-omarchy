@@ -1,6 +1,6 @@
 # Agent handoff
 
-Last updated: 2026-09-05. Phase 1 basic control, backend hardening, reliability, and direct BlueZ discovery milestones complete.
+Last updated: 2026-09-05. Phase 1 basic control, backend hardening, reliability, direct BlueZ discovery, and original Buds Pro firmware milestones complete.
 
 ## Current status
 
@@ -33,15 +33,17 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - With both original Buds Pro earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles also passed. All six actual transitions returned SET status `00` and matched fresh-session read-back; ANC On reported Deep. A phone-assisted physical check resolved a momentary subjective ambiguity and confirmed all three labels behaved correctly. After reconnecting to the PC, product `060C14`, L/R=80%, not charging, and ANC Off were independently confirmed.
 - Discovery now calls BlueZ's `org.freedesktop.DBus.ObjectManager.GetManagedObjects` through the system `dbus-python` binding. It obtains Device1 and Battery1 data in one snapshot, eliminating `bluetoothctl` subprocesses and text parsing while adding no PyPI dependency on this Omarchy host.
 - Live direct-D-Bus discovery and end-to-end status were verified on the original Buds Pro. The privacy-safe diagnostic report includes modalias, service-resolution state, and discovery method while still omitting the Bluetooth address and unrelated devices. `ServicesResolved` was false in one live snapshot despite cached UUIDs and working RFCOMM, so it is informational rather than a compatibility gate.
-- A repeated original Buds Pro `0x0100` query returned capability payload `00bf17682604`. Its feature bits remain unmapped. The existing read-only `0x010d` batch-status request returned no frame in that unauthenticated session, so firmware and dynamic capabilities remain deliberately unreported.
+- A repeated original Buds Pro `0x0100` query returned capability payload `00bf17682604`. Its feature bits remain unmapped. The existing read-only `0x010d` batch-status request returned no frame in that unauthenticated session, so dynamic feature state remains deliberately unreported.
+- Read-only remote-version command `0x0105` returned eight structured ASCII records on product `060C14`. Kind-2 values for left/right/case format as `541.541.510`, exactly matching the version the user checked on the phone. The normal status and diagnostics APIs now expose both this verified firmware string and the lossless records. Firmware capability is marked verified only for the original Buds Pro.
+- Authenticated notification discovery on `060C14` advertised seven event codes (`01 02 03 04 06 08 0a`). Subscribing only to those codes returned a successful `0x8205` response and an immediate `0x0204` snapshot. The same session's `0x010d` query still returned no frame, so batch feature state remains unresolved.
 
 ## Unresolved problems
 
 - Authentication still uses conservative multi-second delays. Timing can be optimized only after repeated control-cycle evidence on both models.
 - Case presence and charging bits should be tested deliberately later.
-- Diagnostics do not yet query firmware or dynamically probe capabilities beyond the verified product profile.
+- Dynamic `0x8100` capability-bit semantics and `0x810d` feature status remain unresolved; do not infer features from them yet.
 - Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
 
 ## Next recommended task
 
-Investigate the authenticated notification subscription/batch-status flow and firmware query semantics using read-only commands and corroborated protocol evidence. Decode `0x8100` capability bits only where their meaning can be validated on both profiles. Then formalize the stable backend API needed by the future frontend; do not begin QML yet.
+Connect the Buds Pro 2, query `0x0105`, and compare the formatted version with the phone to verify whether firmware reporting is generic. Repeat notification negotiation and record model differences. Then formalize the stable backend API needed by the future frontend; do not begin QML yet.

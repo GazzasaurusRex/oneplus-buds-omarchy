@@ -1,7 +1,7 @@
 import unittest
 
 from oneplus_buds.profiles import PROFILES
-from oneplus_buds.protocol import HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_anc_state, parse_battery, parse_broadcast_codes, parse_product_id, parse_set_anc_status
+from oneplus_buds.protocol import HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, VersionRecord, decode_frame, encode_frame, format_firmware_version, parse_anc, parse_anc_state, parse_battery, parse_broadcast_codes, parse_product_id, parse_remote_version, parse_set_anc_status
 
 
 class ProtocolTests(unittest.TestCase):
@@ -28,6 +28,29 @@ class ProtocolTests(unittest.TestCase):
             },
         )
         self.assertEqual(parse_anc(Frame(0x810C, 1, b"\x01\x01\x04"), PROFILES["060C14"].anc), "on")
+
+    def test_remote_version_parser(self):
+        payload = b"\x00\x03" + b"1,1,11,1,2,541,1,3,541"
+        self.assertEqual(
+            parse_remote_version(Frame(0x8105, 1, payload)),
+            (
+                VersionRecord(1, 1, "11"),
+                VersionRecord(1, 2, "541"),
+                VersionRecord(1, 3, "541"),
+            ),
+        )
+        self.assertIsNone(parse_remote_version(Frame(0x8105, 1, b"\x01\x00")))
+        self.assertIsNone(parse_remote_version(Frame(0x8105, 1, b"\x00\x02" + b"1,1,11")))
+
+    def test_firmware_version_uses_kind_two_component_records(self):
+        records = (
+            VersionRecord(1, 1, "11"),
+            VersionRecord(1, 2, "541"),
+            VersionRecord(2, 2, "541"),
+            VersionRecord(3, 2, "510"),
+        )
+        self.assertEqual(format_firmware_version(records), "541.541.510")
+        self.assertIsNone(format_firmware_version((VersionRecord(1, 2, "541"),)))
 
     def test_observed_buds_pro_responses(self):
         capability = bytes.fromhex("aa0d0000008101050000bf17682604")

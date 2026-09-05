@@ -12,13 +12,16 @@ from .protocol import (
     QUERY_BATTERY,
     QUERY_CAPABILITIES,
     QUERY_PRODUCT_ID,
+    QUERY_REMOTE_VERSION,
     REGISTER,
     SET_ANC,
     AncState,
     Frame,
+    format_firmware_version,
     parse_anc_state,
     parse_battery,
     parse_product_id,
+    parse_remote_version,
     parse_set_anc_status,
 )
 from .transport import RfcommTransport
@@ -54,6 +57,7 @@ def query_status(address: str | None = None) -> dict[str, object]:
     with RfcommTransport(device.address, connect_attempts=4) as transport:
         transport.query(QUERY_CAPABILITIES)
         product_frames = transport.query(QUERY_PRODUCT_ID)
+        version_frames = transport.query(QUERY_REMOTE_VERSION)
         battery_frames = transport.query(QUERY_BATTERY)
         anc_frames = transport.query(QUERY_ANC, b"\x01\x01")
     product_id = _first_parsed(product_frames, parse_product_id)
@@ -63,10 +67,16 @@ def query_status(address: str | None = None) -> dict[str, object]:
         if profile
         else None
     )
+    version_records = _first_parsed(version_frames, parse_remote_version)
     result.update(
         {
             "product_id": product_id,
             "model": profile.name if profile else None,
+            "remote_version": [
+                {"component": record.component, "kind": record.kind, "value": record.value}
+                for record in version_records or ()
+            ],
+            "firmware_version": format_firmware_version(version_records),
             "battery": _first_parsed(battery_frames, parse_battery),
             "anc": anc_state.mode if anc_state else None,
             "anc_level": anc_state.level if anc_state else None,
@@ -153,6 +163,8 @@ def diagnostics_report(address: str | None = None) -> dict[str, object]:
             "reported_name": device.name,
             "model": status["model"],
             "product_id": product_id,
+            "remote_version": status["remote_version"],
+            "firmware_version": status["firmware_version"],
             "connected": device.connected,
             "bluez_modalias": device.modalias,
             "services_resolved": device.services_resolved,

@@ -1,6 +1,6 @@
 # Open-source protocol research
 
-Research snapshot: 2026-09-02.
+Research snapshot: 2026-09-05.
 
 | Project | Relevant finding | Transport/model scope | Licence at inspected revision |
 |---|---|---|---|
@@ -13,3 +13,4 @@ The three most directly relevant repositories are used only as factual research 
 
 The term “OPOv1” is used inconsistently in community projects: it can mean the 0xAA command protocol rather than one fixed Bluetooth bearer. Evidence shows the protocol may run over BLE GATT or Bluetooth Classic RFCOMM depending on model. The original OnePlus Buds Pro is an RFCOMM/SPP device.
 
+At OppoPods commit `ad1bb4275b0ce1ce844d5d999dd92e75abc52831`, its protocol notes corroborate `0x0105` as `getRemoteVersion`, the notification flow `0x0200` → `0x8200` → `0x0205` → `0x8205`, and dynamic feature-ID lists for `0x010d`. These facts guided independent implementation and hardware probing; no source code was copied. Its README declares GPL-3.0, though the inspected tree has no standalone licence file.

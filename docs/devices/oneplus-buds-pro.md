@@ -16,6 +16,8 @@ Compatibility status: **Verified for the Phase 1 basic milestone** on real OnePl
 - ANC query returned Off initially. After the user physically enabled ANC, it returned bitmap `08`, matching the registry's deep-ANC profile index.
 - Authenticated ANC writes were acknowledged and independently verified for Off=`01`, Transparency=`02`, and deep ANC On=`08`.
 - With both earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles completed successfully. Every SET returned status `00`, every transition matched an independent fresh-session query, ANC On reported Deep, and a later phone-assisted physical check confirmed Off, Transparency, and ANC On behaved as labelled. After reconnecting to the PC, the final state independently read back Off.
+- Read-only command `0x0105` returned eight ASCII version records. Kind-2 values for component IDs 1/2/3 produced `541.541.510`, exactly matching the firmware version displayed by the phone/HeyMelody. Firmware reporting is verified for this product.
+- Authenticated notification negotiation advertised event codes `01 02 03 04 06 08 0a`; multi-subscription `0x0205` returned status `00` and an immediate `0x0204` state snapshot. The tested batch-status request returned no `0x810d` response even after registration.
 
 The Bluetooth address is deliberately not recorded.
 

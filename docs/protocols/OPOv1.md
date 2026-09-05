@@ -24,6 +24,7 @@ Multi-byte fields are little-endian:
 | Notification capabilities | `0x0200` | `0x8200` | response: status, count, event IDs |
 | Subscribe notifications | `0x0205` | `0x8205` | count followed by negotiated event IDs |
 | Product ID | `0x0103` | `0x8103` | response begins status + 3-byte ID |
+| Remote version | `0x0105` | `0x8105` | response: status, record count, ASCII triples |
 | Battery | `0x0106` | `0x8106` | pairs `[component, raw]` |
 | ANC query | `0x010c` | `0x810c` | request `01 01` |
 | ANC set | `0x0404` | state via `0x0204`/query | `01 01 mode` |
@@ -33,7 +34,23 @@ Battery component IDs are 1=left, 2=right, 3=case. `raw & 0x7f` is percentage an
 
 The Buds Pro response observed on 2026-09-02 prefixes the pairs with a one-byte component count. Its capability response `0x8100` reports an inner payload length one byte shorter than the payload bounded by the valid outer frame length. An unsolicited `0x0204` snapshot following subscription reported an inner length three bytes larger than its outer-bounded payload. The outer length still separated concatenated frames exactly, so it is authoritative for these observed quirks.
 
-A repeat read-only query on 2026-09-05 returned capability payload `00 bf 17 68 26 04` from the original Buds Pro. The first byte is consistent with a success status, but the remaining bytes are not yet mapped to stable feature names. The documented `0x010d` batch-status request produced no response in the same unauthenticated session. Neither result is currently exposed as firmware or dynamic capabilities.
+A repeat read-only query on 2026-09-05 returned capability payload `00 bf 17 68 26 04` from the original Buds Pro. The first byte is consistent with a success status, but the remaining bytes are not yet mapped to stable feature names. The documented `0x010d` batch-status request produced no response in unauthenticated and authenticated sessions. No dynamic capabilities are inferred from either result.
+
+### Remote version
+
+The original Buds Pro returned `status=00`, `count=08`, followed by comma-separated ASCII triples `(component, kind, value)`:
+
+```text
+1,1,11  1,2,541  1,3,541
+2,1,11  2,2,541  2,3,541
+3,1,4   3,2,510
+```
+
+Component IDs 1/2/3 align with left/right/case. Joining kind-2 values in that order produces `541.541.510`, which the user independently confirmed against the phone's firmware display. The parser retains all records, rejects malformed/count-mismatched payloads, and formats firmware only when both left and right kind-2 records exist.
+
+### Notification negotiation
+
+After HELLO and REGISTER, the original Buds Pro returned `0x8200` payload `00 07 01 02 03 04 06 08 0a`. Sending `0x0205` with that exact advertised set returned `0x8205` status `00` and echoed each event code as a little status pair, followed by an immediate `0x0204` state snapshot. No unsupported event was requested. The profile's existing `0x010d` batch query still produced no response, so its feature state is not inferred.
 
 For product `060C14` (original OnePlus Buds Pro), queried ANC state is a model-profile bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. Deep ANC `08` was observed after a physical stem-control transition to ANC On.
 
