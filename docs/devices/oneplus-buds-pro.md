@@ -15,6 +15,7 @@ Compatibility status: **Verified for the Phase 1 basic milestone** on real OnePl
 - Per-component battery query initially returned left 100%, right 100%, case 80% with both earbuds' charging bits set. A later query omitted the case and cleared both charging bits, consistent with live in/out-of-case state.
 - ANC query returned Off initially. After the user physically enabled ANC, it returned bitmap `08`, matching the registry's deep-ANC profile index.
 - Authenticated ANC writes were acknowledged and independently verified for Off=`01`, Transparency=`02`, and deep ANC On=`08`.
+- With both earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles completed successfully. Every SET returned status `00`, every transition matched an independent fresh-session query, ANC On reported Deep, and a later phone-assisted physical check confirmed Off, Transparency, and ANC On behaved as labelled. After reconnecting to the PC, the final state independently read back Off.
 
 The Bluetooth address is deliberately not recorded.
 

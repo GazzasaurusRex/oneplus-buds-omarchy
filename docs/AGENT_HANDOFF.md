@@ -30,6 +30,7 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - Sanitised representative session fixtures cover both verified products without addresses or pairing data. The expanded suite covers framing, bursts, profiles, acknowledgements, discovery/selection, diagnostics privacy, and retry behavior.
 - A live hardened-backend check identified Pro 2 product `062014`, all expected profile capabilities, and batteries L/R/case=100%. Both earbuds reported charging and ANC Off. A repeated Off request returned SET status `0e` but independently verified as Off; a Transparency request also returned `0e` and independently remained Off. This proves SET status alone is insufficient and that the verifier correctly refuses to report an unconfirmed transition. Repeat the cycle with the earbuds out of the case/in use.
 - With both Pro 2 earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles passed. All six actual transitions returned SET status `00` and matched fresh-session read-back; ANC On reported the retained Smart level. The device was restored to ANC Off.
+- With both original Buds Pro earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles also passed. All six actual transitions returned SET status `00` and matched fresh-session read-back; ANC On reported Deep. A phone-assisted physical check resolved a momentary subjective ambiguity and confirmed all three labels behaved correctly. After reconnecting to the PC, product `060C14`, L/R=80%, not charging, and ANC Off were independently confirmed.
 
 ## Unresolved problems
 
@@ -40,4 +41,4 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 
 ## Next recommended task
 
-Connect the original Buds Pro and repeat authenticated Off → Transparency → ANC On → Off cycles to complete the two-model reliability comparison. Afterward replace `bluetoothctl` parsing with direct BlueZ D-Bus access and add firmware/capability queries needed for a useful compatibility report. Do not begin QML until those backend interfaces are stable.
+Replace `bluetoothctl` text parsing with direct BlueZ D-Bus access while preserving dependency-free operation if practical, then investigate firmware and device-returned capability queries for a more useful compatibility report. Keep the CLI/backend interface stable and do not begin QML yet.
