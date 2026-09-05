@@ -1,10 +1,11 @@
 import unittest
 from unittest.mock import patch
 
-from oneplus_buds.backend import diagnostics_report, query_capabilities, query_feature_switches, query_status, set_anc
+from oneplus_buds.backend import diagnostics_report, query_capabilities, query_feature_switches, read_status, set_anc
 from oneplus_buds.bluez import Device
+from oneplus_buds.models import StatusResult
 from oneplus_buds.profiles import PROFILES
-from oneplus_buds.protocol import QUERY_ANC, QUERY_BATTERY, QUERY_BROADCAST_CODES, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_REMOTE_VERSION, QUERY_STATUS, SET_ANC, SUBSCRIBE_BROADCAST, Frame
+from oneplus_buds.protocol import QUERY_ANC, QUERY_BATTERY, QUERY_BROADCAST_CODES, QUERY_CAPABILITIES, QUERY_PRODUCT_ID, QUERY_REMOTE_VERSION, QUERY_STATUS, SET_ANC, SUBSCRIBE_BROADCAST, Frame, VersionRecord
 
 
 DEVICE = Device(
@@ -16,15 +17,16 @@ DEVICE = Device(
     modalias="bluetooth:v02B0p0000d001F",
     services_resolved=True,
 )
-STATUS = {
-    "model": "OnePlus Buds Pro 2",
-    "product_id": "062014",
-    "remote_version": [{"component": 1, "kind": 2, "value": "123"}],
-    "firmware_version": "123.123",
-    "battery": {"left": {"percentage": 80, "charging": False}},
-    "anc": "on",
-    "anc_level": "smart",
-}
+STATUS_RESULT = StatusResult(
+    device=DEVICE,
+    product_id="062014",
+    model="OnePlus Buds Pro 2",
+    remote_version=(VersionRecord(1, 2, "123"), VersionRecord(2, 2, "123")),
+    firmware_version="123.123",
+    battery={"left": {"percentage": 80, "charging": False}},
+    anc="on",
+    anc_level="smart",
+)
 
 
 class BackendTests(unittest.TestCase):
@@ -33,7 +35,7 @@ class BackendTests(unittest.TestCase):
         self.assertIn("firmware", PROFILES["062014"].capabilities)
 
     @patch("oneplus_buds.backend.query_feature_switches", return_value={"wear_detection": True})
-    @patch("oneplus_buds.backend.query_status", return_value=STATUS)
+    @patch("oneplus_buds.backend.read_status", return_value=STATUS_RESULT)
     def test_capabilities_combine_profile_and_device_switches(self, _status, _switches):
         result = query_capabilities()
         self.assertEqual(result["compatibility"], "verified")
@@ -58,7 +60,7 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(result, {"wear_detection": True, "low_latency": False})
         self.assertIn((SUBSCRIBE_BROADCAST, b"\x02\x04\x06"), transport.queries)
 
-    @patch("oneplus_buds.backend.query_status", return_value=STATUS)
+    @patch("oneplus_buds.backend.read_status", return_value=STATUS_RESULT)
     @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
     def test_diagnostics_omits_address(self, _device, _status):
         report = diagnostics_report()
@@ -85,12 +87,13 @@ class BackendTests(unittest.TestCase):
             }
         )
         with patch("oneplus_buds.backend.RfcommTransport", return_value=transport):
-            result = query_status()
-        self.assertEqual(result["product_id"], "062014")
-        self.assertEqual(result["remote_version"][0]["value"], "123")
-        self.assertEqual(result["firmware_version"], "123.123")
-        self.assertEqual(result["battery"]["left"]["percentage"], 80)
-        self.assertEqual((result["anc"], result["anc_level"]), ("on", "smart"))
+            result = read_status()
+        self.assertIsInstance(result, StatusResult)
+        self.assertEqual(result.product_id, "062014")
+        self.assertEqual(result.remote_version[0].value, "123")
+        self.assertEqual(result.firmware_version, "123.123")
+        self.assertEqual(result.battery["left"]["percentage"], 80)
+        self.assertEqual((result.anc, result.anc_level), ("on", "smart"))
 
     @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
     def test_nonzero_set_status_still_requires_matching_verification(self, _device):

@@ -66,6 +66,11 @@ class RfcommTransport:
         self._socket.sendall(packet)
         return self._receive_burst(wait)
 
+    def receive(self, wait: float = 0.0) -> list[Frame]:
+        if self._socket is None:
+            raise RuntimeError("transport is not connected")
+        return self._receive_burst(wait)
+
     def _receive_burst(self, wait: float) -> list[Frame]:
         if self._socket is None:
             raise RuntimeError("transport is not connected")

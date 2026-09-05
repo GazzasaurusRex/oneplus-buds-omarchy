@@ -5,6 +5,7 @@ from typing import TypeVar
 
 from . import __version__
 from .bluez import Device, select_device
+from .models import CapabilityResult, ControlResult, StatusResult
 from .profiles import profile_for_product
 from .protocol import (
     HELLO,
@@ -65,9 +66,8 @@ def device_summary(device: Device, *, include_address: bool = False) -> dict[str
     return result
 
 
-def query_status(address: str | None = None) -> dict[str, object]:
+def read_status(address: str | None = None) -> StatusResult:
     device = select_device(address)
-    result = device_summary(device)
     with RfcommTransport(device.address, connect_attempts=4) as transport:
         transport.query(QUERY_CAPABILITIES)
         product_frames = transport.query(QUERY_PRODUCT_ID)
@@ -82,38 +82,40 @@ def query_status(address: str | None = None) -> dict[str, object]:
         else None
     )
     version_records = _first_parsed(version_frames, parse_remote_version)
-    result.update(
-        {
-            "product_id": product_id,
-            "model": profile.name if profile else None,
-            "remote_version": [
-                {"component": record.component, "kind": record.kind, "value": record.value}
-                for record in version_records or ()
-            ],
-            "firmware_version": format_firmware_version(version_records),
-            "battery": _first_parsed(battery_frames, parse_battery),
-            "anc": anc_state.mode if anc_state else None,
-            "anc_level": anc_state.level if anc_state else None,
-        }
+    return StatusResult(
+        device=device,
+        product_id=product_id,
+        model=profile.name if profile else None,
+        remote_version=version_records or (),
+        firmware_version=format_firmware_version(version_records),
+        battery=_first_parsed(battery_frames, parse_battery),
+        anc=anc_state.mode if anc_state else None,
+        anc_level=anc_state.level if anc_state else None,
     )
-    return result
 
 
-def query_capabilities(address: str | None = None) -> dict[str, object]:
-    status = query_status(address)
-    product_id = status.get("product_id")
-    profile = profile_for_product(product_id if isinstance(product_id, str) else None)
+def query_status(address: str | None = None) -> dict[str, object]:
+    return read_status(address).to_dict()
+
+
+def read_capabilities(address: str | None = None) -> CapabilityResult:
+    status = read_status(address)
+    profile = profile_for_product(status.product_id)
     feature_switches = query_feature_switches(address)
     capabilities = set(profile.capabilities) if profile else set()
     capabilities.update(feature_switches)
-    return {
-        "model": status["model"],
-        "product_id": product_id,
-        "compatibility": "verified" if profile and profile.verified else "experimental",
-        "capabilities": sorted(capabilities),
-        "anc_modes": sorted(profile.anc.write_indices) if profile else [],
-        "feature_switches": feature_switches,
-    }
+    return CapabilityResult(
+        model=status.model,
+        product_id=status.product_id,
+        compatibility="verified" if profile and profile.verified else "experimental",
+        capabilities=tuple(sorted(capabilities)),
+        anc_modes=tuple(sorted(profile.anc.write_indices)) if profile else (),
+        feature_switches=feature_switches,
+    )
+
+
+def query_capabilities(address: str | None = None) -> dict[str, object]:
+    return read_capabilities(address).to_dict()
 
 
 def query_feature_switches(address: str | None = None) -> dict[str, bool]:
@@ -141,7 +143,7 @@ def query_feature_switches(address: str | None = None) -> dict[str, bool]:
     }
 
 
-def set_anc(mode: str, address: str | None = None) -> dict[str, object]:
+def write_anc(mode: str, address: str | None = None) -> ControlResult:
     device = select_device(address)
     with RfcommTransport(device.address, connect_attempts=4) as transport:
         transport.query(QUERY_CAPABILITIES)
@@ -185,29 +187,36 @@ def set_anc(mode: str, address: str | None = None) -> dict[str, object]:
             f"register responses: {_frame_summary(register_frames)}; "
             f"write responses: {_frame_summary(write_frames)}"
         )
-    return {
-        "name": device.name,
-        "product_id": product_id,
-        "anc": observed.mode,
-        "anc_level": observed.level,
-        "set_status": set_status,
-        "verified": True,
-    }
+    return ControlResult(
+        name=device.name,
+        product_id=product_id,
+        anc=observed.mode,
+        anc_level=observed.level,
+        set_status=set_status,
+        verified=True,
+    )
+
+
+def set_anc(mode: str, address: str | None = None) -> dict[str, object]:
+    return write_anc(mode, address).to_dict()
 
 
 def diagnostics_report(address: str | None = None) -> dict[str, object]:
     device = select_device(address)
-    status = query_status(device.address)
-    product_id = status.get("product_id")
-    profile = profile_for_product(product_id if isinstance(product_id, str) else None)
+    status = read_status(device.address)
+    product_id = status.product_id
+    profile = profile_for_product(product_id)
     return {
         "backend_version": __version__,
         "device": {
             "reported_name": device.name,
-            "model": status["model"],
+            "model": status.model,
             "product_id": product_id,
-            "remote_version": status["remote_version"],
-            "firmware_version": status["firmware_version"],
+            "remote_version": [
+                {"component": record.component, "kind": record.kind, "value": record.value}
+                for record in status.remote_version
+            ],
+            "firmware_version": status.firmware_version,
             "connected": device.connected,
             "bluez_modalias": device.modalias,
             "services_resolved": device.services_resolved,
@@ -219,9 +228,9 @@ def diagnostics_report(address: str | None = None) -> dict[str, object]:
         },
         "capabilities": sorted(profile.capabilities) if profile else [],
         "state": {
-            "battery": status["battery"],
-            "anc": status["anc"],
-            "anc_level": status["anc_level"],
+            "battery": status.battery,
+            "anc": status.anc,
+            "anc_level": status.anc_level,
         },
         "privacy": "Bluetooth address and unrelated devices omitted",
     }

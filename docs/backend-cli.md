@@ -9,7 +9,11 @@ Status: Phase 1 backend-hardening milestone, 2026-09-05.
 - `protocol.py`: transport-independent 0xAA framing and response parsers.
 - `profiles.py`: product identity, verified compatibility, capabilities, ANC write indices, read aliases, and levels.
 - `backend.py`: query/control orchestration and query-after-write verification.
+- `api.py` / `models.py`: typed public backend results with JSON compatibility boundaries.
+- `session.py`: authenticated long-lived RFCOMM ownership and privacy-safe event polling.
 - `cli.py`: argument parsing and JSON presentation only.
+
+See `backend-api.md` for the typed integration API intended for the future frontend.
 
 Unknown products may be queried safely, but ANC writes require a known profile marked hardware-verified. SET response status `00` is observed on successful changes, while Buds Pro 2 returned `0e` for an already-active mode. Status values are reported but not treated as proof of success or failure: a fresh state query must match the requested mode or level.
 

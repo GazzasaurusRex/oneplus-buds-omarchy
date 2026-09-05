@@ -1,6 +1,6 @@
 # Agent handoff
 
-Last updated: 2026-09-05. Phase 1 basic control, backend hardening, reliability, direct BlueZ discovery, firmware, and safe dynamic capability milestones complete for both reference models.
+Last updated: 2026-09-05. Phase 1 protocol proof, backend hardening, two-model verification, typed API, and privacy-safe session milestones complete.
 
 ## Current status
 
@@ -39,6 +39,8 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - Buds Pro 2 `0x0105` returned nine records, including extra kind-4 records. Kind-2 left/right/case values format as `196.196.101`, exactly matching the phone. Firmware is now verified for both reference profiles.
 - Pro 2 notification discovery advertised ten event codes (`01 02 03 04 08 0b f1 f2 f3 0a`), and its subscription response shape differs from the original model. A subsequent `0x810d` returned six feature switches. The capability API safely reports recognised support/current state for wear detection, hearing enhancement, multipoint, high-quality audio, and low latency; ID `0x05` remains unnamed.
 - An unsolicited Pro 2 notification contained peer-device information. Raw notification payloads are never surfaced by the capability API or privacy-safe diagnostics; only explicitly recognised boolean feature fields are returned.
+- `BudsBackend` is now the typed public boundary. It separates cheap D-Bus discovery, one-shot `StatusResult`, authenticated `CapabilityResult`, verified `ControlResult`, and long-lived `OpoSession`; legacy dict functions remain only as CLI-compatible wrappers.
+- A live Pro 2 session authenticated/subscribed once, retained the ten advertised event codes, returned redacted notifications for event codes 6 and 2, counted four ignored setup frames, and leaked no raw payload. Unit fixtures prove peer-identifying text cannot escape through `EventBatch`.
 
 ## Unresolved problems
 
@@ -46,7 +48,9 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - Case presence and charging bits should be tested deliberately later.
 - Dynamic `0x8100` bit semantics, original Buds Pro `0x810d` silence, Pro 2 feature ID `0x05`, and additional notification payloads remain unresolved. Do not infer names for unknown fields.
 - Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
+- `0x0204` notification schemas are not mapped yet. The event API exposes only their numeric code until each payload is validated.
+- The device exposes one RFCOMM control channel; a future service must serialize status, writes, and event polling through one owner rather than opening concurrent sessions.
 
 ## Next recommended task
 
-Formalize the stable backend API and long-lived connection/event model needed by the future frontend. Separate cheap cached discovery, one-shot status queries, authenticated feature probing, verified writes, and privacy-safe notifications. Add typed result objects without beginning QML yet.
+Build a small backend service/controller around `BudsBackend` that serializes access to the RFCOMM channel, caches typed state, and turns safe session events into state updates. Add reconnection and shutdown tests. Keep it UI-independent; begin QML only after this service contract is stable.
