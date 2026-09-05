@@ -6,7 +6,7 @@ Last updated: 2026-09-05. Phase 1 protocol proof, backend hardening, two-model v
 
 The no-PyPI-dependency Python proof of concept separates direct BlueZ D-Bus discovery, RFCOMM transport, OPO framing/parsing, product/capability profiles, typed backend orchestration, privacy-safe sessions, serialized cached control, service lifecycle policy, and CLI JSON presentation. It uses the system-provided `dbus-python` binding. `BudsBackend` is the typed public boundary; `BudsController` owns at most one `OpoSession`, serializes operations, caches `ControllerSnapshot`, and reconnects once after polling transport failure. `BudsServiceRunner` adds interruptible polling, connection-state/snapshot callbacks, and capped exponential reconnect backoff without owning a thread or event loop. Both the original OnePlus Buds Pro and Buds Pro 2 are hardware-verified for detection, identity, firmware, component batteries, ANC state, Off, Transparency, and ANC On. The Pro 2 is additionally verified for Deep, Medium, Light, and Smart ANC levels. Writes require a known hardware-verified product profile, authentication, SET-status recording, and fresh-session query-after-write verification.
 
-Repository checkpoint: commit `7314cca` (`fix: redact service connection errors`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 37 tests on Python 3.14.7.
+Service-runner milestone commits: `ea4bb6f` (`feat: add resilient service runner`), `7314cca` (`fix: redact service connection errors`), and `d74167e` (`docs: record live service recovery`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 37 tests on Python 3.14.7.
 
 ## Verified discoveries
 
@@ -51,8 +51,8 @@ Repository checkpoint: commit `7314cca` (`fix: redact service connection errors`
 
 ## Current hardware and repository state
 
-- Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`.
-- Last verified state: ANC On with Smart level; the controller's final shutdown released the RFCOMM socket.
+- Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`; it reconnected successfully after the closed-case service-runner test.
+- Last verified ANC state: On with Smart level. The service runner did not change ANC during the disconnect/reconnect test, and its final shutdown released the RFCOMM socket.
 - Latest implementation commit: `7314cca`.
 - Automated status: 37 tests passing; compilation and `git diff --check` pass with the live-verification follow-up.
 - No Omarchy/QML UI has been started.
