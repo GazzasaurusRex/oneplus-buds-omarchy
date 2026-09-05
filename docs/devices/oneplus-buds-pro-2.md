@@ -17,6 +17,8 @@ Compatibility status: **Verified for the Phase 1 basic milestone** on real hardw
 - Component battery query returned left 100% and right 100%, neither charging; the case was absent from that response
 - ANC Off, Transparency, main ANC On, Deep, Medium, Light, and Smart were each set and verified by a fresh query
 - The main ANC On command enables ANC but preserves the last selected ANC level. It initially reported Deep, then remained Smart after Smart was selected.
+- With both earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles completed successfully. Every SET returned status `00`, every transition matched an independent fresh-session query, ANC On reported the retained Smart level, and the final state was Off.
+- With both earbuds charging/in the case, SET returned status `0e`: an Off no-op still read back Off, while a requested Transparency transition remained Off. The backend correctly treats SET status as diagnostic data and requires state read-back before reporting success.
 
 The Bluetooth address is deliberately not recorded.
 
@@ -47,5 +49,4 @@ Compared with the original Buds Pro, the Pro 2 advertises `0000079a...` rather t
 - Case battery behavior with the case deliberately opened/closed
 - Firmware/version queries
 - Capabilities outside the Phase 1 basic milestone
-- Repeated-operation timing across firmware revisions
-
+- Repeated-operation timing across firmware revisions and longer stress runs

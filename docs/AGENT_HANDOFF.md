@@ -29,6 +29,7 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - The live Buds Pro 2 diagnostics report was verified to omit its Bluetooth address and unrelated devices. `devices` shows only connected compatible addresses for explicit selection.
 - Sanitised representative session fixtures cover both verified products without addresses or pairing data. The expanded suite covers framing, bursts, profiles, acknowledgements, discovery/selection, diagnostics privacy, and retry behavior.
 - A live hardened-backend check identified Pro 2 product `062014`, all expected profile capabilities, and batteries L/R/case=100%. Both earbuds reported charging and ANC Off. A repeated Off request returned SET status `0e` but independently verified as Off; a Transparency request also returned `0e` and independently remained Off. This proves SET status alone is insufficient and that the verifier correctly refuses to report an unconfirmed transition. Repeat the cycle with the earbuds out of the case/in use.
+- With both Pro 2 earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles passed. All six actual transitions returned SET status `00` and matched fresh-session read-back; ANC On reported the retained Smart level. The device was restored to ANC Off.
 
 ## Unresolved problems
 
@@ -39,4 +40,4 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 
 ## Next recommended task
 
-With the earbuds out of the case/in use, repeat authenticated Off → Transparency → ANC On → Off cycles and record timing/reliability results on the Pro 2, then repeat on the original Buds Pro. Afterward replace `bluetoothctl` parsing with direct BlueZ D-Bus access and add firmware/capability queries needed for a useful compatibility report. Do not begin QML until those backend interfaces are stable.
+Connect the original Buds Pro and repeat authenticated Off → Transparency → ANC On → Off cycles to complete the two-model reliability comparison. Afterward replace `bluetoothctl` parsing with direct BlueZ D-Bus access and add firmware/capability queries needed for a useful compatibility report. Do not begin QML until those backend interfaces are stable.
