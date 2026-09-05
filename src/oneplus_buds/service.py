@@ -99,13 +99,22 @@ class BudsServiceRunner:
                 "disconnected",
                 attempt=attempt,
                 retry_delay=retry_delay,
-                error=str(error),
+                error=self._safe_error(error),
             )
         )
         if not cancelled.wait(retry_delay):
             retry_delay = min(retry_delay * 2, self.maximum_retry_delay)
             self._publish_state(ServiceState("reconnecting", attempt=attempt))
         return attempt, retry_delay
+
+    def _safe_error(self, error: Exception) -> str:
+        message = str(error)
+        address = self.controller.address
+        if address:
+            message = message.replace(address, "[device]")
+            message = message.replace(address.lower(), "[device]")
+            message = message.replace(address.upper(), "[device]")
+        return message
 
     def _publish_state(self, state: ServiceState) -> None:
         if self.on_state is not None:

@@ -71,4 +71,4 @@ runner = BudsServiceRunner(
 runner.run(cancelled)
 ```
 
-Connection failures publish a `disconnected` state with the attempt number, retry delay, and error text. Retries start at one second, double to a 30-second ceiling, and reset after a successful connection. The cancellation event interrupts backoff immediately; steady-state cancellation latency is bounded by the configured poll interval (0.5 seconds by default). `run()` always shuts down the controller and publishes a final `stopped` state and disconnected snapshot. The runner creates no thread or event loop itself.
+Connection failures publish a `disconnected` state with the attempt number, retry delay, and address-redacted error text. Retries start at one second, double to a 30-second ceiling, and reset after a successful connection. The cancellation event interrupts backoff immediately; steady-state cancellation latency is bounded by the configured poll interval (0.5 seconds by default). `run()` always shuts down the controller and publishes a final `stopped` state and disconnected snapshot. The runner creates no thread or event loop itself.

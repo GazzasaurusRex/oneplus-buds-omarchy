@@ -70,6 +70,17 @@ class ServiceRunnerTests(unittest.TestCase):
         self.assertNotIn("reconnecting", [state.connection for state in states])
         self.assertEqual(states[-1].connection, "stopped")
 
+    def test_connection_errors_redact_selected_device_address(self):
+        cancelled = RecordingEvent(cancel_after_waits=1)
+        controller = FakeController(
+            starts=[RuntimeError("selected device AA:BB:CC:DD:EE:FF is disconnected")]
+        )
+        controller.address = "AA:BB:CC:DD:EE:FF"
+        states = []
+        BudsServiceRunner(controller, on_state=states.append).run(cancelled)
+        error = next(state.error for state in states if state.connection == "disconnected")
+        self.assertEqual(error, "selected device [device] is disconnected")
+
     def test_rejects_invalid_timing(self):
         with self.assertRaises(ValueError):
             BudsServiceRunner(poll_interval=-1)
@@ -84,6 +95,7 @@ class FakeController:
         self.starts = list(starts or [EMPTY_SNAPSHOT])
         self.polls = list(polls or [])
         self.cancel_after_poll = cancel_after_poll
+        self.address = None
         self.shutdowns = 0
 
     def start(self):
