@@ -14,6 +14,7 @@ QUERY_BATTERY = 0x0106
 QUERY_ANC = 0x010C
 QUERY_STATUS = 0x010D
 SET_ANC = 0x0404
+RESPONSE_SET_ANC = 0x8404
 
 RESPONSE_PRODUCT_ID = 0x8103
 RESPONSE_BATTERY = 0x8106
@@ -171,3 +172,9 @@ def parse_broadcast_codes(frame: Frame) -> bytes | None:
     if status != 0 or len(frame.payload) < 2 + count:
         return None
     return frame.payload[2 : 2 + count]
+
+
+def parse_set_anc_status(frame: Frame) -> int | None:
+    if frame.command != RESPONSE_SET_ANC or not frame.payload:
+        return None
+    return frame.payload[0]

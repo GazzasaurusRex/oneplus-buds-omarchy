@@ -29,6 +29,7 @@ class DeviceProfile:
     name: str
     service_uuid: str
     anc: AncProfile
+    capabilities: frozenset[str]
     verified: bool
 
 
@@ -42,6 +43,16 @@ PROFILES = {
             read_modes={0: "off", 1: "transparency", 2: "on", 3: "on", 4: "on"},
             read_levels={2: "light", 3: "deep", 4: "smart"},
             sequences={"off": 0x40},
+        ),
+        capabilities=frozenset(
+            {
+                "battery",
+                "case_battery",
+                "anc",
+                "transparency",
+                "anc_levels",
+                "smart_anc",
+            }
         ),
         verified=True,
     ),
@@ -62,6 +73,16 @@ PROFILES = {
             read_modes={0: "off", 1: "on", 2: "transparency", 3: "off", 8: "transparency"},
             read_levels={4: "deep", 5: "medium", 6: "light", 7: "smart"},
             sequences={"off": 0x40},
+        ),
+        capabilities=frozenset(
+            {
+                "battery",
+                "case_battery",
+                "anc",
+                "transparency",
+                "anc_levels",
+                "smart_anc",
+            }
         ),
         verified=True,
     ),

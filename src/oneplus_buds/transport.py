@@ -7,20 +7,38 @@ from .protocol import Frame, FrameStream, encode_frame
 
 
 class RfcommTransport:
-    def __init__(self, address: str, channel: int = 15, timeout: float = 3.0) -> None:
+    def __init__(
+        self,
+        address: str,
+        channel: int = 15,
+        timeout: float = 3.0,
+        connect_attempts: int = 1,
+        retry_delay: float = 1.0,
+    ) -> None:
         self.address = address
         self.channel = channel
         self.timeout = timeout
+        self.connect_attempts = connect_attempts
+        self.retry_delay = retry_delay
         self._socket: socket.socket | None = None
         self._sequence = 1
         self._stream = FrameStream()
 
     def __enter__(self) -> "RfcommTransport":
-        sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-        sock.settimeout(self.timeout)
-        sock.connect((self.address, self.channel))
-        self._socket = sock
-        return self
+        for attempt in range(self.connect_attempts):
+            sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+            sock.settimeout(self.timeout)
+            try:
+                sock.connect((self.address, self.channel))
+            except OSError as error:
+                sock.close()
+                if error.errno != 16 or attempt == self.connect_attempts - 1:
+                    raise
+                time.sleep(self.retry_delay)
+            else:
+                self._socket = sock
+                return self
+        raise RuntimeError("unreachable RFCOMM connection retry state")
 
     def __exit__(self, *_: object) -> None:
         if self._socket is not None:

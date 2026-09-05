@@ -1,10 +1,10 @@
 # Agent handoff
 
-Last updated: 2026-09-02. Phase 1 basic milestone complete for Buds Pro and Buds Pro 2.
+Last updated: 2026-09-05. Phase 1 basic control and backend-hardening milestones complete.
 
 ## Current status
 
-The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM transport, OPO framing/parsing, product/capability profiles, and CLI behavior. Both the original OnePlus Buds Pro and Buds Pro 2 are hardware-verified for detection, product identity, component batteries, ANC state, Off, Transparency, and ANC On. The Pro 2 is additionally verified for Deep, Medium, Light, and Smart ANC levels. Writes require a known product profile, authentication, and fresh-session query-after-write verification.
+The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM transport, OPO framing/parsing, product/capability profiles, backend orchestration, and CLI presentation. Both the original OnePlus Buds Pro and Buds Pro 2 are hardware-verified for detection, product identity, component batteries, ANC state, Off, Transparency, and ANC On. The Pro 2 is additionally verified for Deep, Medium, Light, and Smart ANC levels. Writes require a known hardware-verified product profile, authentication, SET-status recording, and fresh-session query-after-write verification.
 
 ## Verified discoveries
 
@@ -25,14 +25,18 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - Existing detection, transport, 0xAA framing, product query, component battery parser, HELLO/REGISTER authentication, and SET flow work unchanged on Pro 2.
 - Pro 2 ANC needs a two-byte-capable profile: main Off index 0, ANC index 1, Transparency index 2; Deep/Medium/Light/Smart indices 4/5/6/7; observed Transparency read alias index 8.
 - Pro 2 Off, Transparency, ANC On, Deep, Medium, Light, and Smart all passed fresh query-after-write verification. Main ANC On preserves the previously selected level. Final hardware state is ANC On with Smart level.
+- Backend hardening adds bounded RFCOMM `EBUSY` connection retries, explicit `--device` selection, profile-driven `capabilities`, and a privacy-safe `diagnostics --report` command.
+- The live Buds Pro 2 diagnostics report was verified to omit its Bluetooth address and unrelated devices. `devices` shows only connected compatible addresses for explicit selection.
+- Sanitised representative session fixtures cover both verified products without addresses or pairing data. The expanded suite covers framing, bursts, profiles, acknowledgements, discovery/selection, diagnostics privacy, and retry behavior.
+- A live hardened-backend check identified Pro 2 product `062014`, all expected profile capabilities, and batteries L/R/case=100%. Both earbuds reported charging and ANC Off. A repeated Off request returned SET status `0e` but independently verified as Off; a Transparency request also returned `0e` and independently remained Off. This proves SET status alone is insufficient and that the verifier correctly refuses to report an unconfirmed transition. Repeat the cycle with the earbuds out of the case/in use.
 
 ## Unresolved problems
 
-- The CLI currently has conservative multi-second delays and busy retries. Timing can be optimized only after repeated reliability testing.
+- Authentication still uses conservative multi-second delays. Timing can be optimized only after repeated control-cycle evidence on both models.
 - Case presence and charging bits should be tested deliberately later.
 - Discovery currently shells out to `bluetoothctl`; replace with a direct BlueZ D-Bus layer when choosing the long-term backend API.
-- The current CLI is a proof of concept and lacks explicit device selection when multiple compatible devices are connected.
+- Diagnostics do not yet query firmware or dynamically probe capabilities beyond the verified product profile.
 
 ## Next recommended task
 
-Add anonymised integration fixtures for complete authenticated exchanges and test repeated-operation reliability. Then improve CLI ergonomics and diagnostics around the generic profile architecture. Do not begin QML or unrelated HeyMelody features yet.
+With the earbuds out of the case/in use, repeat authenticated Off → Transparency → ANC On → Off cycles and record timing/reliability results on the Pro 2, then repeat on the original Buds Pro. Afterward replace `bluetoothctl` parsing with direct BlueZ D-Bus access and add firmware/capability queries needed for a useful compatibility report. Do not begin QML until those backend interfaces are stable.

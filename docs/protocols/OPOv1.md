@@ -46,11 +46,13 @@ Control requires the legacy HELLO frame, a two-second wait, REGISTER with the ob
 3. Send raw HELLO `AA 07 00 00 00 01 23 00 00 12`; wait 2 seconds.
 4. Send raw REGISTER `AA 0C 00 00 00 85 41 05 00 00 B5 50 A0 69`; wait 1.5 seconds.
 5. Send `0x0404` with payload `01 01 bitmap`.
-6. Require successful `0x8404` status `00` when present.
+6. Record any `0x8404` status, then verify the requested state independently.
 7. Close the control socket, allow channel teardown, open a fresh socket, and query `0x010c`.
 8. Treat the operation as successful only if the queried state matches.
 
 This sequence was verified for Off, Transparency, and deep ANC On on 2026-09-02.
+
+`0x8404` payload byte 0 is a SET result/status. `00` was observed on successful state changes. Buds Pro 2 returned `0e` both for an already-active Off request (read-back matched) and for a Transparency request while the earbuds appeared to be charging/in their case (read-back remained Off). It therefore cannot be classified as success or rejection without context. Some sessions do not deliver this response. Its presence, absence, or value is not treated as success; the independent state query remains mandatory.
 
 ## Verified Buds Pro 2 differences
 

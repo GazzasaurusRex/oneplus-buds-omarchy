@@ -65,11 +65,16 @@ def connected_devices() -> list[Device]:
     return devices
 
 
-def select_device() -> Device:
+def select_device(address: str | None = None) -> Device:
     matches = [device for device in connected_devices() if device.looks_compatible]
+    if address is not None:
+        normalized = address.upper()
+        selected = next((device for device in matches if device.address.upper() == normalized), None)
+        if selected is None:
+            raise RuntimeError(f"selected device {address} is not a connected compatible OnePlus device")
+        return selected
     if not matches:
         raise RuntimeError("no connected OPO-compatible OnePlus earbuds found")
     if len(matches) > 1:
-        raise RuntimeError("multiple compatible devices connected; explicit selection is not implemented yet")
+        raise RuntimeError("multiple compatible devices connected; select one with --device ADDRESS")
     return matches[0]
-

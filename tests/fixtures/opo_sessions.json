@@ -1,0 +1,21 @@
+{
+  "format": "sanitized representative OPO frames; no Bluetooth addresses or pairing data",
+  "buds_pro": {
+    "product_id": "060C14",
+    "tx_hello": "aa070000000123000012",
+    "tx_register": "aa0c0000008541050000b550a069",
+    "rx_capabilities": "aa0d0000008101050000bf17682604",
+    "rx_product": "aa0b0000038102040000140c06",
+    "rx_battery": "aa0f00000681030800000302e401e40350",
+    "rx_anc_off": "aa0b00000c8104040000010101",
+    "rx_set_success": "aa080000048442010000"
+  },
+  "buds_pro_2": {
+    "product_id": "062014",
+    "tx_hello": "aa070000000123000012",
+    "tx_register": "aa0c0000008541050000b550a069",
+    "rx_product": "aa0b0000038101040000142006",
+    "rx_anc_transparency": "aa0c00000c81f005000001010001",
+    "rx_set_success": "aa080000048442010000"
+  }
+}

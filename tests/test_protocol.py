@@ -1,7 +1,7 @@
 import unittest
 
 from oneplus_buds.profiles import PROFILES
-from oneplus_buds.protocol import HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_anc_state, parse_battery, parse_broadcast_codes, parse_product_id
+from oneplus_buds.protocol import HELLO, REGISTER, STATUS_QUERY_PAYLOAD, Frame, FrameStream, decode_frame, encode_frame, parse_anc, parse_anc_state, parse_battery, parse_broadcast_codes, parse_product_id, parse_set_anc_status
 
 
 class ProtocolTests(unittest.TestCase):
@@ -64,6 +64,9 @@ class ProtocolTests(unittest.TestCase):
             encode_frame(0x010D, 0, STATUS_QUERY_PAYLOAD).hex(),
             "aa1300000d01000c000b05040b111318061b1c2728",
         )
+        self.assertEqual(parse_set_anc_status(Frame(0x8404, 1, b"\x00")), 0)
+        self.assertEqual(parse_set_anc_status(Frame(0x8404, 1, b"\x0e")), 14)
+        self.assertIsNone(parse_set_anc_status(Frame(0x810C, 1, b"\x00")))
 
     def test_buds_pro_anc_bitmap_parser(self):
         anc = PROFILES["060C14"].anc
