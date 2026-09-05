@@ -16,7 +16,7 @@ Compatibility status: **Verified for the Phase 1 basic milestone** on real hardw
 - Standard 0xAA framing, battery query, product query, ANC query, HELLO, REGISTER, and authenticated SET flow are shared with the original Buds Pro
 - Component battery query returned left 100% and right 100%, neither charging; the case was absent from that response
 - ANC Off, Transparency, main ANC On, Deep, Medium, Light, and Smart were each set and verified by a fresh query
-- The main ANC On command enables ANC but preserves the last selected ANC level. It initially reported Deep, then remained Smart after Smart was selected.
+- The main ANC On command enables the parent ANC mode, but its resulting level is not stable enough to describe as “preserve.” Earlier it retained Smart after Smart was selected; a later command issued while Deep was reported returned Smart. Callers must query the resulting level and use an explicit level command when the user requests one.
 - With both earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles completed successfully. Every SET returned status `00`, every transition matched an independent fresh-session query, ANC On reported the retained Smart level, and the final state was Off.
 - With both earbuds charging/in the case, SET returned status `0e`: an Off no-op still read back Off, while a requested Transparency transition remained Off. The backend correctly treats SET status as diagnostic data and requires state read-back before reporting success.
 - Read-only command `0x0105` returned nine ASCII version records, including kind-4 records absent on the original model. Kind-2 values for left/right/case produced `196.196.101`, exactly matching the phone/HeyMelody firmware display.

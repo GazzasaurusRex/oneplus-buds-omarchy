@@ -36,3 +36,21 @@ The privacy boundary is intentionally strict:
 - Raw peer-device notifications are never included in API results, diagnostics, or fixtures.
 
 Current limitation: asynchronous `0x0204` payload schemas are not sufficiently verified to expose state beyond their event code. A long-lived session also owns the earbuds' single RFCOMM control channel, so one-shot commands should not run concurrently with it. The future service layer should serialize operations through one session owner.
+
+## Serialized controller
+
+`BudsController` is the UI-independent state owner above `BudsBackend`:
+
+```python
+from oneplus_buds import BudsController
+
+controller = BudsController()
+snapshot = controller.start()
+snapshot = controller.poll(0.5)
+result = controller.set_anc("off")
+snapshot = controller.shutdown()
+```
+
+It caches an immutable `ControllerSnapshot`, serializes every operation with one lock, and owns at most one `OpoSession`. A refresh or verified write closes the event socket first and restores notification subscription afterward. A polling transport error triggers one immediate reconnect; repeated failures propagate to the caller for service-level backoff. Shutdown always releases the RFCOMM socket.
+
+Safe battery, ANC, and named feature-switch events update cached typed state. Redacted notification codes are retained in a bounded 32-item history, ignored-frame counts are cumulative, and `generation` changes whenever meaningful state/event data is applied. The controller does not start threads or prescribe an event loop; a future daemon, QML bridge, or test harness controls polling cadence and backoff.

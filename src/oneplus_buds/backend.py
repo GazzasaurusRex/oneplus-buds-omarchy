@@ -21,6 +21,7 @@ from .protocol import (
     STATUS_QUERY_PAYLOAD,
     SUBSCRIBE_BROADCAST,
     AncState,
+    FEATURE_SWITCH_NAMES,
     Frame,
     format_firmware_version,
     parse_anc_state,
@@ -34,14 +35,6 @@ from .protocol import (
 from .transport import RfcommTransport
 
 T = TypeVar("T")
-
-FEATURE_SWITCH_NAMES = {
-    0x04: "wear_detection",
-    0x06: "low_latency",
-    0x0B: "hearing_enhancement",
-    0x11: "multipoint",
-    0x18: "high_quality_audio",
-}
 
 
 def _first_parsed(frames: list[Frame], parser: Callable[[Frame], T | None]) -> T | None:

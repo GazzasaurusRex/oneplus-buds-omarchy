@@ -90,7 +90,7 @@ Its ANC bitmap can span two bytes and needs a product profile with separate writ
 - Observed Transparency report: index 8 (`00 01` little-endian bitmap).
 - Registry read aliases: Off may also report index 3; Transparency may report index 8.
 
-Main ANC On preserves the last selected level. All three main modes and all four levels were verified on hardware with query-after-write. This confirms that framing is generic but ANC interpretation belongs in the device capability/profile layer.
+Main ANC On enables the parent mode but does not reliably preserve the currently reported level: one sequence retained Smart, while a later command starting from Deep returned Smart. The backend therefore verifies only parent mode for `on`; explicit Deep/Medium/Light/Smart commands verify both mode and level. All three main modes and all four levels were verified on hardware with query-after-write. This confirms that framing is generic but ANC interpretation belongs in the device capability/profile layer.
 
 ## Handshake variants
 

@@ -14,6 +14,7 @@ from .protocol import (
     RESPONSE_STATUS,
     SUBSCRIBE_BROADCAST,
     Frame,
+    FEATURE_SWITCH_NAMES,
     parse_anc_state,
     parse_battery,
     parse_broadcast_codes,
@@ -83,7 +84,14 @@ class OpoSession:
             return None
         if frame.command == RESPONSE_STATUS:
             switches = parse_feature_switches(frame)
-            return SafeEvent("feature_switches", switches) if switches is not None else None
+            if switches is None:
+                return None
+            named = {
+                name: switches[feature]
+                for feature, name in FEATURE_SWITCH_NAMES.items()
+                if feature in switches
+            }
+            return SafeEvent("feature_switches", named)
         if frame.command == NOTIFY_STATE and frame.payload:
             return SafeEvent("notification", {"event_code": frame.payload[0]})
         return None

@@ -41,6 +41,8 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - An unsolicited Pro 2 notification contained peer-device information. Raw notification payloads are never surfaced by the capability API or privacy-safe diagnostics; only explicitly recognised boolean feature fields are returned.
 - `BudsBackend` is now the typed public boundary. It separates cheap D-Bus discovery, one-shot `StatusResult`, authenticated `CapabilityResult`, verified `ControlResult`, and long-lived `OpoSession`; legacy dict functions remain only as CLI-compatible wrappers.
 - A live Pro 2 session authenticated/subscribed once, retained the ten advertised event codes, returned redacted notifications for event codes 6 and 2, counted four ignored setup frames, and leaked no raw payload. Unit fixtures prove peer-identifying text cannot escape through `EventBatch`.
+- `BudsController` now serializes access, caches typed snapshots, closes/reopens the event session around one-shot refreshes and verified writes, applies safe events, bounds notification-code history, reconnects once after polling transport failure, and shuts down deterministically. It intentionally owns no thread/event loop.
+- Live Pro 2 controller tests passed start → subscribe → poll → shutdown and start → verified ANC write → resubscribe → shutdown. The latter began at ANC On/Deep and generic `on` read back On/Smart, disproving the earlier claim that main On always preserves the visible level; explicit levels remain deterministic. Final hardware state is ANC On/Smart.
 
 ## Unresolved problems
 
@@ -50,7 +52,8 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
 - `0x0204` notification schemas are not mapped yet. The event API exposes only their numeric code until each payload is validated.
 - The device exposes one RFCOMM control channel; a future service must serialize status, writes, and event polling through one owner rather than opening concurrent sessions.
+- Service-level retry backoff is not yet implemented. The controller performs one immediate reconnect after a polling `OSError` and then propagates failures.
 
 ## Next recommended task
 
-Build a small backend service/controller around `BudsBackend` that serializes access to the RFCOMM channel, caches typed state, and turns safe session events into state updates. Add reconnection and shutdown tests. Keep it UI-independent; begin QML only after this service contract is stable.
+Add a small service runner around `BudsController` with bounded/exponential reconnect backoff, connection-state callbacks, and cancellation-safe polling. Validate disconnect/reconnect against real hardware if practical. Keep transport ownership and policy outside QML; do not build the interface yet.

@@ -78,3 +78,15 @@ class SafeEvent:
 class EventBatch:
     events: tuple[SafeEvent, ...]
     ignored_frames: int
+
+
+@dataclass(frozen=True)
+class ControllerSnapshot:
+    status: StatusResult | None
+    feature_switches: dict[str, bool]
+    session_connected: bool
+    advertised_event_codes: tuple[int, ...]
+    notification_event_codes: tuple[int, ...]
+    ignored_frames: int
+    reconnect_count: int
+    generation: int

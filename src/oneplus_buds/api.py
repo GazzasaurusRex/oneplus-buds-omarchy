@@ -20,9 +20,19 @@ class BudsBackend:
     def set_anc(self, mode: str, address: str | None = None) -> ControlResult:
         return write_anc(mode, address)
 
-    def open_session(self, address: str | None = None) -> OpoSession:
-        device = select_device(address)
-        status = read_status(device.address)
+    def open_session(
+        self,
+        address: str | None = None,
+        *,
+        status: StatusResult | None = None,
+    ) -> OpoSession:
+        if status is None:
+            device = select_device(address)
+            status = read_status(device.address)
+        else:
+            device = status.device
+            if address is not None and device.address.upper() != address.upper():
+                raise ValueError("provided status belongs to a different Bluetooth address")
         profile = profile_for_product(status.product_id)
         if profile is None:
             raise RuntimeError("cannot open event session for an unknown product")

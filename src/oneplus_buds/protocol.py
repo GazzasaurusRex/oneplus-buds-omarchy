@@ -25,6 +25,14 @@ RESPONSE_STATUS = 0x810D
 NOTIFY_STATE = 0x0204
 RESPONSE_BROADCAST_CODES = 0x8200
 
+FEATURE_SWITCH_NAMES = {
+    0x04: "wear_detection",
+    0x06: "low_latency",
+    0x0B: "hearing_enhancement",
+    0x11: "multipoint",
+    0x18: "high_quality_audio",
+}
+
 # Authentication frames have a legacy envelope that is not representable by
 # encode_frame: HELLO carries a trailing 0x12 beyond its zero inner length.
 HELLO = bytes.fromhex("AA 07 00 00 00 01 23 00 00 12")
