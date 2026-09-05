@@ -40,6 +40,7 @@ def device_summary(device: Device, *, include_address: bool = False) -> dict[str
         "connected": device.connected,
         "compatible": device.looks_compatible,
         "bluez_battery": device.battery,
+        "services_resolved": device.services_resolved,
         "transport": "RFCOMM channel 15" if device.looks_compatible else None,
     }
     if include_address:
@@ -153,6 +154,9 @@ def diagnostics_report(address: str | None = None) -> dict[str, object]:
             "model": status["model"],
             "product_id": product_id,
             "connected": device.connected,
+            "bluez_modalias": device.modalias,
+            "services_resolved": device.services_resolved,
+            "discovery": "BlueZ D-Bus ObjectManager",
             "protocol": "OPOv1/0xAA",
             "transport": "Bluetooth Classic RFCOMM channel 15",
             "service_uuids": sorted(device.uuids),

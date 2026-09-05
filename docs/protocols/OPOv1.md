@@ -33,6 +33,8 @@ Battery component IDs are 1=left, 2=right, 3=case. `raw & 0x7f` is percentage an
 
 The Buds Pro response observed on 2026-09-02 prefixes the pairs with a one-byte component count. Its capability response `0x8100` reports an inner payload length one byte shorter than the payload bounded by the valid outer frame length. An unsolicited `0x0204` snapshot following subscription reported an inner length three bytes larger than its outer-bounded payload. The outer length still separated concatenated frames exactly, so it is authoritative for these observed quirks.
 
+A repeat read-only query on 2026-09-05 returned capability payload `00 bf 17 68 26 04` from the original Buds Pro. The first byte is consistent with a success status, but the remaining bytes are not yet mapped to stable feature names. The documented `0x010d` batch-status request produced no response in the same unauthenticated session. Neither result is currently exposed as firmware or dynamic capabilities.
+
 For product `060C14` (original OnePlus Buds Pro), queried ANC state is a model-profile bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. Deep ANC `08` was observed after a physical stem-control transition to ANC On.
 
 Authenticated writes on product `060C14` use the same model bitmap: Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, and smart ANC=`10`. An authenticated `04` write returned success (`0x8404`, status `00`) and read back as light ANC. Community implementations for newer devices use a different set enum, so writes must remain product-gated.

@@ -4,7 +4,7 @@ Status: Phase 1 backend-hardening milestone, 2026-09-05.
 
 ## Architecture
 
-- `bluez.py`: connected-device discovery and explicit selection through `bluetoothctl`.
+- `bluez.py`: connected-device discovery and explicit selection through BlueZ's D-Bus ObjectManager API.
 - `transport.py`: Bluetooth Classic RFCOMM sockets, response bursts, and bounded retry for transient `EBUSY` errors.
 - `protocol.py`: transport-independent 0xAA framing and response parsers.
 - `profiles.py`: product identity, verified compatibility, capabilities, ANC write indices, read aliases, and levels.
@@ -12,6 +12,8 @@ Status: Phase 1 backend-hardening milestone, 2026-09-05.
 - `cli.py`: argument parsing and JSON presentation only.
 
 Unknown products may be queried safely, but ANC writes require a known profile marked hardware-verified. SET response status `00` is observed on successful changes, while Buds Pro 2 returned `0e` for an already-active mode. Status values are reported but not treated as proof of success or failure: a fresh state query must match the requested mode or level.
+
+Discovery uses the system `dbus-python` binding already supplied by Omarchy/Arch rather than parsing `bluetoothctl` output. One ObjectManager snapshot provides Device1 and Battery1 properties, including connection state, UUIDs, aggregate battery, modalias, and service-resolution state. The Python package itself adds no PyPI dependency.
 
 ## Commands
 

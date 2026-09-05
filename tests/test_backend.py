@@ -12,6 +12,8 @@ DEVICE = Device(
     connected=True,
     uuids=("0000079a-d102-11e1-9b23-00025b00a5a5",),
     battery=80,
+    modalias="bluetooth:v02B0p0000d001F",
+    services_resolved=True,
 )
 STATUS = {
     "model": "OnePlus Buds Pro 2",
@@ -38,6 +40,8 @@ class BackendTests(unittest.TestCase):
         rendered = repr(report)
         self.assertNotIn(DEVICE.address, rendered)
         self.assertEqual(report["device"]["product_id"], "062014")
+        self.assertEqual(report["device"]["discovery"], "BlueZ D-Bus ObjectManager")
+        self.assertTrue(report["device"]["services_resolved"])
         self.assertEqual(report["state"]["anc_level"], "smart")
         self.assertIn("address", report["privacy"].lower())
 

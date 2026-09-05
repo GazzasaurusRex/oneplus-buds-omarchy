@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-import re
-import subprocess
 from dataclasses import dataclass
+from typing import Any
 
-DEVICE_RE = re.compile(r"^Device ([0-9A-F:]{17}) (.+)$", re.MULTILINE)
+BLUEZ_SERVICE = "org.bluez"
+BLUEZ_ROOT = "/"
+OBJECT_MANAGER = "org.freedesktop.DBus.ObjectManager"
+DEVICE_INTERFACE = "org.bluez.Device1"
+BATTERY_INTERFACE = "org.bluez.Battery1"
+
 OPO_UUIDS = {
     "00001107-d102-11e1-9b23-00025b00a5a5",
     "0000079a-d102-11e1-9b23-00025b00a5a5",
@@ -18,48 +22,44 @@ class Device:
     connected: bool
     uuids: tuple[str, ...]
     battery: int | None
+    modalias: str | None = None
+    services_resolved: bool = False
 
     @property
     def looks_compatible(self) -> bool:
         return "oneplus" in self.name.lower() and bool(OPO_UUIDS.intersection(self.uuids))
 
 
-def _bluetoothctl(*arguments: str) -> str:
-    completed = subprocess.run(
-        ("bluetoothctl", *arguments),
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    return completed.stdout
+def _managed_objects() -> dict[Any, dict[Any, dict[Any, Any]]]:
+    try:
+        import dbus
+    except ImportError as error:
+        raise RuntimeError(
+            "direct BlueZ discovery requires the system dbus-python binding"
+        ) from error
+
+    bus = dbus.SystemBus()
+    manager = dbus.Interface(bus.get_object(BLUEZ_SERVICE, BLUEZ_ROOT), OBJECT_MANAGER)
+    return manager.GetManagedObjects()
 
 
 def connected_devices() -> list[Device]:
-    listed = _bluetoothctl("devices", "Connected")
     devices: list[Device] = []
-    for address, listed_name in DEVICE_RE.findall(listed):
-        info = _bluetoothctl("info", address)
-        values: dict[str, list[str]] = {}
-        for line in info.splitlines():
-            if ":" not in line:
-                continue
-            key, value = line.strip().split(":", 1)
-            values.setdefault(key, []).append(value.strip())
-        name = values.get("Name", [listed_name])[0]
-        uuids = tuple(
-            match.group(1).lower()
-            for value in values.get("UUID", [])
-            if (match := re.search(r"\(([0-9a-fA-F-]{36})\)$", value))
-        )
-        battery_match = re.match(r"0x[0-9a-f]+ \((\d+)\)", values.get("Battery Percentage", [""])[0])
+    for interfaces in _managed_objects().values():
+        properties = interfaces.get(DEVICE_INTERFACE)
+        if properties is None or not bool(properties.get("Connected", False)):
+            continue
+        battery_properties = interfaces.get(BATTERY_INTERFACE, {})
+        percentage = battery_properties.get("Percentage")
         devices.append(
             Device(
-                address=address,
-                name=name,
-                connected=values.get("Connected", ["no"])[0] == "yes",
-                uuids=uuids,
-                battery=int(battery_match.group(1)) if battery_match else None,
+                address=str(properties.get("Address", "")),
+                name=str(properties.get("Name") or properties.get("Alias") or "Unknown device"),
+                connected=True,
+                uuids=tuple(str(uuid).lower() for uuid in properties.get("UUIDs", ())),
+                battery=int(percentage) if percentage is not None else None,
+                modalias=str(properties["Modalias"]) if "Modalias" in properties else None,
+                services_resolved=bool(properties.get("ServicesResolved", False)),
             )
         )
     return devices

@@ -1,6 +1,6 @@
 # Agent handoff
 
-Last updated: 2026-09-05. Phase 1 basic control and backend-hardening milestones complete.
+Last updated: 2026-09-05. Phase 1 basic control, backend hardening, reliability, and direct BlueZ discovery milestones complete.
 
 ## Current status
 
@@ -31,14 +31,17 @@ The dependency-free Python proof of concept separates BlueZ discovery, RFCOMM tr
 - A live hardened-backend check identified Pro 2 product `062014`, all expected profile capabilities, and batteries L/R/case=100%. Both earbuds reported charging and ANC Off. A repeated Off request returned SET status `0e` but independently verified as Off; a Transparency request also returned `0e` and independently remained Off. This proves SET status alone is insufficient and that the verifier correctly refuses to report an unconfirmed transition. Repeat the cycle with the earbuds out of the case/in use.
 - With both Pro 2 earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles passed. All six actual transitions returned SET status `00` and matched fresh-session read-back; ANC On reported the retained Smart level. The device was restored to ANC Off.
 - With both original Buds Pro earbuds out of the case and in use, two consecutive Off → Transparency → ANC On → Off cycles also passed. All six actual transitions returned SET status `00` and matched fresh-session read-back; ANC On reported Deep. A phone-assisted physical check resolved a momentary subjective ambiguity and confirmed all three labels behaved correctly. After reconnecting to the PC, product `060C14`, L/R=80%, not charging, and ANC Off were independently confirmed.
+- Discovery now calls BlueZ's `org.freedesktop.DBus.ObjectManager.GetManagedObjects` through the system `dbus-python` binding. It obtains Device1 and Battery1 data in one snapshot, eliminating `bluetoothctl` subprocesses and text parsing while adding no PyPI dependency on this Omarchy host.
+- Live direct-D-Bus discovery and end-to-end status were verified on the original Buds Pro. The privacy-safe diagnostic report includes modalias, service-resolution state, and discovery method while still omitting the Bluetooth address and unrelated devices. `ServicesResolved` was false in one live snapshot despite cached UUIDs and working RFCOMM, so it is informational rather than a compatibility gate.
+- A repeated original Buds Pro `0x0100` query returned capability payload `00bf17682604`. Its feature bits remain unmapped. The existing read-only `0x010d` batch-status request returned no frame in that unauthenticated session, so firmware and dynamic capabilities remain deliberately unreported.
 
 ## Unresolved problems
 
 - Authentication still uses conservative multi-second delays. Timing can be optimized only after repeated control-cycle evidence on both models.
 - Case presence and charging bits should be tested deliberately later.
-- Discovery currently shells out to `bluetoothctl`; replace with a direct BlueZ D-Bus layer when choosing the long-term backend API.
 - Diagnostics do not yet query firmware or dynamically probe capabilities beyond the verified product profile.
+- Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
 
 ## Next recommended task
 
-Replace `bluetoothctl` text parsing with direct BlueZ D-Bus access while preserving dependency-free operation if practical, then investigate firmware and device-returned capability queries for a more useful compatibility report. Keep the CLI/backend interface stable and do not begin QML yet.
+Investigate the authenticated notification subscription/batch-status flow and firmware query semantics using read-only commands and corroborated protocol evidence. Decode `0x8100` capability bits only where their meaning can be validated on both profiles. Then formalize the stable backend API needed by the future frontend; do not begin QML yet.
