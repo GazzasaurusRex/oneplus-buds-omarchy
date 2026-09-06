@@ -468,6 +468,30 @@ The plugin should:
 - Prefer Bluetooth notifications/events where possible.
 - Not cause unnecessary wakeups or battery usage.
 
+### Top-bar interaction design
+
+The normal idle state of the top-bar widget should be a compact earbuds/headphones icon only.
+
+When the pointer hovers over the widget, it should smoothly expand horizontally to display the available battery levels for:
+
+- Left earbud
+- Right earbud
+- Charging case
+
+The entire icon and expanded battery-status area must behave as a single clickable target. Clicking anywhere on it should open the full earbuds control panel.
+
+When the pointer leaves the widget, it should collapse back to the icon after a short delay of approximately 200–400 ms so the interaction does not feel twitchy.
+
+Battery fields that are unavailable should be hidden rather than displaying placeholder values.
+
+The expansion/collapse animation, spacing, sizing, hover behaviour and popup interaction should follow existing Omarchy/Quickshell conventions wherever possible.
+
+The expanded widget should resize cleanly within the bar rather than overlapping neighbouring widgets.
+
+This interaction should be capability/state aware. For example, if only one earbud battery is currently available, only display that information.
+
+Do not permanently display all battery percentages in the normal idle state.
+
 ==================================================
 PUBLIC PROJECT QUALITY
 
