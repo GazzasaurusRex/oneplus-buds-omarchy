@@ -86,4 +86,10 @@ A fresh live load on the connected Buds Pro 2 reported `connected`, a populated 
 
 ## Next implementation boundary
 
-Add the smallest capability-driven control surface for the already verified ANC modes. It must use the existing service request path, expose only modes in `anc_modes`, display pending/failure/verified outcomes, and require an explicit hardware test before changing a live earbud setting.
+The bar popup now provides the smallest capability-driven ANC surface. `BarModel.js` orders known modes but includes any future mode explicitly advertised by `anc_modes`; the widget rejects unsupported selections, prevents overlapping requests, correlates the response by request ID, and reports success only when the bridge returns `result.verified === true`. Pending and failed states remain visible in the popup.
+
+A live Pro 2 click from Off to Transparency completed through QML → shared service → bridge → serialized controller → authenticated write → independent query-after-write verification. The popup reported “Verified on earbuds,” and read-only IPC independently returned `current_anc: transparency`, `pending: false`, and no error. The user observed that applying the change felt slow. This matches the deliberately conservative write authentication, verification connection, and monitoring-session reauthentication path; it was not shortened without repeated timing evidence on both reference models.
+
+## Next implementation boundary
+
+Add privacy-safe phase timing around verified ANC operations, then measure repeated transitions on both reference models before changing authentication waits or session ownership. Any latency optimization must retain independent read-back verification, one RFCOMM owner, and the rule that acknowledgements alone never imply success.

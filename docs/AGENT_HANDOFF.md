@@ -1,12 +1,12 @@
 # Agent handoff
 
-Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, and read-only battery/status widget milestones complete.
+Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, and verified ANC control-surface milestones complete.
 
 ## Current status
 
 The no-PyPI-dependency backend now sits inside a validated, minimally installable Omarchy plugin scaffold. The layers remain separated: BlueZ D-Bus discovery, RFCOMM transport, OPO parsing, profiles/capabilities, typed backend, privacy-safe session, serialized controller, resilient service runner, schema-v1 frontend bridge, NDJSON child-process host, headless QML service adapter, and an intentionally hidden placeholder bar widget. The checkout-local launcher imports the bundled `src/` tree because Omarchy plugin installation runs no install hooks. `BudsController` remains the sole RFCOMM owner; QML receives only address-free primitive state and routes verified commands over the bridge. Both reference models retain their previously verified detection, firmware, battery, and ANC coverage.
 
-Latest implementation commit: `4559fca` (`fix: import Quickshell IPC type for status widget`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 55 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
+Latest implementation commit: `2ca6743` (`feat: add verified ANC control surface`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 55 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
 
 ## Verified discoveries
 
@@ -62,13 +62,16 @@ Latest implementation commit: `4559fca` (`fix: import Quickshell IPC type for st
 - `BarModel.js` provides pure capability-driven presentation: it accepts only numeric 0–100 percentages, orders known left/right/case components, marks charging only when explicitly reported, and omits absent, invalid, or unknown fields. `BarWidget.qml` uses current Omarchy font, foreground, spacing, geometry, and tooltip APIs; disconnected states show an icon without stale battery values.
 - The first live widget compile caught a missing `Quickshell.Io` import for `IpcHandler`; commit `4559fca` fixes it and adds a regression assertion. A subsequent unique-URL load required no shell restart and returned `{"service":true,"connection":"connected","snapshot":true,"label":"L 100%⚡  R 100%⚡  C 100%","error":""}`. Live geometry was visible, 195×26, and no plugin error followed the fixed load.
 - The widget test did not send refresh or setting commands. Afterward the helper stopped, all temporary/backup plugin directories were moved out of the live plugin path, `shell.json` matched its pre-test copy byte-for-byte, and shell PID 1009 remained healthy.
+- `BarWidget.qml` now opens a native `PopupCard` containing a `ButtonGroup` derived solely from snapshot `anc_modes`. It rejects unsupported selections, blocks overlapping requests, tracks its own request ID, displays pending/failure state, and says “Verified on earbuds” only for a matching successful response whose result has `verified === true`. The current selection comes from independently read-back `status.anc`/`anc_level`, not optimistic UI state.
+- Live Pro 2 UI testing changed ANC from Off to Transparency. The popup reported verified success and the read-only widget endpoint independently returned `current_anc: transparency`, `pending: false`, with no error. The user reported that application was slow; the current path deliberately performs conservative write authentication, separate read-back verification, and monitoring-session reauthentication, so a roughly multi-second wait is expected and was not hidden or optimized without more evidence.
+- After the live control test the temporary plugin was disabled and moved out of the live plugin path, its helper stopped, `shell.json` matched the pre-test copy byte-for-byte, shell PID 1009 remained healthy, and the connected Pro 2 was left in the user-selected Transparency mode.
 - Live Pro 2 controller tests passed start → subscribe → poll → shutdown and start → verified ANC write → resubscribe → shutdown. The latter began at ANC On/Deep and generic `on` read back On/Smart, disproving the earlier claim that main On always preserves the visible level; explicit levels remain deterministic. Final hardware state is ANC On/Smart.
 
 ## Current hardware and repository state
 
 - Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`; it reconnected successfully after the closed-case service-runner test.
-- Last verified ANC state: On with Smart level. The service runner did not change ANC during the disconnect/reconnect test, and its final shutdown released the RFCOMM socket.
-- Latest implementation commits: `0473e33` (battery/status widget) and `4559fca` (live-QML import fix).
+- Last verified ANC state: Transparency on the connected OnePlus Buds Pro 2, selected by the user through the plugin UI and independently read back by the verified control path.
+- Latest implementation commit: `2ca6743` (capability-driven, verified ANC control surface).
 - Automated status: 55 tests passing; compilation, `git diff --check`, both JavaScript model suites, direct launcher EOF testing, and `omarchy plugin validate .` pass.
 - Existing `omarchy-shell` PID 1009 remains running. The temporary development plugin is disabled and removed, its helper/RFCOMM owner is stopped, and shell configuration is restored exactly.
 
@@ -86,4 +89,4 @@ Latest implementation commit: `4559fca` (`fix: import Quickshell IPC type for st
 
 ## Next recommended task
 
-Add the smallest capability-driven ANC control surface for the already verified modes. It must consume `anc_modes`, route through the existing service/bridge/controller path, visibly distinguish pending, failed, and query-verified outcomes, and never claim success from a write acknowledgement alone. Build and test it without changing hardware first; ask the user immediately before the first live setting change.
+Add privacy-safe phase timing for verified ANC requests and measure repeated transitions on both reference models. Use that evidence to identify safe latency reductions, but retain independent query-after-write verification, conservative failure behavior, and one serialized RFCOMM owner. Ask for one specific physical device/test sequence at a time before changing hardware state.
