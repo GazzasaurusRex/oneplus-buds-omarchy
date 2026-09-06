@@ -37,6 +37,7 @@ class PluginScaffoldTests(unittest.TestCase):
 
     def test_status_widget_resolves_shared_service_and_uses_native_primitives(self):
         widget = (ROOT / "BarWidget.qml").read_text()
+        self.assertIn("import Quickshell.Io", widget)
         self.assertIn("bar.shell.serviceFor(moduleName)", widget)
         self.assertIn('import "BarModel.js" as BarModel', widget)
         self.assertIn("root.bar.barForeground", widget)
