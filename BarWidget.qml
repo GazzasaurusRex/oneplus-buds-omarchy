@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.Ui
 
 BarWidget {
@@ -17,6 +18,19 @@ BarWidget {
   Component.onCompleted: console.log(
     "oneplus-buds.control frontend-ready service=" + (budsService !== null)
       + " connection=" + connection + " snapshot=" + hasSnapshot)
+
+  IpcHandler {
+    target: "oneplus-buds.control"
+
+    function status(): string {
+      return JSON.stringify({
+        service: root.budsService !== null,
+        connection: root.connection,
+        snapshot: root.hasSnapshot,
+        error: root.budsService ? String(root.budsService.lastError || "") : ""
+      })
+    }
+  }
 
   // This milestone proves plugin/service loading only. The capability-driven
   // visual widget and control panel intentionally come later.

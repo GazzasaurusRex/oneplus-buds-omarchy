@@ -42,6 +42,9 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("readonly property bool hasSnapshot", widget)
         self.assertIn("oneplus-buds.control frontend-state", widget)
         self.assertIn("oneplus-buds.control frontend-ready", widget)
+        self.assertEqual(widget.count("IpcHandler {"), 1)
+        self.assertIn('target: "oneplus-buds.control"', widget)
+        self.assertIn("function status(): string", widget)
         self.assertIn("visible: false", widget)
         self.assertIn("implicitWidth: 0", widget)
 
