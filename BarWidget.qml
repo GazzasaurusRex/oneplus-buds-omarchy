@@ -14,6 +14,9 @@ BarWidget {
   onConnectionChanged: console.log(
     "oneplus-buds.control frontend-state connection=" + connection
       + " snapshot=" + hasSnapshot)
+  Component.onCompleted: console.log(
+    "oneplus-buds.control frontend-ready service=" + (budsService !== null)
+      + " connection=" + connection + " snapshot=" + hasSnapshot)
 
   // This milestone proves plugin/service loading only. The capability-driven
   // visual widget and control panel intentionally come later.
