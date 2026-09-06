@@ -1,6 +1,6 @@
 # Omarchy integration decision
 
-Status: deployment adapter selected, minimal plugin scaffold validated on Omarchy 4.0.2-1, 2026-09-06. No visual QML interface has been built yet.
+Status: deployment adapter and first read-only bar widget validated live on Omarchy 4.0.2-1, 2026-09-06.
 
 ## Current contract
 
@@ -78,6 +78,12 @@ The repository root is now directly installable as an Omarchy plugin checkout:
 
 The running-shell test is still pending: canonical IPC reported `omarchy-shell is not running` in the development session. No second Quickshell instance was started. In a graphical session, temporarily enable the plugin and verify helper startup, service lookup, logs, and clean disable/removal before replacing the hidden widget with visual UI.
 
+## Read-only status widget
+
+`BarWidget.qml` now uses the shared service snapshot to present connection and only valid battery components actually returned by the backend. `BarModel.js` validates percentages, orders left/right/case fields, marks charging only when explicitly true, and omits absent, invalid, and unknown fields. The bar uses Omarchy's current font, foreground, spacing, geometry, and tooltip primitives and exposes a read-only IPC status record for lifecycle checks.
+
+A fresh live load on the connected Buds Pro 2 reported `connected`, a populated address-free snapshot, and `L 100%⚡  R 100%⚡  C 100%`. Omarchy reported the widget visible at height 26 and width 195. No earbud setting command was sent. A missing `Quickshell.Io` import was found by the first live compile, fixed, regression-tested, and verified on a new component URL without restarting the graphical shell.
+
 ## Next implementation boundary
 
-Run the pending real-shell lifecycle check when `omarchy-shell` is available. If it passes, implement the smallest capability-driven bar status presentation (connection plus useful battery state) using current Omarchy theme primitives; keep the control panel for a later milestone.
+Add the smallest capability-driven control surface for the already verified ANC modes. It must use the existing service request path, expose only modes in `anc_modes`, display pending/failure/verified outcomes, and require an explicit hardware test before changing a live earbud setting.
