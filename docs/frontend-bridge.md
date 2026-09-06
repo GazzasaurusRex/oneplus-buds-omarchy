@@ -52,4 +52,8 @@ Bluetooth addresses, raw OPO frames, pairing data, and raw notification payloads
 
 Every call returns a `command_response` dictionary containing the schema version, request ID, command, `ok`, `result`, and `error`. Unknown commands and malformed parameter objects are rejected without hardware access. Runtime command errors are address-redacted. The bridge does not add unverified controls or bypass backend capability/profile checks.
 
-This is an in-process contract, not yet a public IPC protocol. If a later service process is required, its D-Bus or socket surface should carry these versioned payloads rather than exposing Python transport objects.
+## Process adapter
+
+`python -m oneplus_buds.bridge_host` carries the same contract over newline-delimited JSON for the future Omarchy QML service. Asynchronous connection/snapshot events and command responses share stdout and are distinguished by `type`; requests arrive on stdin. EOF, `SIGINT`, and `SIGTERM` cancel the runner and wait for controller shutdown.
+
+The deployment rationale and Omarchy lifecycle are documented in [omarchy-integration.md](omarchy-integration.md). This is a private child-process protocol owned by the plugin, not a public system-wide IPC service.
