@@ -1,12 +1,12 @@
 # Agent handoff
 
-Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, and validated plugin-scaffold milestones complete.
+Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, validated plugin scaffold, and live Omarchy lifecycle milestones complete.
 
 ## Current status
 
 The no-PyPI-dependency backend now sits inside a validated, minimally installable Omarchy plugin scaffold. The layers remain separated: BlueZ D-Bus discovery, RFCOMM transport, OPO parsing, profiles/capabilities, typed backend, privacy-safe session, serialized controller, resilient service runner, schema-v1 frontend bridge, NDJSON child-process host, headless QML service adapter, and an intentionally hidden placeholder bar widget. The checkout-local launcher imports the bundled `src/` tree because Omarchy plugin installation runs no install hooks. `BudsController` remains the sole RFCOMM owner; QML receives only address-free primitive state and routes verified commands over the bridge. Both reference models retain their previously verified detection, firmware, battery, and ANC coverage.
 
-Latest implementation commit: `7057b9d` (`feat: scaffold Omarchy service plugin`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 54 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
+Latest implementation commit: `0092e0d` (`test: expose live widget service state`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 54 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
 
 ## Verified discoveries
 
@@ -56,16 +56,18 @@ Latest implementation commit: `7057b9d` (`feat: scaffold Omarchy service plugin`
 - Root `manifest.json` now declares the non-reserved `oneplus-buds.control` plugin as a combined schema-v1 `service` and `bar-widget`. The executable `oneplus-buds-bridge` launcher resolves the checkout-local Python source without an install hook.
 - `Service.qml` owns exactly one bidirectional helper, parses schema-v1 NDJSON through `BridgeModel.js`, exposes connection/snapshot/response state, routes refresh and ANC requests over stdin, suppresses raw stderr, and stops the helper on destruction. `BarWidget.qml` proves shared-service lookup but is intentionally hidden and zero-width until visual work begins.
 - Scaffold tests cover manifest shape, launcher permissions/source resolution, the single-helper lifecycle contract, shared-service lookup, hidden placeholder behavior, and JavaScript parsing/state reduction. Direct launcher EOF testing emitted valid connecting/stopped/final-snapshot NDJSON and exited cleanly.
-- `omarchy plugin validate .` succeeds. A real enable/disable test could not run because canonical IPC reported `omarchy-shell is not running`; no second Quickshell process was started and no user configuration was changed.
+- The live Omarchy lifecycle test used the already-running shell (PID 1009) and the supported local-plugin directory plus `rescanPlugins`/`omarchy plugin enable`; no second shell or graphical-session restart was used. The plugin catalog reported enabled, its zero-size bar item was mounted in the configured right section, and exactly one checkout-local `oneplus-buds-bridge` helper ran while the connected Pro 2 was available. This verifies shell loading, helper startup, and the frontend's `serviceFor("oneplus-buds.control")` architecture. A read-only widget IPC status hook was added for repeatable state inspection; the long-running shell retained the earlier QML component in its cache during this development run, so that newly added hook was not registered until a future fresh load.
+- No plugin-specific QML, Python, Bluetooth, or helper errors appeared. Omarchy itself emitted duplicate-handler warnings for its built-in agents/Bluetooth/network/audio/monitor/power panels during hot enable/disable, and recursively watched `.git` files caused redundant reload debug messages when a full clone was placed or removed. These were shell development-reloader effects, not failures from this plugin; stage/export future development installs without `.git` to keep the reload window quiet.
+- Disable stopped the helper, and removal deleted the temporary plugin directory. The exact pre-test `shell.json` compares byte-for-byte equal afterward, canonical shell ping still returns `ok`, PID 1009 never changed, the Pro 2 remains connected, and no earbud setting command was sent.
 - Live Pro 2 controller tests passed start → subscribe → poll → shutdown and start → verified ANC write → resubscribe → shutdown. The latter began at ANC On/Deep and generic `on` read back On/Smart, disproving the earlier claim that main On always preserves the visible level; explicit levels remain deterministic. Final hardware state is ANC On/Smart.
 
 ## Current hardware and repository state
 
 - Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`; it reconnected successfully after the closed-case service-runner test.
 - Last verified ANC state: On with Smart level. The service runner did not change ANC during the disconnect/reconnect test, and its final shutdown released the RFCOMM socket.
-- Latest implementation commit: `7057b9d`.
+- Latest implementation commit: `0092e0d`; live-test support commits are `9fcc965`, `509164a`, `61bfff4`, and `0092e0d`.
 - Automated status: 54 tests passing; compilation, `git diff --check`, JavaScript model testing, direct launcher EOF testing, and `omarchy plugin validate .` pass.
-- No Omarchy/QML UI has been started.
+- Existing `omarchy-shell` PID 1009 remains running. The temporary development plugin is disabled and removed, its helper/RFCOMM owner is stopped, and shell configuration is restored exactly.
 
 ## Unresolved problems
 
@@ -76,9 +78,9 @@ Latest implementation commit: `7057b9d` (`feat: scaffold Omarchy service plugin`
 - `0x0204` notification schemas are not mapped yet. The event API exposes only their numeric code until each payload is validated.
 - The device exposes one RFCOMM control channel. `BudsServiceRunner` uses `BudsController` as its sole serialized session owner rather than opening concurrent sessions directly.
 - Bridge callbacks are synchronous by default; a frontend adapter must supply the dispatcher hook to marshal them onto its event loop rather than doing UI work in the polling thread.
-- Real shell loading, service sharing, runtime logs, and clean disable/unload remain unverified because `omarchy-shell` was unavailable. These must be tested in the existing graphical shell before visual UI work.
+- The read-only widget IPC status endpoint did not replace the cached hidden-widget component during this long-running development session. Confirm it on the next fresh plugin load; do not restart the user's shell solely for this diagnostic.
 - Public packaging still needs README, LICENSE, dependency/install documentation, and marketplace metadata before submission; the current milestone proves structure, not publication readiness.
 
 ## Next recommended task
 
-When the existing graphical `omarchy-shell` is available, temporarily install/enable the scaffold and verify helper startup, address-free snapshot parsing, shared-service lookup, runtime logs, and clean disable/removal. If that passes, implement the smallest capability-driven bar status presentation for connection and useful battery state; keep the control panel for a later milestone.
+Implement the smallest capability-driven bar status presentation for connection and useful battery state. Keep it read-only, consume the existing shared service snapshot, preserve zero concurrent RFCOMM ownership, and leave the control panel and setting changes for a later milestone. On its next fresh live load, also exercise the widget's read-only IPC status hook to confirm the reported shared-state values.
