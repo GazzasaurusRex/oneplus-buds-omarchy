@@ -1,16 +1,16 @@
 # Agent handoff
 
-Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, and frontend-bridge contract milestones complete.
+Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, and Omarchy deployment-adapter milestones complete.
 
 ## Current status
 
-The no-PyPI-dependency Python proof of concept separates direct BlueZ D-Bus discovery, RFCOMM transport, OPO framing/parsing, product/capability profiles, typed backend orchestration, privacy-safe sessions, serialized cached control, service lifecycle policy, a versioned frontend bridge, and CLI JSON presentation. It uses the system-provided `dbus-python` binding. `BudsBackend` is the typed public boundary; `BudsController` owns at most one `OpoSession`, serializes operations, caches `ControllerSnapshot`, and reconnects once after polling transport failure. `BudsServiceRunner` adds interruptible polling, connection-state/snapshot callbacks, and capped exponential reconnect backoff without owning a thread or event loop. `BudsFrontendBridge` exposes address-free schema-v1 events and validated snapshot/refresh/ANC command routing, with a dispatcher hook for a future UI event loop. Both the original OnePlus Buds Pro and Buds Pro 2 are hardware-verified for detection, identity, firmware, component batteries, ANC state, Off, Transparency, and ANC On. The Pro 2 is additionally verified for Deep, Medium, Light, and Smart ANC levels. Writes require a known hardware-verified product profile, authentication, SET-status recording, and fresh-session query-after-write verification.
+The no-PyPI-dependency Python proof of concept separates direct BlueZ D-Bus discovery, RFCOMM transport, OPO framing/parsing, product/capability profiles, typed backend orchestration, privacy-safe sessions, serialized cached control, service lifecycle policy, a versioned frontend bridge, an NDJSON child-process adapter, and CLI JSON presentation. It uses the system-provided `dbus-python` binding. `BudsBackend` is the typed public boundary; `BudsController` owns at most one `OpoSession`, serializes operations, caches `ControllerSnapshot`, and reconnects once after polling transport failure. `BudsServiceRunner` adds interruptible polling, connection-state/snapshot callbacks, and capped exponential reconnect backoff. `BudsFrontendBridge` exposes address-free schema-v1 events and validated snapshot/refresh/ANC command routing. `BridgeProcessHost` carries that contract over stdin/stdout for a future headless QML service without a second Quickshell instance or separately installed daemon. Both the original OnePlus Buds Pro and Buds Pro 2 are hardware-verified for detection, identity, firmware, component batteries, ANC state, Off, Transparency, and ANC On. The Pro 2 is additionally verified for Deep, Medium, Light, and Smart ANC levels. Writes require a known hardware-verified product profile, authentication, SET-status recording, and fresh-session query-after-write verification.
 
-Latest implementation commit: `cba204f` (`feat: add frontend bridge contract`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 44 tests on Python 3.14.7.
+Latest implementation commit: `e2871f2` (`feat: add Omarchy bridge process adapter`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 49 tests on Python 3.14.7.
 
 ## Verified discoveries
 
-- Host: Omarchy 4.0.1-1, BlueZ 5.87, Python 3.14.7; `bluetooth.service` is active.
+- Host originally inspected on Omarchy 4.0.1-1 and currently running Omarchy 4.0.2-1; BlueZ 5.87, Python 3.14.7; `bluetooth.service` is active.
 - Connected reference devices are reliably discovered through BlueZ's D-Bus ObjectManager; the earlier `bluetoothctl` parser has been removed.
 - Device exposes HeyMelody vendor SPP UUID `00001107-d102-11e1-9b23-00025b00a5a5`, Serial Port, and vendor UUID `66666666-6666-6666-6666-666666666666`.
 - No remote GATT services/characteristics are exposed as BlueZ objects. RFCOMM channel 15 accepts a connection, so Classic RFCOMM is the verified likely control transport.
@@ -50,14 +50,17 @@ Latest implementation commit: `cba204f` (`feat: add frontend bridge contract`). 
 - `BudsFrontendBridge` now serializes controller snapshots into schema-v1 JSON-compatible data containing compatibility, capability-driven ANC modes, safe state, and counters without Bluetooth addresses or raw protocol data. It rejects unknown commands and malformed parameters before hardware access, routes refresh and verified ANC writes through the shared controller, and returns structured address-redacted responses.
 - The bridge accepts a dispatcher hook so service callbacks can be queued onto a future frontend event loop. It deliberately does not select D-Bus, sockets, a process model, or QML architecture yet.
 - A live read-only bridge run on the Pro 2 emitted connection and snapshot events, identified the correct model, produced address-free JSON, and ended with a disconnected final snapshot after cancellation. No device setting was changed.
+- Current Omarchy 4.0.2-1 packaged sources, validator, plugin commands, manifests, loader, and representative first-party service/bar widgets were inspected read-only and compared with the current official Quattro and marketplace documentation. Third-party plugins use a root schema-v1 manifest, run inside the existing shell, and may combine `service` and `bar-widget`; plugin installation performs no dependency/install hook.
+- The selected deployment is a combined service/bar-widget plugin whose headless QML service owns one Python child process. NDJSON over `Quickshell.Io.Process` stdin/stdout carries the existing schema-v1 contract. A separate user daemon, global socket/D-Bus API, second Quickshell process, and one-shot polling helpers are deliberately avoided.
+- `BridgeProcessHost` starts the bridge in a non-daemon worker, isolates blocking stdin in a daemon reader, serializes/flushed stdout records, rejects malformed request envelopes, hides unexpected internal errors, and treats EOF, SIGINT, and SIGTERM as cancellation. Tests prove teardown still completes while stdin is blocked.
 - Live Pro 2 controller tests passed start → subscribe → poll → shutdown and start → verified ANC write → resubscribe → shutdown. The latter began at ANC On/Deep and generic `on` read back On/Smart, disproving the earlier claim that main On always preserves the visible level; explicit levels remain deterministic. Final hardware state is ANC On/Smart.
 
 ## Current hardware and repository state
 
 - Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`; it reconnected successfully after the closed-case service-runner test.
 - Last verified ANC state: On with Smart level. The service runner did not change ANC during the disconnect/reconnect test, and its final shutdown released the RFCOMM socket.
-- Latest implementation commit: `cba204f`.
-- Automated status: 44 tests passing; compilation and `git diff --check` pass with the frontend-bridge milestone.
+- Latest implementation commit: `e2871f2`.
+- Automated status: 49 tests passing; compilation and `git diff --check` pass with the Omarchy adapter milestone.
 - No Omarchy/QML UI has been started.
 
 ## Unresolved problems
@@ -69,7 +72,8 @@ Latest implementation commit: `cba204f` (`feat: add frontend bridge contract`). 
 - `0x0204` notification schemas are not mapped yet. The event API exposes only their numeric code until each payload is validated.
 - The device exposes one RFCOMM control channel. `BudsServiceRunner` uses `BudsController` as its sole serialized session owner rather than opening concurrent sessions directly.
 - Bridge callbacks are synchronous by default; a frontend adapter must supply the dispatcher hook to marshal them onto its event loop rather than doing UI work in the polling thread.
+- The repository does not yet have the root `manifest.json`, QML service entry point, or checkout-local launcher required for installation through `omarchy plugin add`; the next milestone should add only that minimal scaffold and lifecycle proof.
 
 ## Next recommended task
 
-Research the current Omarchy plugin documentation and inspect current first-party plugins to choose the smallest correct deployment adapter for `BudsFrontendBridge` (in-process versus a user-level service/IPC boundary). Document the decision and test the adapter lifecycle before building a polished QML interface. Keep Bluetooth/protocol code and RFCOMM ownership outside QML.
+Scaffold the minimal combined schema-v1 `service` + `bar-widget` plugin manifest and headless `Service.qml` adapter, including a checkout-local Python launcher because Omarchy runs no install hooks. Prove helper startup, NDJSON line parsing and command writes, service sharing, `omarchy plugin validate`, and clean unload before implementing the visual bar widget or control panel.
