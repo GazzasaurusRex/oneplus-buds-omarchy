@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import "BridgeModel.js" as BridgeModel
 
@@ -64,6 +65,23 @@ Item {
   Component.onDestruction: {
     stopping = true
     helper.running = false
+  }
+
+  IpcHandler {
+    target: "oneplus-buds.control"
+
+    function status(): string {
+      return JSON.stringify({
+        connection: root.connection,
+        snapshot: root.snapshot,
+        lastError: root.lastError
+      })
+    }
+
+    function snapshot(): string {
+      var requestId = root.request("snapshot", {})
+      return requestId === null ? "not-running" : String(requestId)
+    }
   }
 
   Process {

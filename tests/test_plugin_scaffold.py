@@ -33,6 +33,10 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn('sourceDir + "/oneplus-buds-bridge"', service)
         self.assertIn('helper.write(JSON.stringify({', service)
         self.assertIn("helper.running = false", service)
+        self.assertEqual(service.count("IpcHandler {"), 1)
+        self.assertIn('target: "oneplus-buds.control"', service)
+        self.assertIn("function status(): string", service)
+        self.assertIn('root.request("snapshot", {})', service)
 
     def test_placeholder_widget_resolves_shared_service_and_stays_hidden(self):
         widget = (ROOT / "BarWidget.qml").read_text()
