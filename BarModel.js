@@ -34,6 +34,42 @@ function titleCase(value) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+function ancModes(snapshot) {
+  var advertised = snapshot && Array.isArray(snapshot.anc_modes)
+    ? snapshot.anc_modes : []
+  var labels = {
+    off: "Off",
+    transparency: "Transparency",
+    on: "On",
+    light: "Light",
+    medium: "Medium",
+    deep: "Deep",
+    smart: "Smart"
+  }
+  var preferred = ["off", "transparency", "on", "light", "medium", "deep", "smart"]
+  var seen = {}
+  var options = []
+
+  function append(mode) {
+    var value = String(mode || "")
+    if (!value || seen[value]) return
+    seen[value] = true
+    options.push({ value: value, label: labels[value] || titleCase(value) })
+  }
+
+  for (var i = 0; i < preferred.length; i++)
+    if (advertised.indexOf(preferred[i]) !== -1) append(preferred[i])
+  for (var j = 0; j < advertised.length; j++) append(advertised[j])
+  return options
+}
+
+function currentAncMode(snapshot) {
+  var status = snapshot && snapshot.status
+  if (!status || !status.anc) return ""
+  if (status.anc === "on" && status.anc_level) return String(status.anc_level)
+  return String(status.anc)
+}
+
 function presentation(connection, snapshot) {
   var connected = connection === "connected"
   var parts = connected ? batteryParts(snapshot) : []
@@ -62,6 +98,8 @@ function presentation(connection, snapshot) {
 if (typeof module !== "undefined") {
   module.exports = {
     batteryParts: batteryParts,
+    ancModes: ancModes,
+    currentAncMode: currentAncMode,
     presentation: presentation,
     validPercentage: validPercentage
   }

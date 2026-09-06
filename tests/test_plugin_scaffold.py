@@ -43,6 +43,11 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("root.bar.barForeground", widget)
         self.assertIn("root.bar.fontFamily", widget)
         self.assertIn("root.bar.showTooltip", widget)
+        self.assertIn("PopupCard {", widget)
+        self.assertIn("ButtonGroup {", widget)
+        self.assertIn("budsService.setAnc(mode)", widget)
+        self.assertIn("response.result.verified === true", widget)
+        self.assertIn("Number(response.request_id) !== pendingRequestId", widget)
         self.assertEqual(widget.count("IpcHandler {"), 1)
         self.assertIn('target: "oneplus-buds.control"', widget)
         self.assertIn("function status(): string", widget)
@@ -65,6 +70,10 @@ if (shown.tooltip.includes("Case:") || shown.label.includes("99")) process.exit(
 const disconnected = model.presentation("reconnecting", snapshot);
 if (disconnected.connected || disconnected.label !== "" || !disconnected.tooltip.includes("Reconnecting")) process.exit(4);
 if (model.validPercentage(-1) || model.validPercentage(101) || model.validPercentage("80")) process.exit(5);
+const controls = model.ancModes({anc_modes: ["smart", "off", "future", "off", "transparency"]});
+if (controls.map(x => x.value).join(",") !== "off,transparency,smart,future") process.exit(6);
+if (model.currentAncMode({status: {anc: "on", anc_level: "deep"}}) !== "deep") process.exit(7);
+if (model.currentAncMode({status: {anc: "transparency", anc_level: null}}) !== "transparency") process.exit(8);
 '''
         subprocess.run(
             ["node", "-e", script, str(ROOT / "BarModel.js")],
