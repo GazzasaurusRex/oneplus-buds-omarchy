@@ -72,3 +72,9 @@ runner.run(cancelled)
 ```
 
 Connection failures publish a `disconnected` state with the attempt number, retry delay, and address-redacted error text. Retries start at one second, double to a 30-second ceiling, and reset after a successful connection. The cancellation event interrupts backoff immediately; steady-state cancellation latency is bounded by the configured poll interval (0.5 seconds by default). `run()` always shuts down the controller and publishes a final `stopped` state and disconnected snapshot. The runner creates no thread or event loop itself.
+
+## Frontend bridge
+
+`BudsFrontendBridge` converts service callbacks and controller results into versioned, address-free, JSON-compatible payloads. It exposes cached snapshot, refresh, and verified ANC commands while retaining `BudsController` as the only RFCOMM owner. Its dispatcher hook lets a future integration marshal service-thread callbacks onto the QML event loop without importing Bluetooth or protocol code into QML.
+
+The complete schema and command rules are documented in [frontend-bridge.md](frontend-bridge.md).
