@@ -1,6 +1,6 @@
 # Omarchy integration decision
 
-Status: deployment adapter selected and lifecycle-tested on Omarchy 4.0.2-1, 2026-09-06. No QML interface has been built yet.
+Status: deployment adapter selected, minimal plugin scaffold validated on Omarchy 4.0.2-1, 2026-09-06. No visual QML interface has been built yet.
 
 ## Current contract
 
@@ -65,6 +65,19 @@ The request envelope permits only `request_id`, `command`, and `parameters`. Res
 
 Automated lifecycle tests use fake bridges and no Bluetooth hardware. They cover normal request routing, malformed input, internal failures, compact one-record-per-line output, EOF shutdown, and cancellation while input remains blocked.
 
+## Minimal plugin scaffold
+
+The repository root is now directly installable as an Omarchy plugin checkout:
+
+- `manifest.json` declares `oneplus-buds.control` as a combined `service` and `bar-widget`, defaulting to the right section.
+- `oneplus-buds-bridge` is an executable checkout-local launcher that imports the bundled `src/` tree. This avoids relying on an install hook or prior Python-package installation.
+- `Service.qml` starts exactly one bidirectional helper after the shell injects the manifest source directory. It parses schema-v1 lines through `BridgeModel.js`, exposes primitive connection/snapshot/response state, sends refresh and ANC requests over stdin, suppresses raw stderr, and stops the helper when unloaded.
+- `BarWidget.qml` resolves the shared service through `bar.shell.serviceFor("oneplus-buds.control")` but remains invisible and zero-width. It exists only to prove the combined plugin shape before visual work begins.
+
+`omarchy plugin validate .` passes. The Python suite covers the manifest, executable launcher, one-helper constraint, shared-service lookup, hidden placeholder, and JavaScript parser/reducer. Direct launcher EOF testing emits valid lifecycle NDJSON and exits cleanly.
+
+The running-shell test is still pending: canonical IPC reported `omarchy-shell is not running` in the development session. No second Quickshell instance was started. In a graphical session, temporarily enable the plugin and verify helper startup, service lookup, logs, and clean disable/removal before replacing the hidden widget with visual UI.
+
 ## Next implementation boundary
 
-The next milestone should scaffold the minimal combined plugin manifest and headless `Service.qml` adapter, plus model-level QML/JavaScript tests where practical. It should prove helper startup, line parsing, command writes, service sharing, plugin validation, and clean unload before implementing the visual bar widget or control panel.
+Run the pending real-shell lifecycle check when `omarchy-shell` is available. If it passes, implement the smallest capability-driven bar status presentation (connection plus useful battery state) using current Omarchy theme primitives; keep the control panel for a later milestone.
