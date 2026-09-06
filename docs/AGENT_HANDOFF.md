@@ -4,7 +4,7 @@ Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model v
 
 ## Current status
 
-The no-PyPI-dependency backend now sits inside a validated, minimally installable Omarchy plugin scaffold. The layers remain separated: BlueZ D-Bus discovery, RFCOMM transport, OPO parsing, profiles/capabilities, typed backend, privacy-safe session, serialized controller, resilient service runner, schema-v1 frontend bridge, NDJSON child-process host, headless QML service adapter, and an intentionally hidden placeholder bar widget. The checkout-local launcher imports the bundled `src/` tree because Omarchy plugin installation runs no install hooks. `BudsController` remains the sole RFCOMM owner; QML receives only address-free primitive state and routes verified commands over the bridge. Both reference models retain their previously verified detection, firmware, battery, and ANC coverage.
+The no-PyPI-dependency backend now sits inside a validated, minimally installable Omarchy plugin with a live-tested battery/status widget and capability-driven ANC popup. The layers remain separated: BlueZ D-Bus discovery, RFCOMM transport, OPO parsing, profiles/capabilities, typed backend, privacy-safe session, serialized controller, resilient service runner, schema-v1 frontend bridge, NDJSON child-process host, headless QML service adapter, and native Omarchy presentation. The checkout-local launcher imports the bundled `src/` tree because Omarchy plugin installation runs no install hooks. `BudsController` remains the sole RFCOMM owner; QML receives only address-free primitive state and routes verified commands over the bridge. Both reference models retain their previously verified detection, firmware, battery, and ANC coverage.
 
 Latest implementation commit: `2ca6743` (`feat: add verified ANC control surface`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 55 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
 
@@ -22,7 +22,7 @@ Latest implementation commit: `2ca6743` (`feat: add verified ANC control surface
 - The parser now maps Buds Pro Off=`01`, Transparency=`02`, and ANC levels light=`04`, deep=`08`, smart=`10`. The physical transition verified deep ANC `08`.
 - Control requires HELLO, a 2-second wait, REGISTER with the observed token, and a 1.5-second wait. Unauthenticated writes were ignored or misleading.
 - Authenticated writes use the Buds Pro profile bitmap, not the newer-device set enum. Off=`01`, Transparency=`02`, light ANC=`04`, deep ANC=`08`, smart ANC=`10`.
-- Authenticated SET returned `0x8404:00`; Off, Transparency, and deep ANC On were each verified by a fresh read-only session. The final hardware state was ANC On.
+- Authenticated SET returned `0x8404:00`; Off, Transparency, and deep ANC On were each verified by a fresh read-only session. That earlier Buds Pro test ended with ANC On; it is not the current Pro 2 state recorded below.
 - Buds Pro 2 advertises OPO UUID `0000079a...`, uses RFCOMM channel 15, and returns product ID `062014`. It exposes BR/EDR/SPP/HID but no BlueZ remote GATT characteristic objects or LE bearer in the tested connection.
 - Existing detection, transport, 0xAA framing, product query, component battery parser, HELLO/REGISTER authentication, and SET flow work unchanged on Pro 2.
 - Pro 2 ANC needs a two-byte-capable profile: main Off index 0, ANC index 1, Transparency index 2; Deep/Medium/Light/Smart indices 4/5/6/7; observed Transparency read alias index 8.
@@ -65,13 +65,13 @@ Latest implementation commit: `2ca6743` (`feat: add verified ANC control surface
 - `BarWidget.qml` now opens a native `PopupCard` containing a `ButtonGroup` derived solely from snapshot `anc_modes`. It rejects unsupported selections, blocks overlapping requests, tracks its own request ID, displays pending/failure state, and says “Verified on earbuds” only for a matching successful response whose result has `verified === true`. The current selection comes from independently read-back `status.anc`/`anc_level`, not optimistic UI state.
 - Live Pro 2 UI testing changed ANC from Off to Transparency. The popup reported verified success and the read-only widget endpoint independently returned `current_anc: transparency`, `pending: false`, with no error. The user reported that application was slow; the current path deliberately performs conservative write authentication, separate read-back verification, and monitoring-session reauthentication, so a roughly multi-second wait is expected and was not hidden or optimized without more evidence.
 - After the live control test the temporary plugin was disabled and moved out of the live plugin path, its helper stopped, `shell.json` matched the pre-test copy byte-for-byte, shell PID 1009 remained healthy, and the connected Pro 2 was left in the user-selected Transparency mode.
-- Live Pro 2 controller tests passed start → subscribe → poll → shutdown and start → verified ANC write → resubscribe → shutdown. The latter began at ANC On/Deep and generic `on` read back On/Smart, disproving the earlier claim that main On always preserves the visible level; explicit levels remain deterministic. Final hardware state is ANC On/Smart.
+- Live Pro 2 controller tests passed start → subscribe → poll → shutdown and start → verified ANC write → resubscribe → shutdown. The latter began at ANC On/Deep and generic `on` read back On/Smart, disproving the earlier claim that main On always preserves the visible level; explicit levels remain deterministic. That earlier controller test ended at On/Smart; the current state is recorded below.
 
 ## Current hardware and repository state
 
 - Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`; it reconnected successfully after the closed-case service-runner test.
 - Last verified ANC state: Transparency on the connected OnePlus Buds Pro 2, selected by the user through the plugin UI and independently read back by the verified control path.
-- Latest implementation commit: `2ca6743` (capability-driven, verified ANC control surface).
+- Latest implementation commit: `2ca6743` (capability-driven, verified ANC control surface); completed milestone handoff commit: `f72bd70`.
 - Automated status: 55 tests passing; compilation, `git diff --check`, both JavaScript model suites, direct launcher EOF testing, and `omarchy plugin validate .` pass.
 - Existing `omarchy-shell` PID 1009 remains running. The temporary development plugin is disabled and removed, its helper/RFCOMM owner is stopped, and shell configuration is restored exactly.
 
