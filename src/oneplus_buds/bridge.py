@@ -5,6 +5,7 @@ from threading import Event
 from typing import TypeAlias
 
 from .controller import BudsController
+from .timing import AncRequestError
 from .models import ControllerSnapshot, ControlResult
 from .profiles import profile_for_product
 from .service import BudsServiceRunner, ServiceState
@@ -90,9 +91,9 @@ class BudsFrontendBridge:
                 mode = params["mode"]
                 if not isinstance(mode, str) or not mode:
                     raise ValueError("set_anc parameter 'mode' must be a non-empty string")
-                control = self.controller.set_anc(mode)
+                control, snapshot = self.controller.set_anc_with_snapshot(mode)
                 result = self._serialize_control(control)
-                self._on_snapshot(self.controller.snapshot())
+                self._on_snapshot(snapshot)
             else:
                 return self._response(
                     command,
@@ -112,7 +113,12 @@ class BudsFrontendBridge:
                 command,
                 request_id,
                 ok=False,
-                error={"code": "command_failed", "message": self._safe_error(error)},
+                error={
+                    "code": "command_failed",
+                    "message": self._safe_error(error),
+                    **({"timings_ms": dict(error.timings_ms)}
+                       if isinstance(error, AncRequestError) else {}),
+                },
             )
         return self._response(command, request_id, ok=True, result=result)
 

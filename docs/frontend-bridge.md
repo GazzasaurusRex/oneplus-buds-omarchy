@@ -57,3 +57,15 @@ Every call returns a `command_response` dictionary containing the schema version
 `python -m oneplus_buds.bridge_host` carries the same contract over newline-delimited JSON for the future Omarchy QML service. Asynchronous connection/snapshot events and command responses share stdout and are distinguished by `type`; requests arrive on stdin. EOF, `SIGINT`, and `SIGTERM` cancel the runner and wait for controller shutdown.
 
 The deployment rationale and Omarchy lifecycle are documented in [omarchy-integration.md](omarchy-integration.md). This is a private child-process protocol owned by the plugin, not a public system-wide IPC service.
+
+ANC responses now carry additive `result.timings_ms` on success and
+`error.timings_ms` on expected timed failures. See [ANC phase timing](backend-api.md#anc-phase-timing)
+for units, nested totals, privacy scope, and the completed two-model hardware measurements.
+Timing values do not imply successful verification; consumers must still check
+`ok` and `result.verified`.
+
+Main On/Off/Transparency requests now reuse the running controller's authenticated
+session and existing subscriptions. Success still requires a fresh, correlated
+state query. The result and matching snapshot are captured atomically, and no
+monitoring restoration blocks successful response delivery. Cold/legacy paths
+retain conservative authentication; see the timing documentation for scope.

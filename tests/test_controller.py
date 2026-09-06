@@ -45,7 +45,7 @@ class ControllerTests(unittest.TestCase):
         first = FakeSession()
         second = FakeSession()
         backend = FakeBackend([first, second])
-        controller = BudsController(backend)
+        controller = BudsController(backend, reuse_session=False)
         controller.start()
         result = controller.set_anc("transparency")
         snapshot = controller.snapshot()

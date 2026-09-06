@@ -7,14 +7,17 @@ from typing import cast
 from .api import BudsBackend
 from .models import ControllerSnapshot, ControlResult, EventBatch, StatusResult
 from .session import OpoSession
+from .timing import AncRequestError, PhaseTimer
 
 
 class BudsController:
     """Serialized state/session owner for a future service or frontend."""
 
-    def __init__(self, backend: BudsBackend | None = None, address: str | None = None) -> None:
+    def __init__(self, backend: BudsBackend | None = None, address: str | None = None,
+                 *, reuse_session: bool = True) -> None:
         self.backend = backend or BudsBackend()
         self.address = address
+        self.reuse_session = reuse_session
         self._lock = RLock()
         self._running = False
         self._session: OpoSession | None = None
@@ -52,27 +55,88 @@ class BudsController:
             return self.snapshot()
 
     def set_anc(self, mode: str) -> ControlResult:
+        timer = PhaseTimer()
+        timings: dict[str, float] = {}
         with self._lock:
-            self._close_session()
+            timer.mark("controller_lock_wait")
+            if self.reuse_session and self._running and mode in ("on", "off", "transparency"):
+                return self._set_session_anc(mode, timer)
             try:
-                result = self.backend.set_anc(mode, self.address)
-                if self._status is not None:
-                    self._status = replace(
-                        self._status,
-                        anc=result.anc,
-                        anc_level=result.anc_level,
-                    )
-                self._generation += 1
-            except Exception:
-                if self._running and self._status is not None:
-                    try:
-                        self._connect_session()
-                    except Exception:
-                        pass
-                raise
-            if self._running:
+                self._close_session()
+                timer.mark("monitor_close")
+                try:
+                    result = self.backend.set_anc(mode, self.address)
+                    timings.update(result.timings_ms)
+                    timer.mark("backend_request")
+                    if self._status is not None:
+                        self._status = replace(
+                            self._status,
+                            anc=result.anc,
+                            anc_level=result.anc_level,
+                        )
+                    self._generation += 1
+                except Exception as error:
+                    if isinstance(error, AncRequestError):
+                        timings.update(error.timings_ms)
+                    timer.mark("backend_request")
+                    if self._running and self._status is not None:
+                        try:
+                            self._connect_session()
+                        except Exception:
+                            pass
+                    timer.mark("monitor_recovery")
+                    raise
+                if self._running:
+                    self._connect_session()
+                timer.mark("monitor_resume")
+            except (OSError, RuntimeError) as error:
+                timer.mark("failed_controller_phase")
+                raise AncRequestError(
+                    str(error), {**timings, **timer.finish("controller_total")}
+                ) from error
+            return replace(
+                result, timings_ms={**timings, **timer.finish("controller_total")}
+            )
+
+    def _set_session_anc(self, mode: str, timer: PhaseTimer) -> ControlResult:
+        try:
+            if self._session is None:
                 self._connect_session()
-            return result
+            timer.mark("session_ready")
+            result, batch = cast(OpoSession, self._session).set_anc(mode)
+            self._apply_batch(batch)
+            if self._status is not None:
+                self._status = replace(self._status, anc=result.anc, anc_level=result.anc_level)
+            self._generation += 1
+            # No socket teardown, reauthentication, or subscription restoration.
+            return replace(result, timings_ms={
+                **result.timings_ms, **timer.finish("controller_total"),
+            })
+        except ValueError:
+            # Profile/parameter rejection happens before transport I/O.
+            raise
+        except (OSError, RuntimeError) as error:
+            # Never replay an uncertain write. Poll/service recovery can reopen
+            # later, without delaying this failed command's response.
+            self._close_session()
+            if self._status is not None:
+                self._status = replace(self._status, anc=None, anc_level=None)
+            self._generation += 1
+            timings = error.timings_ms if isinstance(error, AncRequestError) else {}
+            raise AncRequestError(str(error), {
+                **timings, **timer.finish("controller_total"),
+            }) from error
+
+    def set_anc_with_snapshot(self, mode: str) -> tuple[ControlResult, ControllerSnapshot]:
+        """Capture verified state before a poll can start monitoring recovery."""
+        timer = PhaseTimer()
+        with self._lock:
+            timer.mark("controller_lock_wait")
+            result = self.set_anc(mode)
+            snapshot = self.snapshot()
+            return replace(result, timings_ms={
+                **result.timings_ms, **timer.finish("controller_total"),
+            }), snapshot
 
     def poll(self, wait: float = 0.2) -> ControllerSnapshot:
         with self._lock:

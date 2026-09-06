@@ -1,6 +1,8 @@
 import json
 import unittest
 
+from unittest.mock import patch
+
 from oneplus_buds.bluez import Device
 from oneplus_buds.bridge import BudsFrontendBridge, serialize_snapshot
 from oneplus_buds.models import ControllerSnapshot, ControlResult, StatusResult
@@ -99,6 +101,13 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(controller.anc_modes, ["transparency"])
         self.assertEqual(emitted[-1]["type"], "snapshot")
 
+    def test_verified_response_does_not_reacquire_snapshot_during_recovery(self):
+        controller = FakeController()
+        with patch.object(controller, 'snapshot', side_effect=AssertionError('second lock acquisition')):
+            response = BudsFrontendBridge(lambda _: None, controller=controller).execute(
+                'set_anc', {'mode': 'off'})
+        self.assertTrue(response['ok'])
+
     def test_invalid_commands_and_parameters_are_structured_errors(self):
         bridge = BudsFrontendBridge(lambda _event: None, controller=FakeController())
         unknown = bridge.execute("delete_everything")
@@ -145,6 +154,9 @@ class FakeController:
             set_status=0,
             verified=True,
         )
+
+    def set_anc_with_snapshot(self, mode):
+        return self.set_anc(mode), SNAPSHOT
 
 
 class FakeRunner:

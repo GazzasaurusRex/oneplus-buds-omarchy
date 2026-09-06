@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import TypeVar
+from dataclasses import replace
 
 from . import __version__
 from .bluez import Device, select_device
@@ -33,6 +34,7 @@ from .protocol import (
     parse_set_anc_status,
 )
 from .transport import RfcommTransport
+from .timing import AncRequestError, PhaseTimer
 
 T = TypeVar("T")
 
@@ -137,10 +139,23 @@ def query_feature_switches(address: str | None = None) -> dict[str, bool]:
 
 
 def write_anc(mode: str, address: str | None = None) -> ControlResult:
+    timer = PhaseTimer()
+    try:
+        result = _write_anc(mode, address, timer)
+    except (OSError, RuntimeError) as error:
+        timer.mark("failed_phase")
+        raise AncRequestError(str(error), timer.finish("backend_total")) from error
+    return replace(result, timings_ms=timer.finish("backend_total"))
+
+
+def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResult:
     device = select_device(address)
+    timer.mark("discovery")
     with RfcommTransport(device.address, connect_attempts=4) as transport:
+        timer.mark("write_connect")
         transport.query(QUERY_CAPABILITIES)
         product_frames = transport.query(QUERY_PRODUCT_ID)
+        timer.mark("profile_queries")
         product_id = _first_parsed(product_frames, parse_product_id)
         profile = profile_for_product(product_id)
         if profile is None:
@@ -150,18 +165,24 @@ def write_anc(mode: str, address: str | None = None) -> ControlResult:
         if mode not in profile.anc.write_indices:
             raise RuntimeError(f"refusing ANC write: {mode} is not supported by {profile.name}")
         transport.exchange_raw(HELLO, wait=2.0)
+        timer.mark("hello")
         register_frames = transport.exchange_raw(REGISTER, wait=1.5)
+        timer.mark("register")
         write_frames = transport.query(
             SET_ANC,
             profile.anc.payload_for(mode),
             sequence=profile.anc.sequence_for(mode),
             wait=1.0,
         )
+        timer.mark("set_exchange")
         set_status = _first_parsed(write_frames, parse_set_anc_status)
 
+    timer.mark("write_close")
     try:
         with RfcommTransport(device.address, connect_attempts=12) as verifier:
+            timer.mark("verify_connect")
             state_frames = verifier.query(QUERY_ANC, b"\x01\x01", sequence=0xF0, wait=0.3)
+            timer.mark("verify_query")
     except OSError as error:
         raise RuntimeError(
             "ANC write sent but verification channel stayed busy; "
@@ -169,6 +190,7 @@ def write_anc(mode: str, address: str | None = None) -> ControlResult:
             f"write responses: {_frame_summary(write_frames)}"
         ) from error
 
+    timer.mark("verify_close")
     observed = _first_parsed(state_frames, lambda frame: parse_anc_state(frame, profile.anc))
     expected_mode = mode if mode in ("off", "transparency", "on") else "on"
     expected_level = mode if mode not in ("off", "transparency", "on") else None

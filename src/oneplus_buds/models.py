@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 from .bluez import Device
 from .protocol import VersionRecord
@@ -63,6 +63,8 @@ class ControlResult:
     anc_level: str | None
     set_status: int | None
     verified: bool
+    timings_ms: dict[str, float] = field(default_factory=dict)
+    verification_queries: int = 1
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

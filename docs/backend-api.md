@@ -51,7 +51,7 @@ result = controller.set_anc("off")
 snapshot = controller.shutdown()
 ```
 
-It caches an immutable `ControllerSnapshot`, serializes every operation with one lock, and owns at most one `OpoSession`. A refresh or verified write closes the event socket first and restores notification subscription afterward. A polling transport error triggers one immediate reconnect; repeated failures propagate to the caller for service-level backoff. Shutdown always releases the RFCOMM socket.
+It caches an immutable `ControllerSnapshot`, serializes every operation with one lock, and owns at most one `OpoSession`. A refresh or legacy write closes the event socket first and restores notification subscription afterward. Main On/Off/Transparency writes on a running controller now retain the authenticated socket and subscriptions, verify through fresh sequence-correlated state queries, and return immediately after verification. Explicit ANC levels and one-shot calls retain the legacy path. A polling transport error triggers one immediate reconnect; repeated failures propagate to the caller for service-level backoff. Shutdown always releases the RFCOMM socket.
 
 Safe battery, ANC, and named feature-switch events update cached typed state. Redacted notification codes are retained in a bounded 32-item history, ignored-frame counts are cumulative, and `generation` changes whenever meaningful state/event data is applied. The controller does not start threads or prescribe an event loop; a future daemon, QML bridge, or test harness controls polling cadence and backoff.
 
@@ -78,3 +78,77 @@ Connection failures publish a `disconnected` state with the attempt number, retr
 `BudsFrontendBridge` converts service callbacks and controller results into versioned, address-free, JSON-compatible payloads. It exposes cached snapshot, refresh, and verified ANC commands while retaining `BudsController` as the only RFCOMM owner. Its dispatcher hook lets a future integration marshal service-thread callbacks onto the QML event loop without importing Bluetooth or protocol code into QML.
 
 The complete schema and command rules are documented in [frontend-bridge.md](frontend-bridge.md).
+
+## ANC phase timing
+
+Verified `ControlResult` now includes additive `timings_ms` data, automatically
+included in CLI JSON and bridge results. Durations use a monotonic clock; keys
+are fixed phase names and values are elapsed milliseconds. No absolute timestamp,
+Bluetooth address, user-supplied label, or raw frame is added to timing records.
+
+Backend phases cover discovery, write connection (including retries), profile
+queries, HELLO, REGISTER, SET exchange, write close, independent verifier
+connection (including retries), verifier query, and verifier close. Exchanges
+include the existing conservative waits and receive-burst drain time.
+`backend_total` also includes parsing and validation overhead.
+
+Controller results add `controller_lock_wait`, `monitor_close`,
+`backend_request`, `monitor_resume`, and `controller_total`. `backend_request`
+contains the backend phases: do not add it or the totals to those phases when
+computing a breakdown. Controller total ends after notification resubscription;
+it excludes bridge dispatch, process I/O, and QML rendering. This separates
+verified hardware latency from the additional wait before the UI receives success.
+
+Expected failures raise `AncRequestError` (a `RuntimeError`) with `timings_ms`.
+The bridge includes it in `error.timings_ms`. Completed phases remain available;
+`failed_phase`/`failed_controller_phase` measure the uncompleted tail since the
+last checkpoint, including exception cleanup. `monitor_recovery` measures the
+existing recovery attempt, which may itself fail; its presence is not evidence
+of a connected session. Existing error strings are not part of the privacy-safe
+timing export.
+
+### Hardware measurement
+
+With only the selected reference model connected, both earbuds out of the case
+and in use, and no other plugin/helper owning RFCOMM, run from the checkout:
+
+```sh
+PYTHONPATH=src python scripts/measure_anc.py --product 062014 --run
+```
+
+Use `060C14` for original Buds Pro. The explicit hardware command checks product
+identity before writing and performs two Off → Transparency → On → Off cycles,
+including an initial Off request per cycle. Each write retains independent
+read-back verification and monitoring resubscription. Output is restricted to
+product/firmware, requested/observed modes, SET status, verification, and phase
+durations. It stops on the first failure, releases the controller, and does not
+attempt an unverified restoration; successful completion ends Off.
+
+The Pro 2 baseline was collected on 2026-09-06: all eight requests verified,
+including six actual transitions, ending Off. Median controller duration was
+15.13 seconds (8.43 seconds backend and 6.70 seconds monitoring resumption).
+Original Buds Pro also passed all eight requests with the same rounded medians,
+ending Off. Both baselines are complete; see [baseline findings](measurements/anc-baseline.md)
+for the completed optimization and before/after comparison.
+Confirm one physical test sequence with the user before running. Compare repeated successful transitions on both
+models before proposing delay changes. These measurements instrument the
+already-verified control path; they are not a repeat of baseline compatibility
+or shell-lifecycle testing.
+
+
+### Persistent-session result timings
+
+For main modes on a running controller, `set_response`, `verify_query`, and
+`session_total` replace the legacy backend phase breakdown. `command_sent_elapsed`
+and `verified_elapsed` are cumulative milliseconds from the session method's
+entry; they are not additive phases and exclude controller lock wait/setup.
+`controller_total` includes those outer costs. `verification_queries` is a separate
+integer count, not a duration. There is no `monitor_resume` on a successful warm
+request because its session/subscriptions remain connected.
+
+The service polls without blocking inside the controller lock and waits its
+interval outside it. A failed fast transaction closes its uncertain session,
+clears cached ANC, and returns failure without replaying the write or waiting for
+monitoring restoration; polling handles recovery. `set_anc_with_snapshot()` returns
+a result/snapshot pair captured under the same lock, used by the bridge to avoid
+waiting behind a later reconnect just to serialize already-verified state.

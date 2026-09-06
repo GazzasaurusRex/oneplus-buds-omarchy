@@ -1,0 +1,4 @@
+{"reuse_session": true, "service_polling": true, "advertised_event_codes": [1, 2, 3, 4, 6, 8, 10], "product_id": "060C14", "firmware": "541.541.510", "initial_anc": "off"}
+{"cycle": 1, "requested": "off", "ok": true, "same_session": true, "notification_event_codes": [2, 1, 10, 3], "observed": "off", "level": null, "set_status": 0, "verified": true, "timings_ms": {"command_sent_elapsed": 0.135, "set_response": 33.746, "verify_query": 23.953, "verified_elapsed": 57.808, "session_total": 57.834, "controller_lock_wait": 0.016, "session_ready": 0.037, "controller_total": 58.131}}
+{"cycle": 1, "requested": "transparency", "ok": false, "timings_ms": {"command_sent_elapsed": 0.163, "set_response": 45.054, "verify_query": 18.201, "failed_phase": 0.119, "session_total": 63.402, "controller_lock_wait": 0.022, "session_ready": 0.044, "controller_total": 63.959}}
+{"stopped": true, "reason": "test failed; final ANC state may differ"}

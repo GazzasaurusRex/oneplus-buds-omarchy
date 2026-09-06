@@ -81,6 +81,13 @@ class ServiceRunnerTests(unittest.TestCase):
         error = next(state.error for state in states if state.connection == "disconnected")
         self.assertEqual(error, "selected device [device] is disconnected")
 
+    def test_poll_waits_outside_controller(self):
+        cancelled = RecordingEvent(cancel_after_waits=1)
+        controller = FakeController(polls=[EMPTY_SNAPSHOT])
+        BudsServiceRunner(controller, poll_interval=0.5).run(cancelled)
+        self.assertEqual(controller.poll_waits, [0.0])
+        self.assertEqual(cancelled.waits, [0.5])
+
     def test_rejects_invalid_timing(self):
         with self.assertRaises(ValueError):
             BudsServiceRunner(poll_interval=-1)
@@ -97,6 +104,7 @@ class FakeController:
         self.cancel_after_poll = cancel_after_poll
         self.address = None
         self.shutdowns = 0
+        self.poll_waits = []
 
     def start(self):
         item = self.starts.pop(0) if self.starts else EMPTY_SNAPSHOT
@@ -105,6 +113,7 @@ class FakeController:
         return item
 
     def poll(self, _wait):
+        self.poll_waits.append(_wait)
         item = self.polls.pop(0) if self.polls else EMPTY_SNAPSHOT
         if self.cancel_after_poll is not None:
             self.cancel_after_poll.set()

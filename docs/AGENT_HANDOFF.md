@@ -1,12 +1,12 @@
 # Agent handoff
 
-Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, and verified ANC control-surface milestones complete.
+Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, verified ANC control-surface, two-model ANC timing baseline, and persistent-session ANC optimization milestones complete.
 
 ## Current status
 
 The no-PyPI-dependency backend now sits inside a validated, minimally installable Omarchy plugin with a live-tested battery/status widget and capability-driven ANC popup. The layers remain separated: BlueZ D-Bus discovery, RFCOMM transport, OPO parsing, profiles/capabilities, typed backend, privacy-safe session, serialized controller, resilient service runner, schema-v1 frontend bridge, NDJSON child-process host, headless QML service adapter, and native Omarchy presentation. The checkout-local launcher imports the bundled `src/` tree because Omarchy plugin installation runs no install hooks. `BudsController` remains the sole RFCOMM owner; QML receives only address-free primitive state and routes verified commands over the bridge. Both reference models retain their previously verified detection, firmware, battery, and ANC coverage.
 
-Latest implementation commit: `2ca6743` (`feat: add verified ANC control surface`). Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 55 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
+This handoff accompanies `perf: reuse authenticated sessions for verified ANC control`. Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 79 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
 
 ## Verified discoveries
 
@@ -69,15 +69,15 @@ Latest implementation commit: `2ca6743` (`feat: add verified ANC control surface
 
 ## Current hardware and repository state
 
-- Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`; it reconnected successfully after the closed-case service-runner test.
-- Last verified ANC state: Transparency on the connected OnePlus Buds Pro 2, selected by the user through the plugin UI and independently read back by the verified control path.
-- Latest implementation commit: `2ca6743` (capability-driven, verified ANC control surface); completed milestone handoff commit: `f72bd70`.
-- Automated status: 55 tests passing; compilation, `git diff --check`, both JavaScript model suites, direct launcher EOF testing, and `omarchy plugin validate .` pass.
+- Connected test hardware at session end: OnePlus Buds Pro 2, product `062014`, firmware `196.196.101`, used for optimized-path verification.
+- Last verified ANC state: Off on Pro 2 after optimized-path verification. Original Pro was also left Off after its optimized cycles. Both completed runs exited 0 and released their controller/session.
+- Implementation in this milestone: persistent-session main ANC controls, response-correlated verification with bounded settling, nonblocking service polling, atomic bridge response/snapshot capture, phase timing and hardware measurement records.
+- Automated status: 79 tests passing for timing instrumentation, control optimization, and harness. Previously verified compilation, `git diff --check`, both JavaScript model suites, direct launcher EOF testing, and `omarchy plugin validate .` pass.
 - Existing `omarchy-shell` PID 1009 remains running. The temporary development plugin is disabled and removed, its helper/RFCOMM owner is stopped, and shell configuration is restored exactly.
 
 ## Unresolved problems
 
-- Authentication still uses conservative multi-second delays. Timing can be optimized only after repeated control-cycle evidence on both models.
+- Cold session setup, standalone CLI, explicit ANC levels, and disconnected recovery retain conservative authentication waits. Healthy main-mode changes now reuse authentication/subscriptions. Warm measurements do not prove shorter cold-start waits safe.
 - Case presence and charging bits should be tested deliberately later.
 - Dynamic `0x8100` bit semantics, original Buds Pro `0x810d` silence, Pro 2 feature ID `0x05`, and additional notification payloads remain unresolved. Do not infer names for unknown fields.
 - Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
@@ -89,4 +89,57 @@ Latest implementation commit: `2ca6743` (`feat: add verified ANC control surface
 
 ## Next recommended task
 
-Add privacy-safe phase timing for verified ANC requests and measure repeated transitions on both reference models. Use that evidence to identify safe latency reductions, but retain independent query-after-write verification, conservative failure behavior, and one serialized RFCOMM owner. Ask for one specific physical device/test sequence at a time before changing hardware state.
+The requested ANC latency milestone is complete. Do not repeat either baseline or
+successful optimized cycles. A separate milestone may implement the compact idle
+bar icon and battery hover expansion already specified in PROJECT.md; that UI work
+was deliberately not started here. Publication preparation remains outstanding.
+
+If control latency is revisited, use the recorded phase data first. Cold-start
+handshake waits and mapping validated notification semantics are separate future
+investigations; do not shorten authentication or trust unknown notifications based
+on these warm-session results.
+
+## Completed optimization — 2026-09-06
+
+- Main On/Off/Transparency on a running controller now reuse the authenticated
+  RFCOMM session and subscriptions by default. Explicit levels and one-shot calls
+  retain the proven legacy path. `reuse_session=False` permits baseline comparison.
+- SET is sent without a development sleep; transport waits for matching response
+  command/sequence with deadlines, then separate fresh state-query transactions
+  independently verify the result. No acknowledgement or cache update is proof.
+- Original Pro's first fast trial correctly rejected premature Transparency
+  read-back. A separate read-only session subsequently found Transparency. Bounded
+  response-paced settling queries fixed this observed race without replaying SET.
+- Completed original Pro run: eight verified requests, seven actual transitions,
+  status `00`, On/Deep, same session and subscriptions throughout, final Off.
+  Median actual-transition completion 260 ms versus 15.132 s baseline.
+- Pro 2 first run completed four verified requests then stopped outside the timed
+  ANC-error handler. The original harness lacked enough detail to identify why;
+  do not call this a proven protocol failure or claim its cause was fixed. The
+  harness now records safe failure phase/type and service lifecycle, preserves
+  successful control data before monitoring assertions, and checks final monitoring.
+- Completed Pro 2 rerun, unchanged control implementation: eight verified requests,
+  six actual transitions, status `00`, On/Smart, same session and ten subscriptions
+  throughout, final Off. Median actual-transition completion 167 ms versus 15.138 s
+  baseline. All-request median is 107 ms (includes two already-Off requests).
+- Neither successful run needed monitoring restoration. SET send elapsed within
+  the session call was under 0.23 ms. This is not a measurement of audible change
+  time; a listening observation was requested but not supplied.
+- Service polling drains available frames without waiting under the controller
+  lock; its 0.5 s interval is outside that lock. Reads are bounded under floods.
+- Bridge uses an atomic result/snapshot pair so serialization does not wait for a
+  second lock behind possible subsequent monitoring recovery. Failed fast writes
+  close the uncertain session, invalidate cached ANC, and return without replay;
+  normal polling/service recovery handles reconnects.
+- Expected-failure timing and successful phase timing are privacy-safe. Full
+  sanitized baseline, rejected/incomplete trial, and optimized records are in
+  `docs/measurements/`; analysis explains units, nested totals, and scope.
+- 79 tests pass, including correlated/fragmented responses, deadline bounds,
+  missing acknowledgements, settling mismatch, no replay, session retention,
+  concurrent commands, shutdown ownership, nonblocking polls, bridge delivery,
+  and harness privacy/final-monitoring failure. Plugin validation passes.
+- No QML or desktop configuration was changed. User's pre-existing PROJECT.md
+  hover-expansion requirements are preserved as documentation, not implemented.
+- Final default-bridge Pro 2 check verified already-active Off in 59.448 ms,
+  retained the same session through a ten-second monitoring hold, had no service
+  errors, and exited 0. Compilation and `git diff --check` also pass.

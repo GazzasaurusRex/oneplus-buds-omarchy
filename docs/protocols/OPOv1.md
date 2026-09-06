@@ -102,3 +102,21 @@ Recent BLE and Buds Pro 3 implementations send a HELLO packet (`0x0001`) followe
 - AasheeshLikePanner/cracked-oneplus-buds: BLE OPOv1 research and Swift demonstration. At inspected commit `6320765`, no licence file was present; research only.
 - nic0manz/oneplus_buds3_pro_python: RFCOMM/channel-15 example for Buds Pro 3. At inspected commit `faec7e5`, no licence file was present; research only and not assumed compatible with Buds Pro.
 - BlueZ RFCOMM documentation: Linux socket transport reference (LGPL documentation/source project).
+
+
+## Verified persistent-session control (2026-09-06)
+
+Both reference products accept main On/Off/Transparency writes over the existing
+authenticated RFCOMM monitoring connection while subscriptions remain active.
+SET `0x0404` responses `0x8404` and fresh ANC `0x010c` responses `0x810c` echo the
+request sequence in the tested exchanges. The implementation matches command and
+sequence, retaining unrelated notifications for safe session processing.
+
+SET acknowledgement is not application completion: original Pro immediately
+returned its previous mode after a Transparency acknowledgement, but a later fresh
+read-only session reported Transparency. Bounded repeated fresh queries resolve
+this settling race without repeating the SET. Original Pro verified actual changes
+in about 260 ms; Pro 2's completed run needed one query per request. The independent
+verification is now a separate query transaction on the same channel, not a new
+socket. Cold authentication delays remain unchanged. Full evidence, including
+rejected/incomplete runs, is in [latency measurements](../measurements/anc-baseline.md).

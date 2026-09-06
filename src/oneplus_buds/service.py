@@ -69,7 +69,7 @@ class BudsServiceRunner:
                     self._publish_state(ServiceState("connected"))
                     self._publish_snapshot(snapshot)
                 try:
-                    snapshot = self.controller.poll(self.poll_interval)
+                    snapshot = self.controller.poll(0.0)
                 except (OSError, RuntimeError) as error:
                     connected = False
                     attempt, retry_delay = self._back_off(
@@ -79,6 +79,7 @@ class BudsServiceRunner:
                         break
                     continue
                 self._publish_snapshot(snapshot)
+                cancelled.wait(self.poll_interval)
         finally:
             snapshot = self.controller.shutdown()
             self._publish_state(ServiceState("stopped"))
