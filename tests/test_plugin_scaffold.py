@@ -35,18 +35,42 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("helper.running = false", service)
         self.assertNotIn("IpcHandler", service)
 
-    def test_placeholder_widget_resolves_shared_service_and_stays_hidden(self):
+    def test_status_widget_resolves_shared_service_and_uses_native_primitives(self):
         widget = (ROOT / "BarWidget.qml").read_text()
         self.assertIn("bar.shell.serviceFor(moduleName)", widget)
-        self.assertIn("readonly property string connection", widget)
-        self.assertIn("readonly property bool hasSnapshot", widget)
-        self.assertIn("oneplus-buds.control frontend-state", widget)
-        self.assertIn("oneplus-buds.control frontend-ready", widget)
+        self.assertIn('import "BarModel.js" as BarModel', widget)
+        self.assertIn("root.bar.barForeground", widget)
+        self.assertIn("root.bar.fontFamily", widget)
+        self.assertIn("root.bar.showTooltip", widget)
         self.assertEqual(widget.count("IpcHandler {"), 1)
         self.assertIn('target: "oneplus-buds.control"', widget)
         self.assertIn("function status(): string", widget)
-        self.assertIn("visible: false", widget)
-        self.assertIn("implicitWidth: 0", widget)
+        self.assertIn("visible: true", widget)
+
+    @unittest.skipUnless(shutil.which("node"), "node is needed for JavaScript model tests")
+    def test_bar_model_is_capability_driven_and_rejects_invalid_battery(self):
+        script = r'''
+const model = require(process.argv[1]);
+const snapshot = {status: {model: "OnePlus Buds Pro 2", battery: {
+  left: {percentage: 83, charging: false},
+  right: {percentage: 41.6, charging: true},
+  case: {percentage: null, charging: true},
+  unknown: {percentage: 99, charging: false}
+}}};
+const shown = model.presentation("connected", snapshot);
+if (shown.label !== "L 83%  R 42%⚡") process.exit(1);
+if (!shown.tooltip.includes("OnePlus Buds Pro 2") || !shown.tooltip.includes("Right: 42% (charging)")) process.exit(2);
+if (shown.tooltip.includes("Case:") || shown.label.includes("99")) process.exit(3);
+const disconnected = model.presentation("reconnecting", snapshot);
+if (disconnected.connected || disconnected.label !== "" || !disconnected.tooltip.includes("Reconnecting")) process.exit(4);
+if (model.validPercentage(-1) || model.validPercentage(101) || model.validPercentage("80")) process.exit(5);
+'''
+        subprocess.run(
+            ["node", "-e", script, str(ROOT / "BarModel.js")],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
 
     @unittest.skipUnless(shutil.which("node"), "node is needed for JavaScript model tests")
     def test_bridge_model_parses_and_reduces_messages(self):
