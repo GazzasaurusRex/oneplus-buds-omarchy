@@ -1,6 +1,6 @@
 # Agent handoff
 
-Last updated: 2026-09-07. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, verified ANC control-surface, two-model ANC timing baseline, and persistent-session ANC optimization milestones complete.
+Last updated: 2026-09-08. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, verified ANC control-surface, two-model ANC timing baseline, persistent-session ANC optimization, accepted portrait panel, and GitHub publication milestones complete.
 
 ## Current status
 
@@ -80,12 +80,12 @@ This handoff accompanies `perf: reuse authenticated sessions for verified ANC co
 - Cold session setup, standalone CLI, explicit ANC levels, and disconnected recovery retain conservative authentication waits. Healthy main-mode changes now reuse authentication/subscriptions. Warm measurements do not prove shorter cold-start waits safe.
 - Case presence and charging bits should be tested deliberately later.
 - Dynamic `0x8100` bit semantics, original Buds Pro `0x810d` silence, Pro 2 feature ID `0x05`, and additional notification payloads remain unresolved. Do not infer names for unknown fields.
-- Public packaging must declare or check the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
+- Public packaging declares and checks the platform `dbus-python` binding; it is already installed on the tested Omarchy system but is not a Python-package dependency.
 - `0x0204` notification schemas are not mapped yet. The event API exposes only their numeric code until each payload is validated.
 - The device exposes one RFCOMM control channel. `BudsServiceRunner` uses `BudsController` as its sole serialized session owner rather than opening concurrent sessions directly.
 - Bridge callbacks are synchronous by default; a frontend adapter must supply the dispatcher hook to marshal them onto its event loop rather than doing UI work in the polling thread.
 - Omarchy caches QML components by source URL in this long-running development session. Use a unique temporary source directory when a same-path hot reload retains an older component; do not restart the user's shell solely to invalidate development cache.
-- Public packaging still needs README, LICENSE, dependency/install documentation, and marketplace metadata before submission; the current milestone proves structure, not publication readiness.
+- Marketplace metadata and submission remain external follow-up; the repository, README, LICENSE, dependency/install documentation and validation are complete.
 
 ## Next recommended task
 
@@ -98,12 +98,12 @@ The user selected https://github.com/scoobysti29-design/oneplus-buds-omarchy.git
 The remote initially contained one MIT-license commit; its history is preserved.
 The user requested the original project MIT license, Copyright (c) 2026 Gaz and
 contributors, which replaced the initial GitHub copy. The reviewed snapshot is
-now published on `main` at commit `a7622c5`; a fresh shallow clone passed
+now published on `main` at commit `ea5314b`; a fresh shallow clone passed
 manifest, license, CLI and dependency-preflight checks. README, manifest
 and Python metadata use the selected URL. Local source and history checks found
-only placeholder Bluetooth addresses. Next is committing and publishing the
-reviewed snapshot, followed by clean remote-clone validation. Marketplace
-submission remains a separate explicit action; no release tag has been created.
+only placeholder Bluetooth addresses. The working tree is clean and the local
+`master` branch tracks the configured `origin/main`. Marketplace submission
+remains a separate explicit action; no release tag has been created.
 
 If control latency is revisited, use the recorded phase data first. Cold-start
 handshake waits and mapping validated notification semantics are separate future
