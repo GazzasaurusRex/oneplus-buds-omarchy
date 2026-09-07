@@ -95,8 +95,9 @@ launcher, safe exporter, metadata and marketplace submission draft are present.
 The clean export passes 82 tests, Qt interaction checks and plugin validation.
 
 The user selected https://github.com/scoobysti29-design/oneplus-buds-omarchy.git.
-The remote initially contains one MIT-license commit. Preserve it when joining
-histories; the working LICENSE now matches its copyright notice. README, manifest
+The remote initially contains one MIT-license commit. Its history is preserved. The user subsequently requested the original project
+MIT license, Copyright (c) 2026 Gaz and contributors; it replaces the GitHub
+initialization license in the current tree. README, manifest
 and Python metadata use the selected URL. Local source and history checks found
 only placeholder Bluetooth addresses. Next is committing and publishing the
 reviewed snapshot, followed by clean remote-clone validation. Marketplace

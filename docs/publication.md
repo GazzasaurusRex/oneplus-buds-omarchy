@@ -16,7 +16,8 @@ install hooks. A read-only dependency preflight and a clean exporter are include
 
 The version remains an unreleased development snapshot; this task does not tag a
 release, upload a repository or submit a listing. The user selected `https://github.com/scoobysti29-design/oneplus-buds-omarchy.git`. Its initial
-MIT license commit and copyright notice are preserved.
+commit is preserved in history. At the user's request, the current LICENSE uses
+the project's original MIT notice, Copyright (c) 2026 Gaz and contributors.
 
 ## Reviewable submission draft
 
