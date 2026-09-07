@@ -1,6 +1,6 @@
 # Agent handoff
 
-Last updated: 2026-09-06. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, verified ANC control-surface, two-model ANC timing baseline, and persistent-session ANC optimization milestones complete.
+Last updated: 2026-09-07. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, verified ANC control-surface, two-model ANC timing baseline, and persistent-session ANC optimization milestones complete.
 
 ## Current status
 
@@ -89,10 +89,18 @@ This handoff accompanies `perf: reuse authenticated sessions for verified ANC co
 
 ## Next recommended task
 
-The requested ANC latency milestone is complete. Do not repeat either baseline or
-successful optimized cycles. A separate milestone may implement the compact idle
-bar icon and battery hover expansion already specified in PROJECT.md; that UI work
-was deliberately not started here. Publication preparation remains outstanding.
+Local publication preparation is complete: README, MIT license, changelog,
+contribution/compatibility guides, issue templates, dependency preflight, CLI
+launcher, safe exporter, metadata and marketplace submission draft are present.
+The clean export passes 82 tests, Qt interaction checks and plugin validation.
+
+The user selected https://github.com/scoobysti29-design/oneplus-buds-omarchy.git.
+The remote initially contains one MIT-license commit. Preserve it when joining
+histories; the working LICENSE now matches its copyright notice. README, manifest
+and Python metadata use the selected URL. Local source and history checks found
+only placeholder Bluetooth addresses. Next is committing and publishing the
+reviewed snapshot, followed by clean remote-clone validation. Marketplace
+submission remains a separate explicit action; no release tag has been created.
 
 If control latency is revisited, use the recorded phase data first. Cold-start
 handshake waits and mapping validated notification semantics are separate future
@@ -143,3 +151,105 @@ on these warm-session results.
 - Final default-bridge Pro 2 check verified already-active Off in 59.448 ms,
   retained the same session through a ten-second monitoring hold, had no service
   errors, and exited 0. Compilation and `git diff --check` also pass.
+
+## Compact hover widget — 2026-09-07
+
+- Idle bar presentation is now icon-only. Available batteries expand horizontally
+  on hover with the installed shell's 180 ms OutCubic width-animation convention.
+  The host receives the animated implicit width, and text is clipped within it.
+- Leaving starts a 300 ms single-shot collapse timer; re-entry cancels it.
+  An open popup holds expansion stable until closed and the pointer has left.
+- One MouseArea covers the entire animated width. Clicking opens the panel even
+  for devices without ANC, with battery/connection information and hidden absent
+  ANC controls. Vertical bars retain the compact icon and expose data in the panel.
+- Read-only IPC now includes expanded, width, and popup_open fields.
+- Validation: six frontend scaffold/model tests pass; QML parsing, plugin validation,
+  and diff whitespace checks pass. `python tests/run_qml_hover.py` passes with real
+  Qt mouse events, animation and timers, covering expanded-area clicks, popup hold,
+  delayed collapse, re-entry, one known battery, empty batteries, and disconnection.
+  Its shell/IPC/popup primitives are stubs; this is not a live Omarchy rendering test.
+- No Bluetooth command, desktop configuration change, plugin install, or shell restart
+  was performed. Prior hardware results remain the evidence; current hardware state
+  was not re-queried. The next task is the live visual check above.
+
+## Live hover check complete — 2026-09-07
+
+- Temporary export (without `.git`) was installed at
+  `~/.config/omarchy/plugins/oneplus-hover-20260907-a` and enabled in the existing
+  shell, PID 1025. No shell restart occurred. One Python bridge helper was present.
+- Live status connected, L/R=100%, no case value, ANC Off, no backend error.
+  Idle width 23.1875 px; hover width 120.5 px; height 26 px.
+- Live geometry and regional screenshot verified readable expansion and no overlap
+  with neighbouring icons. The right section grows leftward; the agents widget
+  stays at x=1110 while earbuds expand from x≈1087 to x≈990.
+- Pointer exit returned expanded=false and width=23.1875.
+- The user confirmed the expanded battery area opens the panel as expected.
+  The panel was already closed at the subsequent IPC/screenshot inspection;
+  popup visual acceptance is the user's observation, not an assistant screenshot.
+- No plugin-specific runtime warnings/errors. Built-in duplicate IPC-handler
+  warnings appeared during hot enable, as in prior development loads.
+- Cleanup passed: temporary plugin disabled and moved out of the live plugin path,
+  helper stopped, shell configuration restored byte-for-byte, original shell PID
+  1025 unchanged and ping healthy. Temporary evidence/backups remain under
+  `/tmp/oneplus-live-hover/`. No ANC request was sent; last live state was Off.
+- The user wants changes to the panel after this test; details are pending.
+
+## Portrait panel redesign — 2026-09-07
+
+- User reported that the horizontal ANC options extended off-screen and requested
+  a readable vertical rectangular panel consistent with Omarchy.
+- Replaced the single ButtonGroup row with native full-width Buttons, grouped into
+  Noise control and ANC strength. Unknown advertised modes remain in Other modes;
+  absent groups are hidden. Main ANC On is labelled Noise cancellation and stays
+  selected when an explicit ANC strength is active.
+- Panel width is 320 logical px, height follows content with a 380 px content
+  minimum and PopupCard screen-height cap. A clipped vertical Flickable with
+  scrollbar handles overflow. Header/battery/status messages wrap. Buttons retain
+  native themed selected/hover/focus states; Tab, Up/Down, Enter/Space and Escape
+  are supported, and focusing a button reveals it in the scroll viewport.
+- Capability guards, pending-request exclusion and independently verified response
+  handling remain in place. No backend setting logic changed.
+- Six frontend scaffold/model checks, Qt hover interaction tests, QML parsing,
+  plugin validation and whitespace checks pass. Grouping tests cover unknown
+  modes and empty capabilities.
+- Temporary live export: `~/.config/omarchy/plugins/oneplus-panel-20260907-a`.
+  Backup/export/install/cleanup scripts: `/tmp/oneplus-live-panel/`.
+  Live IPC reports panel 320×425, connected, L/R=100%, ANC Off and no error.
+  No plugin-specific runtime warnings; existing built-in duplicate IPC warnings
+  recur on hot enable.
+- User accepted the live layout: “the layout looks good now. its all easy to read
+  and navigate.” Visual acceptance is the user's observation.
+- Cleanup passed: temporary plugin disabled and moved out of the live plugin path,
+  helper stopped, shell configuration restored byte-for-byte, original shell PID
+  unchanged and ping healthy. Source changes remain in the checkout; no permanent
+  plugin installation was performed. No ANC request was sent during these tests.
+
+## Publication preparation complete — 2026-09-07
+
+- Added README, LICENSE (MIT default proposed to user), CHANGELOG, CONTRIBUTING,
+  compatibility matrix, GitHub bug/compatibility templates and publication draft.
+  Current official publishing/development guides and submission form were checked;
+  draft category Hardware and tags Bar/Media/Quickshell match the form.
+- Corrected research-license wording: OppoPods README declares GPL-3.0 despite
+  absence of a standalone license file at the recorded revision. Its source was
+  not copied. Runtime Omarchy/dbus-python dependencies are not vendored.
+- Added executable checkout-local `oneplus-buds` CLI launcher, read-only
+  `scripts/check_dependencies.py` and `scripts/export_plugin.py`. Export refuses
+  existing destinations/source symlinks and excludes caches/Git internals.
+- Manifest and pyproject declare MIT, with README/license Python metadata.
+  Version remains unreleased 0.0.1 across all three version locations.
+- Clean export `/tmp/oneplus-publication-review` validated with Omarchy, CLI help,
+  dependency preflight, all 82 Python tests (including JS subprocess checks), and
+  Qt offscreen hover tests (3 QtTest results). Dependency failure was exercised
+  with `python3 -S`, correctly reporting missing dbus and exiting 1. Relative links
+  in new public docs resolve; `git diff --check` passes.
+- No Bluetooth tests, live UI reloads, settings changes or desktop installs were
+  repeated. The accepted UI implementation remains part of the working tree.
+- No Git remote is configured. Public URL/owner and optional license preference
+  were requested but not supplied; MIT was prepared under the stated default.
+  README deliberately has no fabricated public repository URL. Publication notes
+  contain a clearly marked command template and submission draft.
+- Python wheel building is not the plugin install path and was not tested:
+  setuptools is absent on this host. The plugin export needs no build dependency.
+  Remaining external work is public repository selection/upload, real URL install
+  verification, release decision and marketplace submission after authorization.

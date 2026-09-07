@@ -25,7 +25,12 @@ Discovery uses the system `dbus-python` binding already supplied by Omarchy/Arch
 
 ## Commands
 
-Run from the repository root during development:
+Run from the repository root during development. The executable `./oneplus-buds`
+now provides the same interface without setting PYTHONPATH. Disable the Omarchy
+plugin before running queries or writes so it does not compete for RFCOMM; re-enable
+it afterward. See the root README for dependency and installation instructions.
+
+Equivalent module invocations:
 
 ```bash
 PYTHONPATH=src python -m oneplus_buds.cli devices

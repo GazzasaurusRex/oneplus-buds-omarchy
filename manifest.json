@@ -20,5 +20,8 @@
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"
-  }
+  },
+  "license": "MIT",
+  "repository": "https://github.com/scoobysti29-design/oneplus-buds-omarchy",
+  "homepage": "https://github.com/scoobysti29-design/oneplus-buds-omarchy"
 }

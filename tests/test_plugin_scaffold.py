@@ -44,7 +44,7 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("root.bar.fontFamily", widget)
         self.assertIn("root.bar.showTooltip", widget)
         self.assertIn("PopupCard {", widget)
-        self.assertIn("ButtonGroup {", widget)
+        self.assertIn("delegate: Button {", widget)
         self.assertIn("budsService.setAnc(mode)", widget)
         self.assertIn("response.result.verified === true", widget)
         self.assertIn("Number(response.request_id) !== pendingRequestId", widget)
@@ -70,6 +70,10 @@ if (shown.tooltip.includes("Case:") || shown.label.includes("99")) process.exit(
 const disconnected = model.presentation("reconnecting", snapshot);
 if (disconnected.connected || disconnected.label !== "" || !disconnected.tooltip.includes("Reconnecting")) process.exit(4);
 if (model.validPercentage(-1) || model.validPercentage(101) || model.validPercentage("80")) process.exit(5);
+const groups = model.ancGroups({anc_modes: ["off", "on", "smart", "future"]});
+if (groups.map(g => g.title).join(",") !== "Noise control,ANC strength,Other modes") process.exit(9);
+if (groups[0].options[1].label !== "Noise cancellation") process.exit(10);
+if (model.ancGroups({}).length !== 0) process.exit(11);
 const controls = model.ancModes({anc_modes: ["smart", "off", "future", "off", "transparency"]});
 if (controls.map(x => x.value).join(",") !== "off,transparency,smart,future") process.exit(6);
 if (model.currentAncMode({status: {anc: "on", anc_level: "deep"}}) !== "deep") process.exit(7);

@@ -90,6 +90,40 @@ The bar popup now provides the smallest capability-driven ANC surface. `BarModel
 
 A live Pro 2 click from Off to Transparency completed through QML → shared service → bridge → serialized controller → authenticated write → independent query-after-write verification. The popup reported “Verified on earbuds,” and read-only IPC independently returned `current_anc: transparency`, `pending: false`, and no error. The user observed that applying the change felt slow. This matches the deliberately conservative write authentication, verification connection, and monitoring-session reauthentication path; it was not shortened without repeated timing evidence on both reference models.
 
-## Next implementation boundary
+## Compact hover presentation
 
-Add privacy-safe phase timing around verified ANC operations, then measure repeated transitions on both reference models before changing authentication waits or session ownership. Any latency optimization must retain independent read-back verification, one RFCOMM owner, and the rule that acknowledgements alone never imply success.
+The ANC latency milestone is complete; see [the handoff](AGENT_HANDOFF.md) and
+[recorded measurements](measurements/anc-baseline.md). Do not repeat those cycles
+for presentation work.
+
+The bar now rests at icon width and reveals only available batteries on hover.
+Its implicit width animates for 180 ms with OutCubic easing, matching the installed
+ActiveWindow widget convention; clipped content cannot paint over neighbours.
+Pointer exit starts a 300 ms collapse delay, re-entry cancels it, and an open popup
+holds the width stable. The entire width is a single click target. The panel shows
+battery/connection information even when no ANC modes are supported. Vertical bars
+keep the icon compact and provide battery information in the panel and tooltip.
+
+`python tests/run_qml_hover.py` exercises the actual widget with Qt mouse events,
+width animations and timers using fake shell services and popup/IPC primitives.
+It covers idle/expanded widths, expanded-area clicking, popup hold, delayed collapse,
+re-entry, partial/absent batteries and disconnection. It does not start Quickshell
+or contact earbuds. Qt 6 qmltestrunner is required only for this development test.
+
+Live validation passed in the existing Omarchy shell on 2026-09-07: idle width
+23.1875 px expanded to 120.5 px for L/R=100%, with clean neighbour geometry and
+collapse after pointer exit. The user confirmed clicking the expanded battery area
+opens the panel as expected. No ANC setting was changed. No plugin-specific runtime
+errors appeared. Cleanup stopped the helper, removed the temporary plugin, restored
+shell configuration byte-for-byte, and preserved shell PID 1025.
+
+The panel now uses a portrait layout (320 logical px wide) with native full-width
+Buttons grouped into Noise control and ANC strength. A vertical scroll viewport
+and PopupCard height cap keep controls reachable on smaller screens; text wraps.
+Main noise cancellation remains visibly selected when an explicit strength is
+active. Keyboard focus reveals offscreen buttons. Live geometry reports 320×425;
+the user accepted the live layout as easy to read and navigate. Temporary-install
+cleanup passed, with exact configuration restoration, helper shutdown and no shell
+restart. Publication documentation and dependency/export checks are now complete; see
+[publication preparation](publication.md). Public repository selection, remote
+installation verification and marketplace submission remain outstanding.

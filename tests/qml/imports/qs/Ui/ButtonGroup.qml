@@ -1,0 +1,2 @@
+import QtQuick
+Item { property var options; property string value; property color foreground; property color background; property color accent; property string fontFamily; property bool focusable; signal changed(string mode) }

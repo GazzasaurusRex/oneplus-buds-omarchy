@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as Controls
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -23,6 +24,18 @@ BarWidget {
   property int pendingRequestId: -1
   property string pendingMode: ""
   property string outcome: ""
+  property bool hoverExpanded: false
+  readonly property bool batteryExpanded: !vertical && presentation.label !== ""
+    && (hoverExpanded || popupOpen)
+
+  onPopupOpenChanged: {
+    if (popupOpen) {
+      collapseTimer.stop()
+      if (bar) bar.hideTooltip(root)
+    } else if (!hitArea.containsMouse) {
+      collapseTimer.restart()
+    }
+  }
 
   function close() { popupOpen = false }
 
@@ -58,15 +71,29 @@ BarWidget {
   }
 
   visible: true
-  implicitWidth: content.implicitWidth + Style.space(14)
+  implicitWidth: icon.implicitWidth + Style.space(14)
+    + (batteryExpanded ? Style.space(5) + batteryLabel.implicitWidth : 0)
   implicitHeight: barSize
 
-  Row {
-    id: content
-    anchors.centerIn: parent
-    spacing: Style.space(5)
+  Behavior on implicitWidth {
+    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+  }
+
+  Timer {
+    id: collapseTimer
+    interval: 300
+    onTriggered: if (!hitArea.containsMouse && !root.popupOpen) root.hoverExpanded = false
+  }
+
+  Item {
+    anchors.fill: parent
+    anchors.leftMargin: Style.space(7)
+    anchors.rightMargin: Style.space(7)
+    clip: true
 
     Text {
+      id: icon
+      anchors.left: parent.left
       anchors.verticalCenter: parent.verticalCenter
       textFormat: Text.PlainText
       text: root.presentation.icon
@@ -77,8 +104,11 @@ BarWidget {
     }
 
     Text {
+      id: batteryLabel
+      anchors.left: icon.right
+      anchors.leftMargin: Style.space(5)
       anchors.verticalCenter: parent.verticalCenter
-      visible: text !== ""
+      visible: !root.vertical && text !== ""
       textFormat: Text.PlainText
       text: root.presentation.label
       color: root.bar.barForeground
@@ -88,13 +118,21 @@ BarWidget {
   }
 
   MouseArea {
+    id: hitArea
     anchors.fill: parent
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton
-    cursorShape: root.ancOptions.length ? Qt.PointingHandCursor : Qt.ArrowCursor
-    onClicked: if (root.ancOptions.length) root.popupOpen = !root.popupOpen
-    onEntered: if (root.bar) root.bar.showTooltip(root, root.presentation.tooltip)
-    onExited: if (root.bar) root.bar.hideTooltip(root)
+    cursorShape: Qt.PointingHandCursor
+    onClicked: root.popupOpen = !root.popupOpen
+    onEntered: {
+      collapseTimer.stop()
+      root.hoverExpanded = true
+      if (root.bar && !root.popupOpen) root.bar.showTooltip(root, root.presentation.tooltip)
+    }
+    onExited: {
+      collapseTimer.restart()
+      if (root.bar) root.bar.hideTooltip(root)
+    }
   }
 
   PopupCard {
@@ -103,48 +141,113 @@ BarWidget {
     bar: root.bar
     owner: root
     open: root.popupOpen
-    contentWidth: popup.fittedContentWidth(Style.space(440))
-    contentHeight: popup.fittedContentHeight(panelContent.implicitHeight)
+    contentWidth: popup.fittedContentWidth(Style.space(320))
+    contentHeight: popup.fittedContentHeight(Math.max(Style.space(380), panelContent.implicitHeight))
 
-    Column {
-      id: panelContent
+    Flickable {
+      id: panelScroll
       anchors.fill: parent
-      spacing: Style.space(10)
+      contentWidth: width
+      contentHeight: panelContent.implicitHeight
+      clip: true
+      boundsBehavior: Flickable.StopAtBounds
+      flickableDirection: Flickable.VerticalFlick
+      Controls.ScrollBar.vertical: Controls.ScrollBar {}
 
-      Text {
-        width: parent.width
-        textFormat: Text.PlainText
-        text: root.snapshot && root.snapshot.status && root.snapshot.status.model
-          ? String(root.snapshot.status.model) : "OnePlus earbuds"
-        color: root.bar.foreground
-        font.family: root.bar.fontFamily
-        font.pixelSize: Style.font.subtitle
-        font.bold: true
-        elide: Text.ElideRight
+      function reveal(item) {
+        var top = item.mapToItem(panelContent, 0, 0).y
+        if (top < contentY) contentY = top
+        else if (top + item.height > contentY + height)
+          contentY = top + item.height - height
       }
 
-      Text {
-        width: parent.width
-        textFormat: Text.PlainText
-        text: root.pendingRequestId >= 0
-          ? "Verifying " + root.pendingMode + "…"
-          : (root.outcome || "Noise control")
-        color: root.bar.foreground
-        font.family: root.bar.fontFamily
-        font.pixelSize: Style.font.bodySmall
-      }
+      Column {
+        id: panelContent
+        width: panelScroll.width
+        spacing: Style.space(12)
 
-      ButtonGroup {
-        options: root.ancOptions
-        value: root.currentAncMode
-        enabled: root.connection === "connected" && root.pendingRequestId < 0
-        opacity: enabled ? 1.0 : 0.5
-        foreground: root.bar.foreground
-        background: root.bar.background
-        accent: Color.accent
-        fontFamily: root.bar.fontFamily
-        focusable: true
-        onChanged: function(mode) { root.selectAnc(mode) }
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.snapshot && root.snapshot.status && root.snapshot.status.model
+            ? String(root.snapshot.status.model) : "OnePlus earbuds"
+          color: root.bar.foreground
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.subtitle
+          font.bold: true
+          wrapMode: Text.Wrap
+        }
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.presentation.label || BarModel.titleCase(root.connection)
+          color: root.bar.foreground
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.bodySmall
+          wrapMode: Text.Wrap
+        }
+
+        Repeater {
+          model: BarModel.ancGroups(root.snapshot)
+
+          delegate: Column {
+            id: section
+            required property var modelData
+            width: panelContent.width
+            spacing: Style.space(6)
+
+            Text {
+              width: parent.width
+              text: section.modelData.title
+              textFormat: Text.PlainText
+              color: root.bar.foreground
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              font.bold: true
+            }
+
+            Repeater {
+              model: section.modelData.options
+
+              delegate: Button {
+                required property var modelData
+                width: section.width
+                height: Math.max(implicitHeight, Style.space(36))
+                text: modelData.label
+                selected: modelData.value === root.currentAncMode
+                  || (modelData.value === "on" && root.snapshot
+                    && root.snapshot.status && root.snapshot.status.anc === "on")
+                bordered: true
+                leftAlign: true
+                enabled: root.connection === "connected" && root.pendingRequestId < 0
+                opacity: enabled ? 1.0 : 0.5
+                foreground: root.bar.foreground
+                background: root.bar.background
+                accent: Color.accent
+                fontFamily: root.bar.fontFamily
+                focusable: true
+                onActiveFocusChanged: if (activeFocus) panelScroll.reveal(this)
+                Keys.onDownPressed: nextItemInFocusChain().forceActiveFocus(Qt.TabFocusReason)
+                Keys.onUpPressed: nextItemInFocusChain(false).forceActiveFocus(Qt.BacktabFocusReason)
+                Keys.onEscapePressed: root.close()
+                onClicked: root.selectAnc(modelData.value)
+              }
+            }
+          }
+        }
+
+        Text {
+          width: parent.width
+          visible: root.outcome !== "" || root.pendingRequestId >= 0
+          textFormat: Text.PlainText
+          text: root.pendingRequestId >= 0
+            ? "Verifying " + BarModel.titleCase(root.pendingMode) + "…" : root.outcome
+          color: root.bar.foreground
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.bodySmall
+          wrapMode: Text.Wrap
+        }
       }
     }
   }
@@ -158,6 +261,11 @@ BarWidget {
         connection: root.connection,
         snapshot: root.snapshot !== null,
         label: root.presentation.label,
+        expanded: root.batteryExpanded,
+        width: root.width,
+        popup_open: root.popupOpen,
+        panel_width: popup.contentWidth,
+        panel_height: popup.contentHeight,
         anc_modes: root.ancOptions.map(function(option) { return option.value }),
         current_anc: root.currentAncMode,
         pending: root.pendingRequestId >= 0,

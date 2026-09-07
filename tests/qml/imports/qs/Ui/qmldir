@@ -1,0 +1,6 @@
+module qs.Ui
+BarWidget 1.0 BarWidget.qml
+PopupCard 1.0 PopupCard.qml
+ButtonGroup 1.0 ButtonGroup.qml
+
+Button 1.0 Button.qml

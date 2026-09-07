@@ -63,6 +63,27 @@ function ancModes(snapshot) {
   return options
 }
 
+function ancGroups(snapshot) {
+  var modes = ancModes(snapshot)
+  var groups = [
+    { title: "Noise control", options: [] },
+    { title: "ANC strength", options: [] },
+    { title: "Other modes", options: [] }
+  ]
+  for (var i = 0; i < modes.length; i++) {
+    var option = modes[i]
+    if (["off", "transparency", "on"].indexOf(option.value) !== -1) {
+      groups[0].options.push({value: option.value,
+        label: option.value === "on" ? "Noise cancellation" : option.label})
+    } else if (["light", "medium", "deep", "smart"].indexOf(option.value) !== -1) {
+      groups[1].options.push(option)
+    } else {
+      groups[2].options.push(option)
+    }
+  }
+  return groups.filter(function(group) { return group.options.length > 0 })
+}
+
 function currentAncMode(snapshot) {
   var status = snapshot && snapshot.status
   if (!status || !status.anc) return ""
@@ -99,6 +120,7 @@ if (typeof module !== "undefined") {
   module.exports = {
     batteryParts: batteryParts,
     ancModes: ancModes,
+    ancGroups: ancGroups,
     currentAncMode: currentAncMode,
     presentation: presentation,
     validPercentage: validPercentage
