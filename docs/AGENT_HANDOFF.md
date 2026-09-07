@@ -95,9 +95,11 @@ launcher, safe exporter, metadata and marketplace submission draft are present.
 The clean export passes 82 tests, Qt interaction checks and plugin validation.
 
 The user selected https://github.com/scoobysti29-design/oneplus-buds-omarchy.git.
-The remote initially contains one MIT-license commit. Its history is preserved. The user subsequently requested the original project
-MIT license, Copyright (c) 2026 Gaz and contributors; it replaces the GitHub
-initialization license in the current tree. README, manifest
+The remote initially contained one MIT-license commit; its history is preserved.
+The user requested the original project MIT license, Copyright (c) 2026 Gaz and
+contributors, which replaced the initial GitHub copy. The reviewed snapshot is
+now published on `main` at commit `a7622c5`; a fresh shallow clone passed
+manifest, license, CLI and dependency-preflight checks. README, manifest
 and Python metadata use the selected URL. Local source and history checks found
 only placeholder Bluetooth addresses. Next is committing and publishing the
 reviewed snapshot, followed by clean remote-clone validation. Marketplace
@@ -246,11 +248,21 @@ on these warm-session results.
   in new public docs resolve; `git diff --check` passes.
 - No Bluetooth tests, live UI reloads, settings changes or desktop installs were
   repeated. The accepted UI implementation remains part of the working tree.
-- No Git remote is configured. Public URL/owner and optional license preference
-  were requested but not supplied; MIT was prepared under the stated default.
-  README deliberately has no fabricated public repository URL. Publication notes
-  contain a clearly marked command template and submission draft.
+- The GitHub remote is now configured and the reviewed snapshot is published.
+  No release tag was created. Publication notes contain the repository URL and
+  marketplace submission draft.
 - Python wheel building is not the plugin install path and was not tested:
   setuptools is absent on this host. The plugin export needs no build dependency.
-  Remaining external work is public repository selection/upload, real URL install
-  verification, release decision and marketplace submission after authorization.
+  Remaining external work is release decision and marketplace submission after
+  authorization.
+
+## GitHub publication complete — 2026-09-08
+
+- Pushed the reviewed history to the selected GitHub repository. `main` points to
+  `a7622c5`; the original initialization commit and project history are retained.
+- The published `LICENSE` is the requested project MIT notice, Copyright (c) 2026
+  Gaz and contributors.
+- Fresh shallow clone validation passed `omarchy plugin validate`, CLI `--help`,
+  and dependency preflight. No hardware or desktop configuration was changed.
+- No release tag was created. Marketplace submission remains a separate external
+  publication action.

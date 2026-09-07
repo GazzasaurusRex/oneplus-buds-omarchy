@@ -50,15 +50,12 @@ content. Existing temporary desktop captures are not committed preview assets.
 
 ## Remaining external steps
 
-1. Review the final source/history before uploading to the user-selected repository.
-   README and metadata now contain its actual URL.
-2. Commit the reviewed snapshot (including the accepted UI work), push it and
-   verify installation from that exact public URL. No remote installation has
-   been claimed or tested while there is no public repository.
-3. Re-run validation for the actual release commit; choose whether to publish
+1. Review the published source/history at the user-selected repository. README
+   and metadata contain its actual URL, and the initial license history is retained.
+2. Re-run validation for the actual release commit; choose whether to publish
    0.0.1 as a pre-release or continue toward the 0.1 target. Keep manifest,
    pyproject and Python `__version__` consistent.
-4. Submit the draft listing only after the repository is public and reviewed.
+3. Submit the draft listing only after the repository is public and reviewed.
 
 For a public Git URL, the current install flow is:
 
