@@ -75,6 +75,18 @@ Item {
     return request("set_anc", { mode: String(mode || "") })
   }
 
+  function eqStatus() {
+    return request("eq_status", {})
+  }
+
+  function setEq(preset) {
+    return request("set_eq", { preset: String(preset || "") })
+  }
+
+  function setCustomEq(entryId, gains) {
+    return request("set_custom_eq", { entry_id: Number(entryId), gains_db: gains })
+  }
+
   onHelperPathChanged: startHelper()
 
   Component.onDestruction: {

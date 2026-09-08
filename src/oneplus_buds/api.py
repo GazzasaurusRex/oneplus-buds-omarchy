@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .backend import read_capabilities, read_status, write_anc
+from .backend import read_capabilities, read_eq, read_status, write_anc, write_custom_eq, write_eq
 from .bluez import Device, connected_devices, select_device
-from .models import CapabilityResult, ControlResult, EventBatch, StatusResult
+from .models import CapabilityResult, ControlResult, EqControlResult, EqStatusResult, EventBatch, StatusResult
 from .profiles import profile_for_product
 from .session import OpoSession
 
@@ -25,6 +25,16 @@ class BudsBackend:
 
     def set_anc(self, mode: str, address: str | None = None) -> ControlResult:
         return write_anc(mode, address)
+
+    def eq_status(self, address: str | None = None) -> EqStatusResult:
+        return read_eq(address)
+
+    def set_eq(self, preset: str, address: str | None = None) -> EqControlResult:
+        return write_eq(preset, address)
+
+    def set_custom_eq(self, entry_id: int, gains_db: tuple[int, ...],
+                      address: str | None = None) -> EqControlResult:
+        return write_custom_eq(entry_id, gains_db, address)
 
     def open_session(
         self,

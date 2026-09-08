@@ -24,11 +24,40 @@ class AncProfile:
 
 
 @dataclass(frozen=True)
+class EqPresetProfile:
+    eq_id: int
+    key: str
+    name: str
+
+
+@dataclass(frozen=True)
+class EqProfile:
+    presets: tuple[EqPresetProfile, ...]
+    supports_custom: bool
+    write_verified: bool
+    custom_write_verified: bool
+
+    def preset_for(self, value: str) -> EqPresetProfile | None:
+        normalized = value.strip().lower()
+        return next((preset for preset in self.presets
+                     if normalized in (preset.key, str(preset.eq_id))), None)
+
+
+FACTORY_EQ_PRESETS = (
+    EqPresetProfile(0, "balanced", "Balanced"),
+    EqPresetProfile(1, "deep-sea-bass", "Deep Sea Bass"),
+    EqPresetProfile(2, "pure-vocals", "Pure Vocals"),
+    EqPresetProfile(3, "bright-and-crisp", "Bright & Crisp"),
+)
+
+
+@dataclass(frozen=True)
 class DeviceProfile:
     product_id: str
     name: str
     service_uuid: str
     anc: AncProfile
+    eq: EqProfile | None
     capabilities: frozenset[str]
     verified: bool
 
@@ -44,6 +73,8 @@ PROFILES = {
             read_levels={2: "light", 3: "deep", 4: "smart"},
             sequences={"off": 0x40},
         ),
+        eq=EqProfile(FACTORY_EQ_PRESETS, supports_custom=False, write_verified=True,
+                     custom_write_verified=False),
         capabilities=frozenset(
             {
                 "battery",
@@ -53,6 +84,7 @@ PROFILES = {
                 "transparency",
                 "anc_levels",
                 "smart_anc",
+                "eq",
             }
         ),
         verified=True,
@@ -75,6 +107,8 @@ PROFILES = {
             read_levels={4: "deep", 5: "medium", 6: "light", 7: "smart"},
             sequences={"off": 0x40},
         ),
+        eq=EqProfile(FACTORY_EQ_PRESETS, supports_custom=True, write_verified=True,
+                     custom_write_verified=True),
         capabilities=frozenset(
             {
                 "battery",
@@ -84,6 +118,8 @@ PROFILES = {
                 "transparency",
                 "anc_levels",
                 "smart_anc",
+                "eq",
+                "custom_eq",
             }
         ),
         verified=True,

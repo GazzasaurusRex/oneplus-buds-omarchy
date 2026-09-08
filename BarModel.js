@@ -91,6 +91,16 @@ function currentAncMode(snapshot) {
   return String(status.anc)
 }
 
+function eqPresets(snapshot) {
+  var eq = snapshot && snapshot.eq
+  return eq && Array.isArray(eq.presets) ? eq.presets : []
+}
+
+function customEqEntries(snapshot) {
+  var eq = snapshot && snapshot.eq
+  return eq && Array.isArray(eq.custom_entries) ? eq.custom_entries : []
+}
+
 function presentation(connection, snapshot) {
   var connected = connection === "connected"
   var parts = connected ? batteryParts(snapshot) : []
@@ -122,6 +132,8 @@ if (typeof module !== "undefined") {
     ancModes: ancModes,
     ancGroups: ancGroups,
     currentAncMode: currentAncMode,
+    eqPresets: eqPresets,
+    customEqEntries: customEqEntries,
     presentation: presentation,
     validPercentage: validPercentage
   }

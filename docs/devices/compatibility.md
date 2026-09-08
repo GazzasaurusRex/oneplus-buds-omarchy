@@ -31,9 +31,16 @@ firmware, ANC, transparency and ANC strengths. Pro supports Light/Deep/Smart;
 Pro 2 also supports Medium. Main On does not reliably preserve the visible strength.
 Case presence and charging flags need further deliberate edge-case testing.
 
+Both reference models have hardware-verified native factory EQ selection for
+Balanced, Deep Sea Bass, Pure Vocals, and Bright & Crisp. Buds Pro 2 additionally
+returns and supports safe updates of two device-declared six-band custom entries
+(62/250/1000/4000/8000/16000 Hz, -6..+6 dB, 1 dB protocol resolution). Original
+Buds Pro returns an empty custom catalogue and is correctly preset-only. EQ writes
+remain unavailable to unknown/experimental products.
+
 Pro 2 capability discovery can report recognised boolean feature switches, but
 wear detection, multipoint, low latency and related switches have no implemented
-write controls. EQ, spatial audio, gestures, finding earbuds and phone-side sound
+write controls. Spatial audio, gestures, finding earbuds and phone-side sound
 features are not implemented. Unknown feature IDs and notification schemas remain
 unnamed. Physical earbud changes are not guaranteed to update the UI immediately.
 

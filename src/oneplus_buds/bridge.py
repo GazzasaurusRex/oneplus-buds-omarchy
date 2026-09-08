@@ -9,7 +9,7 @@ from typing import TypeAlias
 from .availability import Availability
 from .controller import BudsController
 from .timing import AncRequestError
-from .models import ControllerSnapshot, ControlResult
+from .models import ControllerSnapshot, ControlResult, EqControlResult
 from .profiles import profile_for_product
 from .service import BudsServiceRunner, ServiceState
 
@@ -29,6 +29,11 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
         "compatibility": "verified" if profile and profile.verified else "experimental",
         "capabilities": sorted(capabilities),
         "anc_modes": sorted(profile.anc.write_indices) if profile else [],
+        "eq": snapshot.eq_status.to_dict() if snapshot.eq_status else None,
+        "eq_write_verified": bool(profile and profile.eq and profile.eq.write_verified),
+        "custom_eq_write_verified": bool(
+            profile and profile.eq and profile.eq.custom_write_verified
+        ),
         "feature_switches": dict(snapshot.feature_switches),
         "session_connected": snapshot.session_connected,
         "advertised_event_codes": list(snapshot.advertised_event_codes),
@@ -99,6 +104,32 @@ class BudsFrontendBridge:
                 control, snapshot = self.controller.set_anc_with_snapshot(mode)
                 result = self._serialize_control(control)
                 self._on_snapshot(snapshot)
+            elif command == "eq_status":
+                self._require_parameters(command, params, set())
+                result = self.controller.eq_status().to_dict()
+                self._on_snapshot(self.controller.snapshot())
+            elif command == "set_eq":
+                self._require_parameters(command, params, {"preset"})
+                preset = params["preset"]
+                if not isinstance(preset, str) or not preset:
+                    raise ValueError("set_eq parameter 'preset' must be a non-empty string")
+                control = self.controller.set_eq(preset)
+                self.controller.eq_status()
+                result = self._serialize_eq_control(control)
+                self._on_snapshot(self.controller.snapshot())
+            elif command == "set_custom_eq":
+                self._require_parameters(command, params, {"entry_id", "gains_db"})
+                entry_id, gains = params["entry_id"], params["gains_db"]
+                if not isinstance(entry_id, int) or isinstance(entry_id, bool):
+                    raise ValueError("set_custom_eq parameter 'entry_id' must be an integer")
+                if not isinstance(gains, list) or any(
+                    not isinstance(value, int) or isinstance(value, bool) for value in gains
+                ):
+                    raise ValueError("set_custom_eq parameter 'gains_db' must be an integer array")
+                control = self.controller.set_custom_eq(entry_id, tuple(gains))
+                self.controller.eq_status()
+                result = self._serialize_eq_control(control)
+                self._on_snapshot(self.controller.snapshot())
             else:
                 return self._response(
                     command,
@@ -185,4 +216,8 @@ class BudsFrontendBridge:
 
     @staticmethod
     def _serialize_control(result: ControlResult) -> JsonObject:
+        return result.to_dict()
+
+    @staticmethod
+    def _serialize_eq_control(result: EqControlResult) -> JsonObject:
         return result.to_dict()

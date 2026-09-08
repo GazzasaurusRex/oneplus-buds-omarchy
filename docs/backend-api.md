@@ -12,9 +12,14 @@ devices = backend.discover()          # cheap BlueZ D-Bus snapshot
 status = backend.status()             # one-shot OPO query
 capabilities = backend.capabilities() # authenticated feature probe
 result = backend.set_anc("off")       # verified write
+eq = backend.eq_status()               # native device EQ state/capabilities
+result = backend.set_eq("balanced")   # verified native preset selection
 ```
 
-The return types are immutable dataclasses in `models.py`: `StatusResult`, `CapabilityResult`, and `ControlResult`. Each has an explicit `to_dict()` boundary for JSON presentation. Bluetooth transport and protocol objects do not leak into callers.
+The return types are immutable dataclasses in `models.py`, including
+`EqStatusResult` and `EqControlResult`. Each has an explicit `to_dict()` boundary
+for JSON presentation. Bluetooth transport and protocol objects do not leak into
+callers.
 
 ## Long-lived event session
 
@@ -48,6 +53,8 @@ controller = BudsController()
 snapshot = controller.start()
 snapshot = controller.poll(0.5)
 result = controller.set_anc("off")
+eq = controller.eq_status()
+result = controller.set_eq("balanced")
 snapshot = controller.shutdown()
 ```
 

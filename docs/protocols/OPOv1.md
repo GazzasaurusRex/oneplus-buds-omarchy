@@ -28,6 +28,10 @@ Multi-byte fields are little-endian:
 | Battery | `0x0106` | `0x8106` | pairs `[component, raw]` |
 | ANC query | `0x010c` | `0x810c` | request `01 01` |
 | ANC set | `0x0404` | state via `0x0204`/query | `01 01 mode` |
+| Current native EQ | `0x010f` | `0x810f` / `0x0504` | response: status, EQ ID |
+| Native EQ catalogue | `0x0122` | `0x8122` | request `01 05` |
+| Select native EQ | `0x0406` | `0x8406` | one-byte EQ ID |
+| Update custom EQ | `0x0418` | `0x8418` | structured custom entry |
 | Batch status / wake | `0x010d` | `0x810d` | fixed sequence `00`; parameter list |
 
 Battery component IDs are 1=left, 2=right, 3=case. `raw & 0x7f` is percentage and bit 7 indicates charging.
@@ -92,6 +96,52 @@ Its ANC bitmap can span two bytes and needs a product profile with separate writ
 
 Main ANC On enables the parent mode but does not reliably preserve the currently reported level: one sequence retained Smart, while a later command starting from Deep returned Smart. The backend therefore verifies only parent mode for `on`; explicit Deep/Medium/Light/Smart commands verify both mode and level. All three main modes and all four levels were verified on hardware with query-after-write. This confirms that framing is generic but ANC interpretation belongs in the device capability/profile layer.
 
+## Native EQ (verified 2026-09-08)
+
+Current EQ uses empty query `0x010f`; successful `0x810f` is `[00, eq_id]`.
+Notification `0x0504` carries the ID without a status byte. Factory/custom entry
+selection uses `0x0406 [eq_id]`, acknowledged by `0x8406 [status]`. The backend
+sends SET once and requires a fresh correlated current query plus a fresh detailed
+catalogue read; acknowledgement alone is never success.
+
+Detailed query `0x0122 01 05` returns `0x8122`:
+
+```text
+status count
+repeat count times:
+  selected min_gain_i8 max_gain_i8 eq_id name_length name_utf8 band_count
+  repeat band_count times: frequency_hz_u16le gain_i8
+```
+
+Detailed update `0x0418` action 2 omits `selected` but otherwise carries the same
+entry definition. Community sources also identify create=1 and delete=3; they are
+not exposed. The backend updates only a custom ID, layout, name and limits returned
+by that connected device and rejects wrong band counts, non-integer gains,
+out-of-range gains, malformed UTF-8, duplicate/zero frequencies, truncation and
+trailing data before a packet can be sent.
+
+Both products expose factory IDs 0 Balanced, 1 Deep Sea Bass, 2 Pure Vocals and
+3 Bright & Crisp. Every preset was selected, freshly read back, and audibly
+confirmed on both reference devices. Warm authenticated command/read-back time was
+approximately 97–123 ms on Buds Pro and 194–244 ms on Buds Pro 2 in the recorded
+runs (excluding the required pre-write preservation read). See the
+[hardware verification record](../measurements/native-eq.md).
+
+Buds Pro 2 firmware `196.196.101` returned custom IDs 4 and 5 with six bands at
+62, 250, 1000, 4000, 8000 and 16000 Hz, limits -6..+6 dB, and signed whole-byte
+gains (1 dB protocol resolution). The original selected ID 4 values
+`+3,+1,0,0,0,0` matched HeyMelody. A reversible ID 5 update to
+`+6,-6,+6,-6,+6,-6` was freshly read back and audibly confirmed, then restored
+to all zero; ID 4 was reselected and both curves were verified in a separate
+session. Buds Pro firmware `541.541.510` returned zero custom entries, so its
+profile correctly exposes preset-only EQ.
+
+State survived independent RFCOMM session teardown/reconnect on both models. Full
+earbud power-off/reboot persistence has not been isolated from normal app/device
+behavior and remains an explicit follow-up. A Pro 2 registry mentions firmware-
+gated ID 7 Clear Vocals, but it is not exposed because the device does not provide
+a factory catalogue and that ID was not hardware-tested.
+
 ## Handshake variants
 
 Recent BLE and Buds Pro 3 implementations send a HELLO packet (`0x0001`) followed by REGISTER (`0x0085`) with a fixed four-byte token. An RFCOMM implementation and device registry covering the original Buds Pro instead use the `0x0100` capability query and report that normal state queries require no registration sequence. The proof of concept therefore starts with the older, less invasive query flow. Hardware responses must decide whether an additional handshake is required.
@@ -99,6 +149,10 @@ Recent BLE and Buds Pro 3 implementations send a HELLO packet (`0x0001`) followe
 ## Sources and licence posture
 
 - Leaf-lsgtky/OppoPods: RFCOMM implementation plus a recovered HeyMelody device registry. At inspected commit `ad1bb42`, no licence file was present; research only, no code copied.
+- Zhaoyi-ya/OppoPodsManager: EQ command and variable-band parser corroboration at
+  `f272e9e` (GPL-3.0); research only, no code copied.
+- 1812z/OppoPods: independent EQ command corroboration at `0d9e8a6`; no standalone
+  licence file found, research only.
 - AasheeshLikePanner/cracked-oneplus-buds: BLE OPOv1 research and Swift demonstration. At inspected commit `6320765`, no licence file was present; research only.
 - nic0manz/oneplus_buds3_pro_python: RFCOMM/channel-15 example for Buds Pro 3. At inspected commit `faec7e5`, no licence file was present; research only and not assumed compatible with Buds Pro.
 - BlueZ RFCOMM documentation: Linux socket transport reference (LGPL documentation/source project).

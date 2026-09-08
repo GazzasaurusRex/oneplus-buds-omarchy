@@ -22,6 +22,10 @@ Compatibility status: **Verified for the Phase 1 basic milestone** on real hardw
 - Read-only command `0x0105` returned nine ASCII version records, including kind-4 records absent on the original model. Kind-2 values for left/right/case produced `196.196.101`, exactly matching the phone/HeyMelody firmware display.
 - Notification discovery advertised ten event codes: `01 02 03 04 08 0b f1 f2 f3 0a`, versus seven on the original model. Multi-subscription succeeded and triggered a state snapshot.
 - After subscription, batch status `0x810d` returned six feature switches. Recognised values were wear detection=on, hearing enhancement=on, multipoint=off, high-quality audio=off, and low latency/game mode=off. Feature `0x05` remains unnamed. Presence establishes capability independently from the current on/off value.
+- Native EQ exposes four verified factory presets and two device-declared custom
+  entries with six bands at 62/250/1000/4000/8000/16000 Hz and -6..+6 dB limits.
+  All presets and a reversible custom update were read back and audibly confirmed.
+  Both custom slots and the original selection were restored exactly afterward.
 
 The Bluetooth address is deliberately not recorded.
 
@@ -50,5 +54,5 @@ Compared with the original Buds Pro, the Pro 2 advertises `0000079a...` rather t
 ## Still to verify later
 
 - Case battery behavior with the case deliberately opened/closed
-- Capabilities outside the Phase 1 basic milestone
+- Full earbud power-cycle EQ persistence and unverified firmware-gated preset ID 7
 - Repeated-operation timing across firmware revisions and longer stress runs

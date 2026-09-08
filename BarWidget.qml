@@ -19,6 +19,11 @@ BarWidget {
   readonly property var ancOptions: BarModel.ancModes(snapshot)
   readonly property string currentAncMode: BarModel.currentAncMode(snapshot)
   readonly property var lastResponse: budsService ? budsService.lastResponse : null
+  readonly property var eqStatus: snapshot ? snapshot.eq : null
+  readonly property var eqPresets: BarModel.eqPresets(snapshot)
+  readonly property var customEqEntries: BarModel.customEqEntries(snapshot)
+  readonly property var selectedCustom: customEqEntries.length > 0
+    ? customEqEntries[Math.max(0, Math.min(customSlotIndex, customEqEntries.length - 1))] : null
 
   readonly property bool lifecycleUsable: connection === "connected"
     && snapshot !== null && snapshot.session_connected === true
@@ -33,6 +38,18 @@ BarWidget {
   property int pendingRequestId: -1
   property string pendingMode: ""
   property string outcome: ""
+  property string pendingKind: ""
+  property int customSlotIndex: 0
+  onEqStatusChanged: {
+    if (!eqStatus || !customEqEntries.length) return
+    for (var i = 0; i < customEqEntries.length; i++) {
+      if (customEqEntries[i].eq_id === eqStatus.current_id) {
+        customSlotIndex = i
+        return
+      }
+    }
+    customSlotIndex = 0
+  }
   property bool hoverExpanded: false
   readonly property bool batteryExpanded: !vertical && presentation.label !== ""
     && (hoverExpanded || popupOpen)
@@ -41,6 +58,15 @@ BarWidget {
     if (popupOpen) {
       collapseTimer.stop()
       if (bar) bar.hideTooltip(root)
+      if (budsService && connection === "connected" && snapshot
+          && snapshot.capabilities && snapshot.capabilities.indexOf("eq") !== -1
+          && pendingRequestId < 0) {
+        var requestId = budsService.eqStatus()
+        if (requestId !== null) {
+          pendingRequestId = requestId
+          pendingKind = "eq_status"
+        }
+      }
     } else if (!hitArea.containsMouse) {
       collapseTimer.restart()
     }
@@ -62,6 +88,30 @@ BarWidget {
     }
     pendingRequestId = requestId
     pendingMode = mode
+    pendingKind = "anc"
+    outcome = ""
+  }
+
+  function selectEq(value) {
+    if (!budsService || connection !== "connected" || pendingRequestId >= 0) return
+    var requestId = budsService.setEq(value)
+    if (requestId === null) { outcome = "Could not start request"; return }
+    pendingRequestId = requestId
+    pendingKind = "eq"
+    pendingMode = String(value)
+    outcome = ""
+  }
+
+  function applyCustomEq() {
+    if (!selectedCustom || !budsService || pendingRequestId >= 0) return
+    var gains = []
+    for (var i = 0; i < bandRepeater.count; i++)
+      gains.push(Number(bandRepeater.itemAt(i).gainValue))
+    var requestId = budsService.setCustomEq(selectedCustom.eq_id, gains)
+    if (requestId === null) { outcome = "Could not start request"; return }
+    pendingRequestId = requestId
+    pendingKind = "custom_eq"
+    pendingMode = selectedCustom.name
     outcome = ""
   }
 
@@ -70,8 +120,12 @@ BarWidget {
     if (!response || Number(response.request_id) !== pendingRequestId) return
     pendingRequestId = -1
     pendingMode = ""
+    var completedKind = pendingKind
+    pendingKind = ""
     if (response.ok === true && response.result && response.result.verified === true) {
       outcome = "Verified on earbuds"
+    } else if (response.ok === true && completedKind === "eq_status") {
+      outcome = ""
     } else {
       var detail = response.error && response.error.message
         ? String(response.error.message) : "Change could not be verified"
@@ -246,12 +300,120 @@ BarWidget {
           }
         }
 
+
+        Column {
+          width: parent.width
+          spacing: Style.space(6)
+          visible: !!(root.snapshot && root.snapshot.capabilities
+            && root.snapshot.capabilities.indexOf("eq") !== -1)
+
+          Text {
+            width: parent.width
+            text: "Earbud EQ"
+            textFormat: Text.PlainText
+            color: root.bar.foreground
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            font.bold: true
+          }
+
+          Text {
+            width: parent.width
+            text: root.eqStatus ? "Current: " + root.eqStatus.current_name : "Loading native EQ…"
+            textFormat: Text.PlainText
+            color: root.bar.foreground
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.bodySmall
+          }
+
+          Repeater {
+            model: root.eqPresets
+            delegate: Button {
+              required property var modelData
+              width: parent.width
+              height: Math.max(implicitHeight, Style.space(36))
+              text: modelData.name
+              selected: !!(root.eqStatus && root.eqStatus.current_id === modelData.id)
+              bordered: true
+              leftAlign: true
+              enabled: root.connection === "connected" && root.pendingRequestId < 0
+                && root.snapshot.eq_write_verified === true
+              opacity: enabled ? 1.0 : 0.5
+              foreground: root.bar.foreground
+              background: root.bar.background
+              accent: Color.accent
+              fontFamily: root.bar.fontFamily
+              onClicked: root.selectEq(modelData.key)
+            }
+          }
+
+          Controls.ComboBox {
+            width: parent.width
+            visible: root.customEqEntries.length > 0
+            model: root.customEqEntries.map(function(entry) { return entry.name })
+            currentIndex: root.customSlotIndex
+            enabled: root.pendingRequestId < 0
+            onActivated: function(index) { root.customSlotIndex = index }
+          }
+
+          Repeater {
+            id: bandRepeater
+            model: root.selectedCustom ? root.selectedCustom.bands : []
+            delegate: Row {
+              required property var modelData
+              property alias gainValue: gainBox.value
+              width: parent.width
+              spacing: Style.space(8)
+
+              Text {
+                width: parent.width - gainBox.width - parent.spacing
+                anchors.verticalCenter: parent.verticalCenter
+                text: modelData.frequency_hz >= 1000
+                  ? (modelData.frequency_hz / 1000) + " kHz" : modelData.frequency_hz + " Hz"
+                color: root.bar.foreground
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+              }
+              Controls.SpinBox {
+                id: gainBox
+                from: root.selectedCustom ? root.selectedCustom.min_gain_db : -6
+                to: root.selectedCustom ? root.selectedCustom.max_gain_db : 6
+                stepSize: root.eqStatus && root.eqStatus.gain_step_db
+                  ? root.eqStatus.gain_step_db : 1
+                value: modelData.gain_db
+                editable: true
+                enabled: root.snapshot && root.snapshot.custom_eq_write_verified === true
+                  && root.pendingRequestId < 0
+                textFromValue: function(value) { return (value > 0 ? "+" : "") + value + " dB" }
+                valueFromText: function(text) { return parseInt(text) || 0 }
+              }
+            }
+          }
+
+          Button {
+            width: parent.width
+            visible: root.selectedCustom !== null
+            text: "Apply " + (root.selectedCustom ? root.selectedCustom.name : "custom EQ")
+            bordered: true
+            leftAlign: true
+            enabled: root.snapshot && root.snapshot.custom_eq_write_verified === true
+              && root.pendingRequestId < 0
+            opacity: enabled ? 1.0 : 0.5
+            foreground: root.bar.foreground
+            background: root.bar.background
+            accent: Color.accent
+            fontFamily: root.bar.fontFamily
+            onClicked: root.applyCustomEq()
+          }
+        }
+
         Text {
           width: parent.width
           visible: root.outcome !== "" || root.pendingRequestId >= 0
           textFormat: Text.PlainText
           text: root.pendingRequestId >= 0
-            ? "Verifying " + BarModel.titleCase(root.pendingMode) + "…" : root.outcome
+            ? (root.pendingKind === "eq_status" ? "Reading native EQ…"
+              : "Verifying " + BarModel.titleCase(root.pendingMode) + "…") : root.outcome
           color: root.bar.foreground
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.bodySmall
@@ -283,6 +445,7 @@ BarWidget {
         anc_modes: root.ancOptions.map(function(option) { return option.value }),
         current_anc: root.currentAncMode,
         pending: root.pendingRequestId >= 0,
+        eq: root.eqStatus,
         error: root.budsService ? String(root.budsService.lastError || "") : ""
       })
     }

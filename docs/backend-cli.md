@@ -40,8 +40,21 @@ PYTHONPATH=src python -m oneplus_buds.cli anc status
 PYTHONPATH=src python -m oneplus_buds.cli anc off
 PYTHONPATH=src python -m oneplus_buds.cli anc transparency
 PYTHONPATH=src python -m oneplus_buds.cli anc on
+PYTHONPATH=src python -m oneplus_buds.cli eq status
+PYTHONPATH=src python -m oneplus_buds.cli eq list
+PYTHONPATH=src python -m oneplus_buds.cli eq set deep-sea-bass
+PYTHONPATH=src python -m oneplus_buds.cli eq set custom:4
+PYTHONPATH=src python -m oneplus_buds.cli eq custom 5 0 0 0 0 0 0
 PYTHONPATH=src python -m oneplus_buds.cli diagnostics --report
 ```
+
+EQ is earbud-native OPO control, not PipeWire/software processing. `eq status`
+returns fresh current state, factory presets and any device-declared custom
+definitions. `eq set` accepts listed keys, numeric factory IDs, or `custom:<id>`.
+`eq custom` updates only an existing device-returned entry and requires exactly
+one whole-dB value per returned band, within its returned limits. Every write
+pre-reads state, sends once, and verifies with fresh queries. Unknown devices and
+unverified feature/model combinations cannot write.
 
 Select among multiple connected compatible devices by putting the global option before the command:
 

@@ -6,7 +6,7 @@ from typing import cast
 
 from .lifecycle_trace import mark
 from .api import BudsBackend
-from .models import ControllerSnapshot, ControlResult, EventBatch, StatusResult
+from .models import ControllerSnapshot, ControlResult, EqControlResult, EqStatusResult, EventBatch, StatusResult
 from .protocol import VersionRecord
 from .session import OpoSession
 from .timing import AncRequestError, PhaseTimer
@@ -31,6 +31,7 @@ class BudsController:
         self._ignored_frames = 0
         self._reconnect_count = 0
         self._generation = 0
+        self._eq_status: EqStatusResult | None = None
 
     def start(self) -> ControllerSnapshot:
         with self._lock:
@@ -139,6 +140,55 @@ class BudsController:
                 **result.timings_ms, **timer.finish("controller_total"),
             }), snapshot
 
+    def eq_status(self) -> EqStatusResult:
+        with self._lock:
+            self._require_running()
+            if self._session is None:
+                self.refresh()
+            result, batch = cast(OpoSession, self._session).eq_status()
+            self._apply_batch(batch)
+            self._eq_status = result
+            self._generation += 1
+            return result
+
+    def set_eq(self, preset: str) -> EqControlResult:
+        with self._lock:
+            self._require_running()
+            if self._session is None:
+                self.refresh()
+            try:
+                result, batch = cast(OpoSession, self._session).set_eq(preset)
+            except ValueError:
+                raise
+            except (OSError, RuntimeError):
+                self._close_session()
+                self._eq_status = None
+                self._generation += 1
+                raise
+            self._apply_batch(batch)
+            self._eq_status = None
+            self._generation += 1
+            return result
+
+    def set_custom_eq(self, entry_id: int, gains_db: tuple[int, ...]) -> EqControlResult:
+        with self._lock:
+            self._require_running()
+            if self._session is None:
+                self.refresh()
+            try:
+                result, batch = cast(OpoSession, self._session).set_custom_eq(entry_id, gains_db)
+            except ValueError:
+                raise
+            except (OSError, RuntimeError):
+                self._close_session()
+                self._eq_status = None
+                self._generation += 1
+                raise
+            self._apply_batch(batch)
+            self._eq_status = None
+            self._generation += 1
+            return result
+
     def poll(self, wait: float = 0.2) -> ControllerSnapshot:
         with self._lock:
             self._require_running()
@@ -163,6 +213,7 @@ class BudsController:
             self._advertised_event_codes = ()
             self._notification_event_codes = ()
             self._ignored_frames = 0
+            self._eq_status = None
             self._generation += 1
             return self.snapshot()
 
@@ -177,6 +228,7 @@ class BudsController:
                 ignored_frames=self._ignored_frames,
                 reconnect_count=self._reconnect_count,
                 generation=self._generation,
+                eq_status=self._eq_status,
             )
 
     def _connect_session(self) -> None:
@@ -226,6 +278,10 @@ class BudsController:
                     self._notification_event_codes = (
                         self._notification_event_codes + (code,)
                     )[-32:]
+            elif event.kind == "eq_changed":
+                # The next consumer read must fetch complete state, including
+                # changes made by HeyMelody on the shared device.
+                self._eq_status = None
         if batch.events:
             self._generation += 1
 

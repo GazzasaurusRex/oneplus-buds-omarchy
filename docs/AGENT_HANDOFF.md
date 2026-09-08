@@ -1,12 +1,53 @@
 # Agent handoff
 
-Last updated: 2026-09-08. Phase 1 protocol proof, backend hardening, two-model verification, typed API/session, serialized controller, service runner, frontend bridge, Omarchy deployment adapter, live lifecycle, battery/status widget, verified ANC control-surface, two-model ANC timing baseline, persistent-session ANC optimization, accepted portrait panel, and GitHub publication milestones complete.
+Last updated: 2026-09-08. Native earbud EQ protocol discovery, two-model hardware verification, safe backend and panel milestone added to the prior completed milestones.
 
 ## Current status
 
 The no-PyPI-dependency backend now sits inside a validated, minimally installable Omarchy plugin with a live-tested battery/status widget and capability-driven ANC popup. The layers remain separated: BlueZ D-Bus discovery, RFCOMM transport, OPO parsing, profiles/capabilities, typed backend, privacy-safe session, serialized controller, resilient service runner, schema-v1 frontend bridge, NDJSON child-process host, headless QML service adapter, and native Omarchy presentation. The checkout-local launcher imports the bundled `src/` tree because Omarchy plugin installation runs no install hooks. `BudsController` remains the sole RFCOMM owner; QML receives only address-free primitive state and routes verified commands over the bridge. Both reference models retain their previously verified detection, firmware, battery, and ANC coverage.
 
-This handoff accompanies `perf: reuse authenticated sessions for verified ANC control`. Test command `PYTHONPATH=src python -m unittest discover -s tests` passes all 79 tests on Python 3.14.7. `omarchy plugin validate .` passes on Omarchy 4.0.2-1.
+The current working tree adds native OPO EQ without PipeWire/software processing.
+Both reference devices are restored to their original EQ state. Final validation
+and publication status are recorded at the end of this document.
+
+## Native earbud EQ milestone — 2026-09-08
+
+- Open-source research at recorded revisions corroborated current EQ `0x010f`,
+  detailed catalogue `0x0122 01 05`, selection `0x0406`, and custom detail
+  `0x0418` before any write. The implementation is independent and device replies
+  remain authoritative.
+- Both products expose and audibly verified factory IDs 0 Balanced, 1 Deep Sea
+  Bass, 2 Pure Vocals, and 3 Bright & Crisp. Every write was preceded by a state
+  read, sent once, freshly queried, and followed by restoration.
+- Pro 2 `196.196.101` exposes custom IDs 4/5, six bands at
+  62/250/1000/4000/8000/16000 Hz, -6..+6 dB, and 1 dB protocol resolution. The
+  user confirmed the original ID 4 curve matched HeyMelody. An obvious reversible
+  ID 5 curve was freshly read back and audibly confirmed, then restored to zeros.
+- Original Buds Pro `541.541.510` returns an empty custom catalogue. It is
+  preset-only; no Pro 2 bands or ranges are assumed.
+- Warm command/read-back measurements were roughly 97–123 ms on Pro and
+  194–244 ms on Pro 2 for presets; the Pro 2 custom update was 235 ms. Updated
+  timing now also records the mandatory preservation read as a separate phase.
+- Both devices retained state across separate RFCOMM sessions. Full earbud power-
+  cycle persistence remains unisolated. Firmware-gated Pro 2 registry preset ID 7
+  is not exposed because it was not hardware-tested.
+- Backend profiles separately gate preset and custom writes. Unknown products
+  receive neither. Detailed parsing/encoding validates device-defined layout,
+  exact count, UTF-8, signed limits/gains, frequency uniqueness/range, and trailing
+  data. Controller/bridge operations reuse the authenticated serialized session,
+  invalidate EQ after notifications/reconnect, and always refresh before display.
+- CLI commands are `eq status`, `eq list`, `eq set <key|custom:id>`, and
+  `eq custom <id> <gains...>`. The panel—not the compact hover widget—contains
+  capability-driven preset and custom controls.
+- Final hardware state: original Buds Pro selected Balanced (its initial state),
+  freshly verified in a separate session. Pro 2 selected original Custom ID 4
+  with `+3,+1,0,0,0,0`; Custom1 ID 5 is restored to all zeros, also verified in a
+  separate session.
+- Final validation: 108 Python/JavaScript tests, 4 Qt offscreen interaction tests,
+  `omarchy plugin validate .`, and `git diff --check` pass. A live read-only
+  persistent bridge request returned Buds Pro EQ state correctly. The Omarchy
+  shell was not running, so no second graphical shell was started for a live panel
+  render; the panel is covered by the Qt capability/custom-control interaction test.
 
 ## Verified discoveries
 

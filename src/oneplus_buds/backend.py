@@ -7,7 +7,7 @@ from dataclasses import replace
 from .lifecycle_trace import mark
 from . import __version__
 from .bluez import Device, select_device
-from .models import CapabilityResult, ControlResult, StatusResult
+from .models import CapabilityResult, ControlResult, EqControlResult, EqStatusResult, StatusResult
 from .profiles import profile_for_product
 from .protocol import (
     HELLO,
@@ -36,6 +36,7 @@ from .protocol import (
 )
 from .transport import RfcommTransport
 from .timing import AncRequestError, PhaseTimer
+from .session import OpoSession
 
 T = TypeVar("T")
 
@@ -111,6 +112,15 @@ def read_capabilities(address: str | None = None) -> CapabilityResult:
         capabilities=tuple(sorted(capabilities)),
         anc_modes=tuple(sorted(profile.anc.write_indices)) if profile else (),
         feature_switches=feature_switches,
+        eq_write_verified=bool(profile and profile.eq and profile.eq.write_verified),
+        eq_presets=tuple(
+            {"id": preset.eq_id, "key": preset.key, "name": preset.name}
+            for preset in profile.eq.presets
+        ) if profile and profile.eq else (),
+        supports_custom_eq=bool(profile and profile.eq and profile.eq.supports_custom),
+        custom_eq_write_verified=bool(
+            profile and profile.eq and profile.eq.custom_write_verified
+        ),
     )
 
 
@@ -219,6 +229,50 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
 
 def set_anc(mode: str, address: str | None = None) -> dict[str, object]:
     return write_anc(mode, address).to_dict()
+
+
+def read_eq(address: str | None = None) -> EqStatusResult:
+    device = select_device(address)
+    session, _status, _events = OpoSession.bootstrap(device)
+    try:
+        result, _batch = session.eq_status()
+        return result
+    finally:
+        session.__exit__(None, None, None)
+
+
+def query_eq(address: str | None = None) -> dict[str, object]:
+    return read_eq(address).to_dict()
+
+
+def write_eq(preset: str, address: str | None = None) -> EqControlResult:
+    device = select_device(address)
+    session, _status, _events = OpoSession.bootstrap(device)
+    try:
+        result, _batch = session.set_eq(preset)
+        return result
+    finally:
+        session.__exit__(None, None, None)
+
+
+def set_eq(preset: str, address: str | None = None) -> dict[str, object]:
+    return write_eq(preset, address).to_dict()
+
+
+def write_custom_eq(entry_id: int, gains_db: tuple[int, ...],
+                    address: str | None = None) -> EqControlResult:
+    device = select_device(address)
+    session, _status, _events = OpoSession.bootstrap(device)
+    try:
+        result, _batch = session.set_custom_eq(entry_id, gains_db)
+        return result
+    finally:
+        session.__exit__(None, None, None)
+
+
+def set_custom_eq(entry_id: int, gains_db: tuple[int, ...],
+                  address: str | None = None) -> dict[str, object]:
+    return write_custom_eq(entry_id, gains_db, address).to_dict()
 
 
 def diagnostics_report(address: str | None = None) -> dict[str, object]:

@@ -14,15 +14,24 @@ QUERY_REMOTE_VERSION = 0x0105
 QUERY_BATTERY = 0x0106
 QUERY_ANC = 0x010C
 QUERY_STATUS = 0x010D
+QUERY_EQ = 0x010F
+QUERY_EQ_ALL = 0x0122
 SET_ANC = 0x0404
+SET_EQ = 0x0406
+SET_EQ_DETAIL = 0x0418
 RESPONSE_SET_ANC = 0x8404
+RESPONSE_SET_EQ = 0x8406
+RESPONSE_SET_EQ_DETAIL = 0x8418
 
 RESPONSE_PRODUCT_ID = 0x8103
 RESPONSE_REMOTE_VERSION = 0x8105
 RESPONSE_BATTERY = 0x8106
 RESPONSE_ANC = 0x810C
 RESPONSE_STATUS = 0x810D
+RESPONSE_EQ = 0x810F
+RESPONSE_EQ_ALL = 0x8122
 NOTIFY_STATE = 0x0204
+NOTIFY_EQ = 0x0504
 RESPONSE_BROADCAST_CODES = 0x8200
 
 FEATURE_SWITCH_NAMES = {
@@ -38,6 +47,7 @@ FEATURE_SWITCH_NAMES = {
 HELLO = bytes.fromhex("AA 07 00 00 00 01 23 00 00 12")
 REGISTER = bytes.fromhex("AA 0C 00 00 00 85 41 05 00 00 B5 50 A0 69")
 STATUS_QUERY_PAYLOAD = bytes.fromhex("0B 05 04 0B 11 13 18 06 1B 1C 27 28")
+EQ_ALL_QUERY_PAYLOAD = bytes.fromhex("01 05")
 
 
 @dataclass(frozen=True)
@@ -59,6 +69,22 @@ class VersionRecord:
     component: int
     kind: int
     value: str
+
+
+@dataclass(frozen=True)
+class EqBand:
+    frequency_hz: int
+    gain_db: int
+
+
+@dataclass(frozen=True)
+class EqEntry:
+    eq_id: int
+    name: str
+    selected: bool
+    min_gain_db: int
+    max_gain_db: int
+    bands: tuple[EqBand, ...]
 
 
 VERSION_COMPONENTS = {1: "left", 2: "right", 3: "case"}
@@ -248,3 +274,91 @@ def parse_set_anc_status(frame: Frame) -> int | None:
     if frame.command != RESPONSE_SET_ANC or not frame.payload:
         return None
     return frame.payload[0]
+
+
+def parse_eq_id(frame: Frame) -> int | None:
+    if frame.command == RESPONSE_EQ:
+        if len(frame.payload) != 2 or frame.payload[0] != 0:
+            return None
+        return frame.payload[1]
+    if frame.command == NOTIFY_EQ and len(frame.payload) == 1:
+        return frame.payload[0]
+    return None
+
+
+def parse_eq_entries(frame: Frame) -> tuple[EqEntry, ...] | None:
+    """Parse the device-authored native EQ catalogue conservatively."""
+    if frame.command != RESPONSE_EQ_ALL or len(frame.payload) < 2:
+        return None
+    status, count = frame.payload[:2]
+    if status != 0:
+        return None
+    payload = frame.payload
+    offset = 2
+    entries: list[EqEntry] = []
+    try:
+        for _ in range(count):
+            if offset + 5 > len(payload):
+                return None
+            selected = payload[offset]
+            minimum = int.from_bytes(payload[offset + 1 : offset + 2], "little", signed=True)
+            maximum = int.from_bytes(payload[offset + 2 : offset + 3], "little", signed=True)
+            eq_id = payload[offset + 3]
+            name_length = payload[offset + 4]
+            offset += 5
+            if selected not in (0, 1) or minimum > maximum or offset + name_length + 1 > len(payload):
+                return None
+            name = payload[offset : offset + name_length].decode("utf-8")
+            offset += name_length
+            band_count = payload[offset]
+            offset += 1
+            if band_count == 0 or offset + band_count * 3 > len(payload):
+                return None
+            bands: list[EqBand] = []
+            frequencies: set[int] = set()
+            for _ in range(band_count):
+                frequency = int.from_bytes(payload[offset : offset + 2], "little")
+                gain = int.from_bytes(payload[offset + 2 : offset + 3], "little", signed=True)
+                offset += 3
+                if frequency == 0 or frequency in frequencies or not minimum <= gain <= maximum:
+                    return None
+                frequencies.add(frequency)
+                bands.append(EqBand(frequency, gain))
+            entries.append(EqEntry(eq_id, name, bool(selected), minimum, maximum, tuple(bands)))
+    except UnicodeDecodeError:
+        return None
+    if offset != len(payload) or len({entry.eq_id for entry in entries}) != len(entries):
+        return None
+    return tuple(entries)
+
+
+def parse_set_eq_status(frame: Frame) -> int | None:
+    if frame.command not in (RESPONSE_SET_EQ, RESPONSE_SET_EQ_DETAIL) or not frame.payload:
+        return None
+    return frame.payload[0]
+
+
+def encode_eq_detail_payload(entry: EqEntry, gains_db: tuple[int, ...]) -> bytes:
+    """Encode an update of an existing custom entry after strict validation."""
+    if not 0 <= entry.eq_id <= 0xFF:
+        raise ValueError("EQ id must fit in one byte")
+    if len(gains_db) != len(entry.bands):
+        raise ValueError(f"custom EQ requires exactly {len(entry.bands)} gains")
+    if any(not isinstance(gain, int) or not entry.min_gain_db <= gain <= entry.max_gain_db
+           for gain in gains_db):
+        raise ValueError(
+            f"custom EQ gains must be whole dB values from {entry.min_gain_db} to {entry.max_gain_db}"
+        )
+    name = entry.name.encode("utf-8")
+    if len(name) > 0xFF or len(entry.bands) > 0xFF:
+        raise ValueError("custom EQ definition is too large")
+    payload = bytearray((2, entry.min_gain_db & 0xFF, entry.max_gain_db & 0xFF,
+                         entry.eq_id, len(name)))
+    payload.extend(name)
+    payload.append(len(entry.bands))
+    for band, gain in zip(entry.bands, gains_db, strict=True):
+        if not 0 < band.frequency_hz <= 0xFFFF:
+            raise ValueError("custom EQ frequency must fit in two bytes")
+        payload.extend(band.frequency_hz.to_bytes(2, "little"))
+        payload.append(gain & 0xFF)
+    return bytes(payload)

@@ -78,6 +78,9 @@ const controls = model.ancModes({anc_modes: ["smart", "off", "future", "off", "t
 if (controls.map(x => x.value).join(",") !== "off,transparency,smart,future") process.exit(6);
 if (model.currentAncMode({status: {anc: "on", anc_level: "deep"}}) !== "deep") process.exit(7);
 if (model.currentAncMode({status: {anc: "transparency", anc_level: null}}) !== "transparency") process.exit(8);
+const eq = {eq: {presets: [{id: 0, name: "Balanced"}], custom_entries: [{eq_id: 4}]}};
+if (model.eqPresets(eq).length !== 1 || model.customEqEntries(eq)[0].eq_id !== 4) process.exit(12);
+if (model.eqPresets({}).length || model.customEqEntries({}).length) process.exit(13);
 '''
         subprocess.run(
             ["node", "-e", script, str(ROOT / "BarModel.js")],

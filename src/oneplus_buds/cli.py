@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 
-from .backend import device_summary, diagnostics_report, query_capabilities, query_status, set_anc
+from .backend import (device_summary, diagnostics_report, query_capabilities, query_eq,
+                      query_status, set_anc, set_custom_eq, set_eq)
 from .bluez import connected_devices
 
 
@@ -21,6 +22,15 @@ def main() -> None:
         "mode",
         choices=("status", "on", "off", "transparency", "light", "medium", "deep", "smart"),
     )
+    eq_parser = subparsers.add_parser("eq", help="query or safely set native earbud EQ")
+    eq_commands = eq_parser.add_subparsers(dest="eq_command", required=True)
+    eq_commands.add_parser("status", help="read current native EQ and device-declared bands")
+    eq_commands.add_parser("list", help="list factory presets and custom entries")
+    eq_set = eq_commands.add_parser("set", help="select a factory or device-declared custom EQ")
+    eq_set.add_argument("preset", help="preset key, numeric factory id, or custom:<id>")
+    eq_custom = eq_commands.add_parser("custom", help="update an existing device-declared custom curve")
+    eq_custom.add_argument("entry_id", type=int, help="custom entry id returned by eq status")
+    eq_custom.add_argument("gains", nargs="+", type=int, help="one whole-dB gain per reported band")
     args = parser.parse_args()
     try:
         if args.command == "devices":
@@ -35,6 +45,21 @@ def main() -> None:
             output = query_capabilities(args.device)
         elif args.command == "diagnostics":
             output = diagnostics_report(args.device)
+        elif args.command == "eq":
+            if args.eq_command == "status":
+                output = query_eq(args.device)
+            elif args.eq_command == "list":
+                state = query_eq(args.device)
+                output = {
+                    "current": {key: state[key] for key in ("current_id", "current_name", "current_kind")},
+                    "presets": state["presets"],
+                    "custom_entries": state["custom_entries"],
+                    "gain_step_db": state["gain_step_db"],
+                }
+            elif args.eq_command == "custom":
+                output = set_custom_eq(args.entry_id, tuple(args.gains), args.device)
+            else:
+                output = set_eq(args.preset, args.device)
         elif args.mode == "status":
             status = query_status(args.device)
             output = {"anc": status["anc"], "anc_level": status["anc_level"]}

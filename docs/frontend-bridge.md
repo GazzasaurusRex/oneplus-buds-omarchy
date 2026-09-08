@@ -49,6 +49,13 @@ Bluetooth addresses, raw OPO frames, pairing data, and raw notification payloads
 - `snapshot` with no parameters: returns the cached state without Bluetooth I/O.
 - `refresh` with no parameters: performs a serialized one-shot refresh and emits the resulting snapshot.
 - `set_anc` with exactly `{"mode": "..."}`: uses the existing authenticated, profile-gated, query-after-write verified controller path and emits the resulting snapshot.
+- `eq_status` with no parameters: freshly reads native EQ state and device-declared
+  custom capabilities on the existing authenticated session.
+- `set_eq` with exactly `{"preset": "..."}`: selects only a verified factory key
+  or device-declared custom ID and refreshes the emitted state after read-back.
+- `set_custom_eq` with exactly `{"entry_id": number, "gains_db": [integers...]}`:
+  delegates strict band-count/range validation to the device capability layer,
+  sends once, and emits only freshly verified state.
 
 Every call returns a `command_response` dictionary containing the schema version, request ID, command, `ok`, `result`, and `error`. Unknown commands and malformed parameter objects are rejected without hardware access. Runtime command errors are address-redacted. The bridge does not add unverified controls or bypass backend capability/profile checks.
 

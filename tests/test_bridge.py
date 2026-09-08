@@ -5,7 +5,9 @@ from unittest.mock import patch
 
 from oneplus_buds.bluez import Device
 from oneplus_buds.bridge import BudsFrontendBridge, serialize_snapshot
-from oneplus_buds.models import ControllerSnapshot, ControlResult, StatusResult
+from oneplus_buds.models import (ControllerSnapshot, ControlResult, EqControlResult,
+                                 EqStatusResult, StatusResult)
+from oneplus_buds.protocol import EqBand, EqEntry
 from oneplus_buds.service import ServiceState
 
 
@@ -35,6 +37,16 @@ SNAPSHOT = ControllerSnapshot(
     ignored_frames=3,
     reconnect_count=1,
     generation=2,
+)
+EQ_STATUS = EqStatusResult(
+    DEVICE.name, "062014", DEVICE.name, 4, "Custom", "custom",
+    ({"id": 0, "key": "balanced", "name": "Balanced"},),
+    (EqEntry(4, "Custom", True, -6, 6, (EqBand(62, 3),)),), 1,
+)
+EQ_SNAPSHOT = ControllerSnapshot(
+    status=STATUS, feature_switches={}, session_connected=True,
+    advertised_event_codes=(), notification_event_codes=(), ignored_frames=0,
+    reconnect_count=0, generation=3, eq_status=EQ_STATUS,
 )
 
 
@@ -101,6 +113,29 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(controller.anc_modes, ["transparency"])
         self.assertEqual(emitted[-1]["type"], "snapshot")
 
+    def test_eq_commands_are_typed_verified_and_emit_fresh_state(self):
+        emitted = []
+        controller = FakeController()
+        bridge = BudsFrontendBridge(emitted.append, controller=controller)
+        status = bridge.execute("eq_status")
+        preset = bridge.execute("set_eq", {"preset": "balanced"})
+        custom = bridge.execute("set_custom_eq", {"entry_id": 4, "gains_db": [3]})
+        self.assertEqual(status["result"]["current_name"], "Custom")
+        self.assertTrue(preset["result"]["verified"])
+        self.assertTrue(custom["result"]["verified"])
+        self.assertEqual(controller.eq_targets, ["balanced"])
+        self.assertEqual(controller.custom_targets, [(4, (3,))])
+        self.assertEqual(emitted[-1]["snapshot"]["eq"]["current_id"], 4)
+
+    def test_malformed_custom_eq_never_reaches_controller(self):
+        controller = FakeController()
+        response = BudsFrontendBridge(lambda _event: None, controller=controller).execute(
+            "set_custom_eq", {"entry_id": 4, "gains_db": [True]}
+        )
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "invalid_parameters")
+        self.assertEqual(controller.custom_targets, [])
+
     def test_verified_response_does_not_reacquire_snapshot_during_recovery(self):
         controller = FakeController()
         with patch.object(controller, 'snapshot', side_effect=AssertionError('second lock acquisition')):
@@ -134,9 +169,12 @@ class FakeController:
         self.error = error
         self.refreshes = 0
         self.anc_modes = []
+        self.eq_targets = []
+        self.custom_targets = []
+        self.current_snapshot = SNAPSHOT
 
     def snapshot(self):
-        return SNAPSHOT
+        return self.current_snapshot
 
     def refresh(self):
         self.refreshes += 1
@@ -157,6 +195,18 @@ class FakeController:
 
     def set_anc_with_snapshot(self, mode):
         return self.set_anc(mode), SNAPSHOT
+
+    def eq_status(self):
+        self.current_snapshot = EQ_SNAPSHOT
+        return EQ_STATUS
+
+    def set_eq(self, preset):
+        self.eq_targets.append(preset)
+        return EqControlResult(DEVICE.name, "062014", 0, "Balanced", 4, "Custom", 0, True)
+
+    def set_custom_eq(self, entry_id, gains):
+        self.custom_targets.append((entry_id, gains))
+        return EqControlResult(DEVICE.name, "062014", entry_id, "Custom", 0, "Balanced", 0, True)
 
 
 class FakeRunner:
