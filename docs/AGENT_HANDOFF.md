@@ -305,3 +305,51 @@ on these warm-session results.
   original Buds Pro, ANC Off. Address-free transition samples are in
   `/tmp/oneplus-switch-evidence.jsonl`; durable verification summary is in
   `docs/measurements/device-switching.md`.
+
+## Connection lifecycle optimization — 2026-09-08
+
+- Instrumented the unchanged lifecycle before adjusting timing. Backend JSONL
+  uses monotonic and Unix nanoseconds for phase/cross-process correlation; a
+  separate GLib observer timestamps BlueZ Device1 signals and actual QML state.
+  Traces contain no addresses, object paths, raw frames, tokens or error text.
+- Eight baseline hardware runs cover cold service startup, arrival at an empty
+  running service, same-device reconnect and cross-model switch on both reference
+  models. Usable UI took 8.655–38.073 seconds. Backend setup consistently took
+  8.525–9.014 seconds; timer backoff added 7.909–29.074 seconds on arrivals.
+- Diagnosis: disconnected recovery had no BlueZ event wake-up; startup opened a
+  status socket and then a monitoring socket, consistently causing a one-second
+  EBUSY retry; fixed query drains delayed product/state; firmware preceded
+  essential state; subscription setup delayed UI usability. Runtime SDP was not
+  involved because verified RFCOMM channel 15 was already used directly.
+- The process host now watches BlueZ availability signals on a private D-Bus/
+  GLib loop. Generation-counted hints interrupt a pending retry once while fresh
+  ObjectManager discovery remains authoritative. Normal failures retain capped
+  exponential backoff, cancellation behavior and the timer-only fallback. BlueZ
+  daemon restarts clear hint state. No connection or active-device state is cached.
+- Startup now keeps one RFCOMM socket through fresh product/profile resolution,
+  conservative HELLO/REGISTER authentication and response-correlated battery/ANC
+  reads. It publishes usable state before subscription and firmware, which then
+  populate on the same serialized session. Subscription failure still invokes
+  normal teardown/recovery. The established 2-second HELLO and 1.5-second REGISTER
+  waits remain unchanged because this milestone did not establish shorter safe
+  values.
+- Eight optimized hardware runs cover the same matrix. Usable UI took
+  4.476–4.869 seconds: Pro 2 cold 4.869, arrival 4.481, reconnect 4.504, switch
+  4.485; original Pro cold 4.630, arrival 4.597, reconnect 4.561, switch 4.476.
+  BlueZ-to-discovery delay was 0.365–2.910 ms for non-cold scenarios. Both switch
+  directions cleared the intermediate UI and loaded the destination profile,
+  battery, ANC, capabilities and firmware. No successful optimized startup used
+  EBUSY recovery or retry backoff, and no matching runtime errors were found.
+- Automated suite is 97 tests, adding one-socket/fresh-profile behavior on both
+  fixtures, essential-before-optional ordering, socket cleanup, correlated
+  deferred firmware, lost-wakeup prevention, wake de-duplication, cancellation,
+  fallback backoff and BlueZ restart/late-UUID cases. Existing generic switching,
+  bridge, control and privacy tests remain green. Qt tests and plugin validation
+  also pass.
+- Full method, phase audit and before/after table are in
+  `docs/measurements/connection-lifecycle.md`; raw and summarized address-free
+  artifacts are adjacent as `2026-09-08-connection-{baseline,optimized}*`.
+  The live optimized plugin is enabled at
+  `~/.config/omarchy/plugins/oneplus-connect-optimized`; current hardware is Pro 2
+  connected with ANC Off. Baseline and prior installs remain preserved under
+  `/tmp`. No ANC command was sent during connection measurements.

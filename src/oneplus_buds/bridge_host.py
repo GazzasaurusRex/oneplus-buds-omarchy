@@ -7,6 +7,7 @@ from collections.abc import Callable
 from threading import Event, Lock, Thread
 from typing import Protocol, TextIO
 
+from .lifecycle_trace import mark
 from .bridge import BudsFrontendBridge, JsonObject, SCHEMA_VERSION
 
 
@@ -42,6 +43,7 @@ class BridgeProcessHost:
         self.bridge = bridge_factory(self._write)
 
     def run(self) -> None:
+        mark("host_start")
         service_worker = Thread(target=self._run_bridge, daemon=False)
         input_worker = Thread(target=self._read_requests, daemon=True)
         service_worker.start()
@@ -118,13 +120,27 @@ class BridgeProcessHost:
         with self._write_lock:
             self.output_stream.write(encoded + "\n")
             self.output_stream.flush()
+            if payload.get("type") == "connection":
+                mark("frontend_connection_sent", connection=str(payload.get("connection")))
+            elif payload.get("type") == "snapshot":
+                snapshot = payload.get("snapshot") or {}
+                if snapshot.get("session_connected"):
+                    mark("frontend_snapshot_sent")
 
 
 def main() -> None:
-    host = BridgeProcessHost(sys.stdin, sys.stdout)
+    mark("process_start")
+    from .availability import BlueZAvailability
+    availability = BlueZAvailability()
+    availability.start()
+    host = BridgeProcessHost(sys.stdin, sys.stdout, bridge_factory=lambda emit:
+        BudsFrontendBridge(emit, availability=availability))
     signal.signal(signal.SIGINT, lambda *_args: host.stop())
     signal.signal(signal.SIGTERM, lambda *_args: host.stop())
-    host.run()
+    try:
+        host.run()
+    finally:
+        availability.close()
 
 
 if __name__ == "__main__":

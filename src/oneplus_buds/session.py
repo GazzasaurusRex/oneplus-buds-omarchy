@@ -1,16 +1,26 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from time import monotonic
 
 from .bluez import Device
-from .models import ControlResult, EventBatch, SafeEvent
+from .lifecycle_trace import mark, span
+from .models import ControlResult, EventBatch, SafeEvent, StatusResult
 from .timing import AncRequestError, PhaseTimer
-from .profiles import DeviceProfile
+from .profiles import DeviceProfile, profile_for_product
 from .protocol import (
     HELLO,
     NOTIFY_STATE,
     QUERY_BROADCAST_CODES,
     QUERY_CAPABILITIES,
+    QUERY_PRODUCT_ID,
+    QUERY_BATTERY,
+    QUERY_REMOTE_VERSION,
+    RESPONSE_PRODUCT_ID,
+    RESPONSE_REMOTE_VERSION,
+    parse_product_id,
+    parse_remote_version,
+    format_firmware_version,
     QUERY_ANC,
     SET_ANC,
     RESPONSE_SET_ANC,
@@ -31,13 +41,58 @@ from .transport import RfcommTransport
 
 
 class OpoSession:
-    def __init__(self, device: Device, profile: DeviceProfile) -> None:
+    def __init__(self, device: Device, profile: DeviceProfile,
+                 *, transport: RfcommTransport | None = None) -> None:
         self.device = device
         self.profile = profile
-        self._transport = RfcommTransport(device.address, connect_attempts=4)
+        self._transport = transport or RfcommTransport(device.address, connect_attempts=4)
+        self._version_pending = False
+        self._version_sequence: int | None = None
+        self._subscription_pending = False
         self._connected = False
         self._authenticated = False
         self.advertised_event_codes: tuple[int, ...] = ()
+
+    @classmethod
+    def bootstrap(cls, device: Device) -> tuple["OpoSession", StatusResult, EventBatch]:
+        """Identify, authenticate and read essential state on one owned socket."""
+        transport = RfcommTransport(device.address, connect_attempts=4)
+        transport.__enter__()
+        try:
+            # Preserve the existing capability primer and authentication waits.
+            transport.query(QUERY_CAPABILITIES)
+            with span("query", command=QUERY_PRODUCT_ID):
+                product = parse_product_id(transport.request(
+                    QUERY_PRODUCT_ID, b"", RESPONSE_PRODUCT_ID))
+            profile = profile_for_product(product)
+            if profile is None:
+                raise RuntimeError("cannot open event session for an unknown product")
+            mark("profile_resolved", product_id=product)
+            session = cls(device, profile, transport=transport)
+            session._connected = True
+            initial = session.authenticate(primed=True)
+            received: list[Frame] = []
+            with span("query", command=QUERY_BATTERY):
+                battery = parse_battery(transport.request(
+                    QUERY_BATTERY, b"", RESPONSE_BATTERY, on_frames=received.extend))
+            with span("query", command=QUERY_ANC):
+                anc = parse_anc_state(transport.request(
+                    QUERY_ANC, b"\x01\x01", RESPONSE_ANC, on_frames=received.extend), profile.anc)
+            if battery is None or anc is None:
+                raise RuntimeError("essential device state is not available")
+            status = StatusResult(device=device, product_id=product, model=profile.name,
+                remote_version=(), firmware_version=None, battery=battery,
+                anc=anc.mode, anc_level=anc.level)
+            # Essential query responses are newer than setup notifications.
+            extra = session._redact(received)
+            events = tuple(event for event in initial.events + extra.events
+                           if event.kind not in ("battery", "anc"))
+            session._version_pending = True
+            session._subscription_pending = True
+            return session, status, EventBatch(events, initial.ignored_frames + extra.ignored_frames)
+        except BaseException:
+            transport.__exit__(None, None, None)
+            raise
 
     def __enter__(self) -> "OpoSession":
         self._transport.__enter__()
@@ -49,12 +104,32 @@ class OpoSession:
         self._authenticated = False
         self._transport.__exit__(*args)
 
-    def authenticate_and_subscribe(self) -> EventBatch:
+    def authenticate_and_subscribe(self, *, primed: bool = False) -> EventBatch:
+        authenticated = self.authenticate(primed=primed)
+        subscribed = self._subscribe()
+        return EventBatch(
+            authenticated.events + subscribed.events,
+            authenticated.ignored_frames + subscribed.ignored_frames,
+        )
+
+    def authenticate(self, *, primed: bool = False) -> EventBatch:
+        mark("authentication.begin")
         self._require_connected()
         frames: list[Frame] = []
-        frames.extend(self._transport.query(QUERY_CAPABILITIES))
+        if not primed:
+            frames.extend(self._transport.query(QUERY_CAPABILITIES))
         frames.extend(self._transport.exchange_raw(HELLO, wait=2.0))
         frames.extend(self._transport.exchange_raw(REGISTER, wait=1.5))
+        self._authenticated = True
+        mark("authentication.end")
+        return self._redact(frames)
+
+    def _subscribe(self) -> EventBatch:
+        self._require_connected()
+        if not self._authenticated:
+            raise RuntimeError("session authentication has not completed")
+        mark("subscription.begin")
+        frames: list[Frame] = []
         advertised_frames = self._transport.query(QUERY_BROADCAST_CODES, wait=0.5)
         frames.extend(advertised_frames)
         advertised = next(
@@ -65,7 +140,7 @@ class OpoSession:
         if advertised:
             payload = bytes((len(advertised),)) + advertised
             frames.extend(self._transport.query(SUBSCRIBE_BROADCAST, payload, wait=0.5))
-        self._authenticated = True
+        mark("subscription.end")
         return self._redact(frames)
 
     def set_anc(self, mode: str) -> tuple[ControlResult, EventBatch]:
@@ -147,7 +222,19 @@ class OpoSession:
 
     def poll(self, wait: float = 0.2) -> EventBatch:
         self._require_connected()
-        return self._redact(self._transport.receive(wait))
+        setup = EventBatch((), 0)
+        if self._subscription_pending:
+            self._subscription_pending = False
+            setup = self._subscribe()
+        if self._version_pending:
+            self._version_pending = False
+            self._version_sequence = self._transport.send_query(QUERY_REMOTE_VERSION)
+            mark("optional_firmware_sent")
+        received = self._redact(self._transport.receive(wait))
+        return EventBatch(
+            setup.events + received.events,
+            setup.ignored_frames + received.ignored_frames,
+        )
 
     def _redact(self, frames: list[Frame]) -> EventBatch:
         events: list[SafeEvent] = []
@@ -161,6 +248,16 @@ class OpoSession:
         return EventBatch(tuple(events), ignored)
 
     def _safe_event(self, frame: Frame) -> SafeEvent | None:
+        if (frame.command == RESPONSE_REMOTE_VERSION
+                and self._version_sequence is not None
+                and frame.sequence == self._version_sequence):
+            records = parse_remote_version(frame)
+            if records is not None:
+                self._version_sequence = None
+                mark("optional_firmware_received")
+                return SafeEvent("firmware", {"records": [asdict(record) for record in records],
+                    "version": format_firmware_version(records)})
+            return None
         if frame.command == RESPONSE_BATTERY:
             battery = parse_battery(frame)
             return SafeEvent("battery", battery) if battery is not None else None

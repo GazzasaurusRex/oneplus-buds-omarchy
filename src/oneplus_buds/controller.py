@@ -4,8 +4,10 @@ from dataclasses import replace
 from threading import RLock
 from typing import cast
 
+from .lifecycle_trace import mark
 from .api import BudsBackend
 from .models import ControllerSnapshot, ControlResult, EventBatch, StatusResult
+from .protocol import VersionRecord
 from .session import OpoSession
 from .timing import AncRequestError, PhaseTimer
 
@@ -34,12 +36,15 @@ class BudsController:
         with self._lock:
             if self._running:
                 return self.snapshot()
+            mark("controller_start")
             self.shutdown()
             try:
-                self._status = self.backend.status(self._selected_address)
+                self._session, self._status, batch = self.backend.start_session(self._selected_address)
                 self.address = self._status.device.address
-                self._connect_session()
+                self._advertised_event_codes = self._session.advertised_event_codes
+                self._apply_batch(batch)
                 self._running = True
+                mark("controller_usable")
             except Exception:
                 self.shutdown()
                 raise
@@ -207,6 +212,10 @@ class BudsController:
                     anc=cast(str | None, event.data.get("mode")),
                     anc_level=cast(str | None, event.data.get("level")),
                 )
+            elif event.kind == "firmware" and self._status is not None:
+                self._status = replace(self._status,
+                    firmware_version=cast(str | None, event.data["version"]),
+                    remote_version=tuple(VersionRecord(**record) for record in event.data["records"]))
             elif event.kind == "feature_switches":
                 self._feature_switches.update(
                     {key: value for key, value in event.data.items() if isinstance(value, bool)}

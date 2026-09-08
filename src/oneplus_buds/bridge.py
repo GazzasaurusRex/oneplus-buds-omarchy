@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping
 from threading import Event
 from typing import TypeAlias
 
+from .availability import Availability
 from .controller import BudsController
 from .timing import AncRequestError
 from .models import ControllerSnapshot, ControlResult
@@ -47,6 +48,7 @@ class BudsFrontendBridge:
         *,
         controller: BudsController | None = None,
         dispatch: Dispatch | None = None,
+        availability: Availability | None = None,
         poll_interval: float = 0.5,
     ) -> None:
         self.controller = controller or BudsController()
@@ -54,6 +56,7 @@ class BudsFrontendBridge:
         self.dispatch = dispatch or (lambda callback: callback())
         self.runner = BudsServiceRunner(
             self.controller,
+            availability=availability,
             poll_interval=poll_interval,
             on_state=self._on_state,
             on_snapshot=self._on_snapshot,

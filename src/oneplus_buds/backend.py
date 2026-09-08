@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import TypeVar
 from dataclasses import replace
 
+from .lifecycle_trace import mark
 from . import __version__
 from .bluez import Device, select_device
 from .models import CapabilityResult, ControlResult, StatusResult
@@ -62,7 +63,9 @@ def device_summary(device: Device, *, include_address: bool = False) -> dict[str
 
 
 def read_status(address: str | None = None) -> StatusResult:
+    mark("status.begin")
     device = select_device(address)
+    mark("compatible_device_selected")
     with RfcommTransport(device.address, connect_attempts=4) as transport:
         transport.query(QUERY_CAPABILITIES)
         product_frames = transport.query(QUERY_PRODUCT_ID)
@@ -76,7 +79,9 @@ def read_status(address: str | None = None) -> StatusResult:
         if profile
         else None
     )
+    mark("profile_resolved", product_id=product_id or "unknown")
     version_records = _first_parsed(version_frames, parse_remote_version)
+    mark("status.end")
     return StatusResult(
         device=device,
         product_id=product_id,

@@ -108,6 +108,9 @@ ANC On may choose a device-dependent strength; select a specific strength if you
 need one. Cold setup and explicit strengths still take several seconds. Warm main
 mode changes reuse the authenticated session; recorded timings are in
 [the measurement notes](docs/measurements/anc-baseline.md).
+Connection startup uses BlueZ availability notifications while retaining bounded
+retry fallback; both models' phase-by-phase results are in the
+[connection lifecycle measurements](docs/measurements/connection-lifecycle.md).
 
 ## CLI and diagnostic reports
 

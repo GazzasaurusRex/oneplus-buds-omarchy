@@ -10,6 +10,13 @@ Item {
   property var state: BridgeModel.initialState()
   property int nextRequestId: 1
   property bool stopping: false
+  property var lifecycleObservations: []
+
+  function observeLifecycle(phase, productId) {
+    lifecycleObservations = lifecycleObservations.concat([{
+      phase: phase, unix_ms: Date.now(), product_id: productId || null
+    }]).slice(-32)
+  }
 
   readonly property string sourceDir: manifest && manifest.__sourceDir
     ? String(manifest.__sourceDir) : ""
@@ -37,7 +44,16 @@ Item {
       }
       return
     }
+    var previous = state
     state = BridgeModel.applyMessage(state, parsed.message)
+    if (state.connection !== previous.connection)
+      observeLifecycle("frontend_" + state.connection, null)
+    var status = state.snapshot && state.snapshot.status
+    var oldStatus = previous.snapshot && previous.snapshot.status
+    if (status && state.snapshot.session_connected
+        && (!oldStatus || !previous.snapshot.session_connected
+            || oldStatus.product_id !== status.product_id))
+      observeLifecycle("frontend_first_usable", status.product_id)
   }
 
   function request(command, parameters) {

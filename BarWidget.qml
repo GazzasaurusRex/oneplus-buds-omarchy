@@ -20,6 +20,15 @@ BarWidget {
   readonly property string currentAncMode: BarModel.currentAncMode(snapshot)
   readonly property var lastResponse: budsService ? budsService.lastResponse : null
 
+  readonly property bool lifecycleUsable: connection === "connected"
+    && snapshot !== null && snapshot.session_connected === true
+    && snapshot.status !== null && ancOptions.length > 0
+  onLifecycleUsableChanged: {
+    if (budsService && typeof budsService.observeLifecycle === "function")
+      budsService.observeLifecycle(lifecycleUsable ? "ui_usable" : "ui_unavailable",
+        snapshot && snapshot.status ? snapshot.status.product_id : null)
+  }
+
   property bool popupOpen: false
   property int pendingRequestId: -1
   property string pendingMode: ""
@@ -263,6 +272,8 @@ BarWidget {
         device_status: root.snapshot ? root.snapshot.status : null,
         session_connected: root.snapshot ? root.snapshot.session_connected : false,
         generation: root.snapshot ? root.snapshot.generation : 0,
+        lifecycle: root.budsService && root.budsService.lifecycleObservations
+          ? root.budsService.lifecycleObservations : [],
         label: root.presentation.label,
         expanded: root.batteryExpanded,
         width: root.width,

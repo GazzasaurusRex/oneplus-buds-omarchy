@@ -1,0 +1,142 @@
+{"connected": false, "monotonic_ns": 3159156163055, "phase": "bluez_initial_snapshot", "pid": 35267, "unix_ns": 1788892161632780412}
+{"connected": true, "monotonic_ns": 3159156408287, "phase": "bluez_initial_snapshot", "pid": 35267, "unix_ns": 1788892161633025172}
+{"monotonic_ns": 3159157050292, "phase": "observer_ready", "pid": 35267, "unix_ns": 1788892161633667113}
+{"monotonic_ns": 3159249565428, "observed_unix_ms": 1788891201827, "phase": "frontend_connecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726182478}
+{"monotonic_ns": 3159249666779, "observed_unix_ms": 1788891201943, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726283532}
+{"monotonic_ns": 3159249728229, "observed_unix_ms": 1788891202929, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726344852}
+{"monotonic_ns": 3159249773787, "observed_unix_ms": 1788891202943, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726390371}
+{"monotonic_ns": 3159249815373, "observed_unix_ms": 1788891204944, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726431956}
+{"monotonic_ns": 3159249854011, "observed_unix_ms": 1788891204956, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726470568}
+{"monotonic_ns": 3159249892685, "observed_unix_ms": 1788891208957, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726509252}
+{"monotonic_ns": 3159249930268, "observed_unix_ms": 1788891208986, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726546852}
+{"monotonic_ns": 3159249967510, "observed_unix_ms": 1788891216986, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726584085}
+{"monotonic_ns": 3159250015493, "observed_unix_ms": 1788891217004, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726632064}
+{"monotonic_ns": 3159250063423, "observed_unix_ms": 1788891233006, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726680097}
+{"monotonic_ns": 3159250104231, "observed_unix_ms": 1788891241642, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892161726720838}
+{"monotonic_ns": 3159250142356, "observed_unix_ms": 1788891241687, "phase": "ui_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892161726758947}
+{"monotonic_ns": 3159250182162, "observed_unix_ms": 1788891241687, "phase": "frontend_first_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892161726798742}
+{"monotonic_ns": 3177092518138, "observed_unix_ms": 1788892179197, "phase": "frontend_connecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892179569136792}
+{"monotonic_ns": 3178588042442, "observed_unix_ms": 1788892180666, "phase": "frontend_connecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892181064659640}
+{"monotonic_ns": 3182365270198, "observed_unix_ms": 1788892184761, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892184841887324}
+{"monotonic_ns": 3182365407670, "observed_unix_ms": 1788892184792, "phase": "ui_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892184842024811}
+{"monotonic_ns": 3182365498641, "observed_unix_ms": 1788892184792, "phase": "frontend_first_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892184842115422}
+{"monotonic_ns": 3257282814425, "phase": "bluez_disconnected_signal", "pid": 35267, "unix_ns": 1788892259759432108}
+{"monotonic_ns": 3257586947610, "observed_unix_ms": 1788892259880, "phase": "ui_unavailable", "pid": 35267, "product_id": "none", "unix_ns": 1788892260063564785}
+{"monotonic_ns": 3257587059944, "observed_unix_ms": 1788892259880, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892260063676635}
+{"monotonic_ns": 3258782746534, "observed_unix_ms": 1788892260880, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892261259363564}
+{"monotonic_ns": 3258782847807, "observed_unix_ms": 1788892260885, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892261259464459}
+{"monotonic_ns": 3260753881624, "observed_unix_ms": 1788892262885, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892263230498638}
+{"monotonic_ns": 3260753991392, "observed_unix_ms": 1788892262906, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892263230608099}
+{"monotonic_ns": 3264772283470, "observed_unix_ms": 1788892266906, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892267248900493}
+{"monotonic_ns": 3264772381763, "observed_unix_ms": 1788892266916, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892267248998455}
+{"monotonic_ns": 3272776383740, "observed_unix_ms": 1788892274916, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892275253000717}
+{"monotonic_ns": 3272776479968, "observed_unix_ms": 1788892274922, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892275253096676}
+{"monotonic_ns": 3286355214980, "phase": "bluez_connected_signal", "pid": 35267, "unix_ns": 1788892288831832198}
+{"monotonic_ns": 3286389961407, "observed_unix_ms": 1788892288845, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892288866578426}
+{"monotonic_ns": 3291005765755, "observed_unix_ms": 1788892293345, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892293482382750}
+{"monotonic_ns": 3291005874430, "observed_unix_ms": 1788892293393, "phase": "ui_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892293482491056}
+{"monotonic_ns": 3291005924989, "observed_unix_ms": 1788892293393, "phase": "frontend_first_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892293482541582}
+{"monotonic_ns": 3324649099448, "phase": "bluez_disconnected_signal", "pid": 35267, "unix_ns": 1788892327125716566}
+{"monotonic_ns": 3325098635104, "observed_unix_ms": 1788892327366, "phase": "ui_unavailable", "pid": 35267, "product_id": "none", "unix_ns": 1788892327575252521}
+{"monotonic_ns": 3325098733628, "observed_unix_ms": 1788892327372, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892327575350331}
+{"monotonic_ns": 3325897930278, "observed_unix_ms": 1788892328366, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892328374547331}
+{"monotonic_ns": 3326292150511, "observed_unix_ms": 1788892328373, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892328768767556}
+{"monotonic_ns": 3328279019115, "observed_unix_ms": 1788892330373, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892330755636288}
+{"monotonic_ns": 3328279119027, "observed_unix_ms": 1788892330379, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892330755735768}
+{"monotonic_ns": 3332346533638, "observed_unix_ms": 1788892334380, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892334823150649}
+{"monotonic_ns": 3332346629365, "observed_unix_ms": 1788892334386, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892334823246003}
+{"monotonic_ns": 3340165262497, "observed_unix_ms": 1788892342387, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892342641879756}
+{"monotonic_ns": 3340165448755, "observed_unix_ms": 1788892342424, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892342642065689}
+{"monotonic_ns": 3353111545603, "phase": "bluez_connected_signal", "pid": 35267, "unix_ns": 1788892355588163579}
+{"monotonic_ns": 3353254848020, "observed_unix_ms": 1788892355646, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892355731465067}
+{"monotonic_ns": 3357957657109, "observed_unix_ms": 1788892360061, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892360434274089}
+{"monotonic_ns": 3357957755440, "observed_unix_ms": 1788892360073, "phase": "ui_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892360434372090}
+{"monotonic_ns": 3357957807696, "observed_unix_ms": 1788892360073, "phase": "frontend_first_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892360434424314}
+{"monotonic_ns": 3396127607101, "observed_unix_ms": 1788892398416, "phase": "frontend_connecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892398604224264}
+{"monotonic_ns": 3400595272618, "observed_unix_ms": 1788892402853, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892403071889881}
+{"monotonic_ns": 3400595369783, "observed_unix_ms": 1788892402903, "phase": "ui_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892403071986482}
+{"monotonic_ns": 3400595422967, "observed_unix_ms": 1788892402903, "phase": "frontend_first_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892403072039649}
+{"monotonic_ns": 3434100725385, "phase": "bluez_disconnected_signal", "pid": 35267, "unix_ns": 1788892436577344464}
+{"monotonic_ns": 3434453583922, "observed_unix_ms": 1788892436872, "phase": "ui_unavailable", "pid": 35267, "product_id": "none", "unix_ns": 1788892436930201604}
+{"monotonic_ns": 3434453794360, "observed_unix_ms": 1788892436873, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892436930411719}
+{"monotonic_ns": 3435622151149, "observed_unix_ms": 1788892437873, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892438098768149}
+{"monotonic_ns": 3435622246351, "observed_unix_ms": 1788892437894, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892438098863014}
+{"monotonic_ns": 3437806327632, "observed_unix_ms": 1788892439894, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892440282944661}
+{"monotonic_ns": 3437806438847, "observed_unix_ms": 1788892439900, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892440283055545}
+{"monotonic_ns": 3441798291816, "observed_unix_ms": 1788892443901, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892444274908768}
+{"monotonic_ns": 3441798389980, "observed_unix_ms": 1788892443905, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892444275006692}
+{"monotonic_ns": 3449562615741, "observed_unix_ms": 1788892451907, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892452039232746}
+{"monotonic_ns": 3449562725662, "observed_unix_ms": 1788892451932, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892452039342304}
+{"monotonic_ns": 3463130599657, "phase": "bluez_connected_signal", "pid": 35267, "unix_ns": 1788892465607218336}
+{"monotonic_ns": 3463367240085, "observed_unix_ms": 1788892465647, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892465843857102}
+{"monotonic_ns": 3467690039828, "observed_unix_ms": 1788892470076, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892470166656874}
+{"monotonic_ns": 3467690140061, "observed_unix_ms": 1788892470111, "phase": "ui_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892470166756817}
+{"monotonic_ns": 3467690193242, "observed_unix_ms": 1788892470111, "phase": "frontend_first_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892470166809860}
+{"monotonic_ns": 3494911250900, "phase": "bluez_disconnected_signal", "pid": 35267, "unix_ns": 1788892497387869744}
+{"monotonic_ns": 3495457802991, "observed_unix_ms": 1788892497577, "phase": "ui_unavailable", "pid": 35267, "product_id": "none", "unix_ns": 1788892497934420085}
+{"monotonic_ns": 3495457915405, "observed_unix_ms": 1788892497578, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892497934532116}
+{"monotonic_ns": 3496251988166, "observed_unix_ms": 1788892498578, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892498728605182}
+{"monotonic_ns": 3496252099849, "observed_unix_ms": 1788892498616, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892498728716623}
+{"monotonic_ns": 3498234752422, "observed_unix_ms": 1788892500618, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892500711369483}
+{"monotonic_ns": 3498234867308, "observed_unix_ms": 1788892500642, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892500711483962}
+{"monotonic_ns": 3502339562885, "observed_unix_ms": 1788892504643, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892504816179921}
+{"monotonic_ns": 3502339658948, "observed_unix_ms": 1788892504671, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892504816275642}
+{"monotonic_ns": 3510399981434, "observed_unix_ms": 1788892512672, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892512876598419}
+{"monotonic_ns": 3510400087305, "observed_unix_ms": 1788892512692, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892512876703994}
+{"monotonic_ns": 3514618438388, "phase": "bluez_connected_signal", "pid": 35267, "unix_ns": 1788892517095056799}
+{"monotonic_ns": 3514799586482, "observed_unix_ms": 1788892517148, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892517276203496}
+{"monotonic_ns": 3519181185557, "observed_unix_ms": 1788892521526, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892521657802799}
+{"monotonic_ns": 3519181317545, "observed_unix_ms": 1788892521571, "phase": "ui_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892521657934372}
+{"monotonic_ns": 3519181374661, "observed_unix_ms": 1788892521571, "phase": "frontend_first_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892521657991281}
+{"monotonic_ns": 3556349842835, "phase": "bluez_disconnected_signal", "pid": 35267, "unix_ns": 1788892558826460816}
+{"monotonic_ns": 3557004254405, "observed_unix_ms": 1788892559049, "phase": "ui_unavailable", "pid": 35267, "product_id": "none", "unix_ns": 1788892559480871440}
+{"monotonic_ns": 3557004350505, "observed_unix_ms": 1788892559050, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892559480967197}
+{"monotonic_ns": 3557804208462, "observed_unix_ms": 1788892560050, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892560280825471}
+{"monotonic_ns": 3557804308911, "observed_unix_ms": 1788892560078, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892560280925588}
+{"monotonic_ns": 3559795184438, "observed_unix_ms": 1788892562078, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892562271801578}
+{"monotonic_ns": 3559795305666, "observed_unix_ms": 1788892562109, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892562271922468}
+{"monotonic_ns": 3563840521006, "observed_unix_ms": 1788892566108, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892566317138103}
+{"monotonic_ns": 3563840708528, "observed_unix_ms": 1788892566153, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892566317326136}
+{"monotonic_ns": 3569358222903, "observed_unix_ms": 1788892571567, "phase": "frontend_connecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892571834840204}
+{"monotonic_ns": 3569358371194, "observed_unix_ms": 1788892571588, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892571834988029}
+{"monotonic_ns": 3570373761068, "observed_unix_ms": 1788892572590, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892572850378158}
+{"monotonic_ns": 3570373871626, "observed_unix_ms": 1788892572604, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892572850488350}
+{"monotonic_ns": 3572384087916, "observed_unix_ms": 1788892574605, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892574860705941}
+{"monotonic_ns": 3572384193205, "observed_unix_ms": 1788892574622, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892574860809890}
+{"monotonic_ns": 3576479918698, "observed_unix_ms": 1788892578623, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892578956535989}
+{"monotonic_ns": 3576480031834, "observed_unix_ms": 1788892578635, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892578956648647}
+{"monotonic_ns": 3584309280981, "observed_unix_ms": 1788892586636, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892586785898221}
+{"monotonic_ns": 3584309440807, "observed_unix_ms": 1788892586665, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892586786057732}
+{"monotonic_ns": 3600557589117, "observed_unix_ms": 1788892602665, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892603034206101}
+{"monotonic_ns": 3600557684504, "observed_unix_ms": 1788892602670, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892603034301217}
+{"monotonic_ns": 3606845754056, "phase": "bluez_connected_signal", "pid": 35267, "unix_ns": 1788892609322372056}
+{"monotonic_ns": 3606914942619, "observed_unix_ms": 1788892609341, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892609391559969}
+{"monotonic_ns": 3611827711469, "observed_unix_ms": 1788892613910, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892614304328575}
+{"monotonic_ns": 3611827822050, "observed_unix_ms": 1788892613919, "phase": "ui_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892614304438719}
+{"monotonic_ns": 3611827877637, "observed_unix_ms": 1788892613919, "phase": "frontend_first_usable", "pid": 35267, "product_id": "060C14", "unix_ns": 1788892614304494238}
+{"monotonic_ns": 3645245937052, "phase": "bluez_disconnected_signal", "pid": 35267, "unix_ns": 1788892647722555993}
+{"monotonic_ns": 3645601984796, "observed_unix_ms": 1788892647941, "phase": "ui_unavailable", "pid": 35267, "product_id": "none", "unix_ns": 1788892648078601784}
+{"monotonic_ns": 3645602102297, "observed_unix_ms": 1788892647942, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892648078718999}
+{"monotonic_ns": 3646795735002, "observed_unix_ms": 1788892648942, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892649272352017}
+{"monotonic_ns": 3646795830726, "observed_unix_ms": 1788892648949, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892649272447387}
+{"monotonic_ns": 3648598122720, "observed_unix_ms": 1788892650951, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892651074739910}
+{"monotonic_ns": 3648598221365, "observed_unix_ms": 1788892650980, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892651074838015}
+{"monotonic_ns": 3652599088150, "observed_unix_ms": 1788892654981, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892655075705310}
+{"monotonic_ns": 3652599230688, "observed_unix_ms": 1788892655009, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892655075847547}
+{"monotonic_ns": 3659877301666, "observed_unix_ms": 1788892662132, "phase": "frontend_connecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892662353918771}
+{"monotonic_ns": 3659877442214, "observed_unix_ms": 1788892662156, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892662354058978}
+{"monotonic_ns": 3661014486625, "observed_unix_ms": 1788892663157, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892663491103798}
+{"monotonic_ns": 3661014632927, "observed_unix_ms": 1788892663168, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892663491249762}
+{"monotonic_ns": 3662957116765, "observed_unix_ms": 1788892665170, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892665433733788}
+{"monotonic_ns": 3662957213245, "observed_unix_ms": 1788892665190, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892665433829938}
+{"monotonic_ns": 3666893720146, "observed_unix_ms": 1788892669191, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892669370337165}
+{"monotonic_ns": 3666893817231, "observed_unix_ms": 1788892669219, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892669370434005}
+{"monotonic_ns": 3674759971426, "observed_unix_ms": 1788892677219, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892677236588424}
+{"monotonic_ns": 3674760083506, "observed_unix_ms": 1788892677227, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892677236700225}
+{"monotonic_ns": 3690989885350, "observed_unix_ms": 1788892693229, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892693466502309}
+{"monotonic_ns": 3690989992520, "observed_unix_ms": 1788892693248, "phase": "frontend_disconnected", "pid": 35267, "product_id": "none", "unix_ns": 1788892693466609305}
+{"monotonic_ns": 3699100793767, "phase": "bluez_connected_signal", "pid": 35267, "unix_ns": 1788892701577412431}
+{"monotonic_ns": 3699273030622, "observed_unix_ms": 1788892701630, "phase": "frontend_reconnecting", "pid": 35267, "product_id": "none", "unix_ns": 1788892701749647968}
+{"monotonic_ns": 3703641353899, "observed_unix_ms": 1788892706036, "phase": "frontend_connected", "pid": 35267, "product_id": "none", "unix_ns": 1788892706117970972}
+{"monotonic_ns": 3703641452672, "observed_unix_ms": 1788892706058, "phase": "ui_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892706118069382}
+{"monotonic_ns": 3703641505011, "observed_unix_ms": 1788892706058, "phase": "frontend_first_usable", "pid": 35267, "product_id": "062014", "unix_ns": 1788892706118121640}

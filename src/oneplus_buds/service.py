@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from threading import Event
 from typing import Literal
 
+from .availability import Availability
+from .lifecycle_trace import mark
 from .controller import BudsController
 from .models import ControllerSnapshot
 
@@ -28,6 +30,7 @@ class BudsServiceRunner:
         self,
         controller: BudsController | None = None,
         *,
+        availability: Availability | None = None,
         poll_interval: float = 0.5,
         initial_retry_delay: float = 1.0,
         maximum_retry_delay: float = 30.0,
@@ -41,6 +44,8 @@ class BudsServiceRunner:
         if maximum_retry_delay < initial_retry_delay:
             raise ValueError("maximum_retry_delay must be at least initial_retry_delay")
         self.controller = controller or BudsController()
+        self.availability = availability
+        self._attempt_token = 0
         self.poll_interval = poll_interval
         self.initial_retry_delay = initial_retry_delay
         self.maximum_retry_delay = maximum_retry_delay
@@ -52,11 +57,14 @@ class BudsServiceRunner:
         attempt = 0
         retry_delay = self.initial_retry_delay
         connected = False
+        mark("service_start")
         self._publish_state(ServiceState("connecting"))
         try:
             while not cancelled.is_set():
+                self._attempt_token = self.availability.token() if self.availability else 0
                 if not connected:
                     try:
+                        mark("service_discovery_attempt")
                         snapshot = self.controller.start()
                     except (OSError, RuntimeError) as error:
                         attempt, retry_delay = self._back_off(
@@ -107,7 +115,10 @@ class BudsServiceRunner:
                 error=safe_error,
             )
         )
-        if not cancelled.wait(retry_delay):
+        mark("service_retry_wait", delay_ms=int(retry_delay * 1000))
+        was_cancelled = (self.availability.wait(cancelled, retry_delay, self._attempt_token)
+                         if self.availability else cancelled.wait(retry_delay))
+        if not was_cancelled:
             retry_delay = min(retry_delay * 2, self.maximum_retry_delay)
             self._publish_state(ServiceState("reconnecting", attempt=attempt))
         return attempt, retry_delay

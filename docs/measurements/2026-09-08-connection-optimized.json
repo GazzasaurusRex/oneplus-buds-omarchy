@@ -1,0 +1,530 @@
+[
+  {
+    "pid": 36239,
+    "product_id": "060C14",
+    "scenario": "cold_service",
+    "origin_unix_ns": 1788892180161648538,
+    "controller_unix_ns": 1788892180347203402,
+    "notice_delay_ms": 185.555,
+    "setup_ms": 4412.316,
+    "to_ui_ms": 4630.351,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 12.872
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 49.029
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 350.604
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 34.79
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2200.751
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1700.656
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3905.106
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 32.194
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 20.532
+      }
+    ]
+  },
+  {
+    "pid": 36239,
+    "product_id": "060C14",
+    "scenario": "reconnect",
+    "origin_unix_ns": 1788892288831832198,
+    "controller_unix_ns": 1788892288833234409,
+    "notice_delay_ms": 1.402,
+    "setup_ms": 4510.691,
+    "to_ui_ms": 4561.168,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 6.338
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 170.41
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 358.107
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 17.755
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2200.685
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1700.593
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3902.037
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 41.234
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 10.531
+      }
+    ]
+  },
+  {
+    "pid": 36239,
+    "product_id": "062014",
+    "scenario": "switch",
+    "origin_unix_ns": 1788892355588163579,
+    "controller_unix_ns": 1788892355588528298,
+    "notice_delay_ms": 0.365,
+    "setup_ms": 4472.433,
+    "to_ui_ms": 4484.836,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 16.434
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 122.097
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 350.824
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 26.757
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2203.176
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1700.705
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3904.689
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 32.852
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 11.826
+      }
+    ]
+  },
+  {
+    "pid": 39928,
+    "product_id": "062014",
+    "scenario": "cold_service",
+    "origin_unix_ns": 1788892398034214857,
+    "controller_unix_ns": 1788892398414865737,
+    "notice_delay_ms": 380.651,
+    "setup_ms": 4435.943,
+    "to_ui_ms": 4868.785,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 23.344
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 41.353
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 350.846
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 55.477
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2200.71
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1700.706
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3902.448
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 30.247
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 23.613
+      }
+    ]
+  },
+  {
+    "pid": 39928,
+    "product_id": "062014",
+    "scenario": "reconnect",
+    "origin_unix_ns": 1788892465607218336,
+    "controller_unix_ns": 1788892465608137575,
+    "notice_delay_ms": 0.919,
+    "setup_ms": 4466.428,
+    "to_ui_ms": 4503.781,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 15.874
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 124.804
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 351.01
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 13.014
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2202.422
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1701.978
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3905.881
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 35.732
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 12.534
+      }
+    ]
+  },
+  {
+    "pid": 39928,
+    "product_id": "060C14",
+    "scenario": "switch",
+    "origin_unix_ns": 1788892517095056799,
+    "controller_unix_ns": 1788892517096686563,
+    "notice_delay_ms": 1.63,
+    "setup_ms": 4427.354,
+    "to_ui_ms": 4475.943,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 15.787
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 85.974
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 351.281
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 22.221
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2201.002
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1701.1
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3903.482
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 29.772
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 11.847
+      }
+    ]
+  },
+  {
+    "pid": 42758,
+    "product_id": "060C14",
+    "scenario": "arrival",
+    "origin_unix_ns": 1788892609322372056,
+    "controller_unix_ns": 1788892609322901227,
+    "notice_delay_ms": 0.529,
+    "setup_ms": 4586.216,
+    "to_ui_ms": 4596.628,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 6.543
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 240.616
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 351.292
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 41.983
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2201.269
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1700.812
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3902.919
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 29.558
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 8.983
+      }
+    ]
+  },
+  {
+    "pid": 44407,
+    "product_id": "062014",
+    "scenario": "arrival",
+    "origin_unix_ns": 1788892701577412431,
+    "controller_unix_ns": 1788892701580322826,
+    "notice_delay_ms": 2.91,
+    "setup_ms": 4453.802,
+    "to_ui_ms": 4480.588,
+    "phases": [
+      {
+        "phase": "bluez_discovery",
+        "command": null,
+        "failed": false,
+        "ms": 18.915
+      },
+      {
+        "phase": "rfcomm_connect",
+        "command": null,
+        "failed": false,
+        "ms": 97.674
+      },
+      {
+        "phase": "query",
+        "command": 256,
+        "failed": false,
+        "ms": 351.054
+      },
+      {
+        "phase": "query",
+        "command": 259,
+        "failed": false,
+        "ms": 25.333
+      },
+      {
+        "phase": "hello",
+        "command": null,
+        "failed": false,
+        "ms": 2201.401
+      },
+      {
+        "phase": "register",
+        "command": null,
+        "failed": false,
+        "ms": 1701.149
+      },
+      {
+        "phase": "authentication",
+        "command": null,
+        "failed": false,
+        "ms": 3905.033
+      },
+      {
+        "phase": "query",
+        "command": 262,
+        "failed": false,
+        "ms": 32.755
+      },
+      {
+        "phase": "query",
+        "command": 268,
+        "failed": false,
+        "ms": 13.878
+      }
+    ]
+  }
+]

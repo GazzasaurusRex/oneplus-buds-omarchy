@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .lifecycle_trace import span
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -40,7 +42,8 @@ def _managed_objects() -> dict[Any, dict[Any, dict[Any, Any]]]:
 
     bus = dbus.SystemBus()
     manager = dbus.Interface(bus.get_object(BLUEZ_SERVICE, BLUEZ_ROOT), OBJECT_MANAGER)
-    return manager.GetManagedObjects()
+    with span("bluez_discovery"):
+        return manager.GetManagedObjects()
 
 
 def connected_devices() -> list[Device]:

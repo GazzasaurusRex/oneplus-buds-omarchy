@@ -4,7 +4,8 @@ import socket
 import time
 from collections.abc import Callable
 
-from .protocol import Frame, FrameStream, encode_frame
+from .lifecycle_trace import mark, span
+from .protocol import HELLO, Frame, FrameStream, encode_frame
 
 
 class RfcommTransport:
@@ -30,12 +31,14 @@ class RfcommTransport:
             sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
             sock.settimeout(self.timeout)
             try:
-                sock.connect((self.address, self.channel))
+                with span("rfcomm_connect", channel=self.channel, attempt=attempt + 1):
+                    sock.connect((self.address, self.channel))
             except OSError as error:
                 sock.close()
                 if error.errno != 16 or attempt == self.connect_attempts - 1:
                     raise
-                time.sleep(self.retry_delay)
+                with span("rfcomm_retry_wait"):
+                    time.sleep(self.retry_delay)
             else:
                 self._socket = sock
                 return self
@@ -43,8 +46,18 @@ class RfcommTransport:
 
     def __exit__(self, *_: object) -> None:
         if self._socket is not None:
+            mark("rfcomm_close")
             self._socket.close()
             self._socket = None
+
+    def send_query(self, command: int, payload: bytes = b"") -> int:
+        """Send an optional query; the sole session reader collects its reply."""
+        if self._socket is None:
+            raise RuntimeError("transport is not connected")
+        sequence = self._sequence
+        self._sequence = 1 if sequence == 0xFE else sequence + 1
+        self._socket.sendall(encode_frame(command, sequence, payload))
+        return sequence
 
     def query(
         self,
@@ -58,14 +71,16 @@ class RfcommTransport:
         frame_sequence = self._sequence if sequence is None else sequence
         if sequence is None:
             self._sequence = 1 if frame_sequence == 0xFE else frame_sequence + 1
-        self._socket.sendall(encode_frame(command, frame_sequence, payload))
-        return self._receive_burst(wait)
+        with span("query", command=command):
+            self._socket.sendall(encode_frame(command, frame_sequence, payload))
+            return self._receive_burst(wait)
 
     def exchange_raw(self, packet: bytes, wait: float) -> list[Frame]:
         if self._socket is None:
             raise RuntimeError("transport is not connected")
-        self._socket.sendall(packet)
-        return self._receive_burst(wait)
+        with span("hello" if packet == HELLO else "register"):
+            self._socket.sendall(packet)
+            return self._receive_burst(wait)
 
     def request(
         self,

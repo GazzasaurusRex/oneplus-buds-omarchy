@@ -23,6 +23,17 @@ class SwitchingBackend:
         self.selected = []
         self.sessions = []
 
+    def start_session(self, address=None):
+        status = self.status(address)
+        session = self.open_session(status.device.address, status=status)
+        session.__enter__()
+        try:
+            batch = session.authenticate_and_subscribe()
+        except BaseException:
+            session.__exit__(None, None, None)
+            raise
+        return session, status, batch
+
     def status(self, address=None):
         self.selected.append(address)
         if self.current is None:

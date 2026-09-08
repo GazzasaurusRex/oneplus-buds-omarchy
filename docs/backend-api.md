@@ -51,7 +51,7 @@ result = controller.set_anc("off")
 snapshot = controller.shutdown()
 ```
 
-It caches an immutable `ControllerSnapshot`, serializes every operation with one lock, and owns at most one `OpoSession`. A refresh or legacy write closes the event socket first and restores notification subscription afterward. Main On/Off/Transparency writes on a running controller now retain the authenticated socket and subscriptions, verify through fresh sequence-correlated state queries, and return immediately after verification. Explicit ANC levels and one-shot calls retain the legacy path. A polling transport error triggers one immediate reconnect; repeated failures propagate to the caller for service-level backoff. Shutdown always releases the RFCOMM socket.
+It caches an immutable `ControllerSnapshot`, serializes every operation with one lock, and owns at most one `OpoSession`. Startup discovers a device, identifies its product/profile, authenticates, and reads essential battery/ANC state on one RFCOMM socket. The first usable snapshot is published at that point; subscription setup and firmware then populate on the same session. A refresh or legacy write closes the event socket first and restores notification subscription afterward. Main On/Off/Transparency writes on a running controller retain the authenticated socket and subscriptions, verify through fresh sequence-correlated state queries, and return immediately after verification. Explicit ANC levels and one-shot calls retain the legacy path. A polling transport error triggers one immediate reconnect; repeated failures propagate to the caller for service-level backoff. Shutdown always releases the RFCOMM socket.
 
 Safe battery, ANC, and named feature-switch events update cached typed state. Redacted notification codes are retained in a bounded 32-item history, ignored-frame counts are cumulative, and `generation` changes whenever meaningful state/event data is applied. The controller does not start threads or prescribe an event loop; a future daemon, QML bridge, or test harness controls polling cadence and backoff.
 
@@ -71,7 +71,7 @@ runner = BudsServiceRunner(
 runner.run(cancelled)
 ```
 
-Connection failures publish a `disconnected` state with the attempt number, retry delay, and address-redacted error text. Retries start at one second, double to a 30-second ceiling, and reset after a successful connection. The cancellation event interrupts backoff immediately; steady-state cancellation latency is bounded by the configured poll interval (0.5 seconds by default). `run()` always shuts down the controller and publishes a final `stopped` state and disconnected snapshot. The runner creates no thread or event loop itself.
+Connection failures publish a `disconnected` state with the attempt number, retry delay, and address-redacted error text. Retries start at one second, double to a 30-second ceiling, and reset after a successful connection. The plugin host's BlueZ availability watcher interrupts a pending wait when a compatible Device1 becomes connected, but fresh discovery remains authoritative and failed attempts continue normal backoff. If the optional watcher cannot start, timer recovery is unchanged. Cancellation interrupts backoff immediately; steady-state cancellation latency is bounded by the configured poll interval (0.5 seconds by default). `run()` always shuts down the controller and publishes a final `stopped` state and disconnected snapshot. The runner itself creates no thread or event loop; the process host owns and closes the watcher's GLib thread.
 
 ## Frontend bridge
 
@@ -159,9 +159,10 @@ Automatic selection is a lifecycle policy, separate from the active Bluetooth
 address. After a polling transport failure, the controller closes the old
 session, clears its status, feature switches, advertised/observed event codes,
 and ignored-frame count, then reruns BlueZ connected-device selection. A newly
-selected device gets fresh product/firmware/battery/ANC queries and a new
-profile-specific authenticated, subscribed session. No model-pair special case
-is involved. Recovery after a failed control session follows the same path.
+selected device gets fresh product/battery/ANC queries and a new profile-specific
+authenticated session. Subscription and firmware follow on that same socket
+after the usable snapshot. No model-pair special case is involved. Recovery
+after a failed control session follows the same path.
 
 Failed discovery or authentication leaves an empty disconnected snapshot. The
 runner publishes that snapshot before retry backoff, so the frontend removes the

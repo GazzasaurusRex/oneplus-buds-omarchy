@@ -2,12 +2,18 @@ from __future__ import annotations
 
 from .backend import read_capabilities, read_status, write_anc
 from .bluez import Device, connected_devices, select_device
-from .models import CapabilityResult, ControlResult, StatusResult
+from .models import CapabilityResult, ControlResult, EventBatch, StatusResult
 from .profiles import profile_for_product
 from .session import OpoSession
 
 
 class BudsBackend:
+    def start_session(self, address: str | None = None) -> tuple[OpoSession, StatusResult, EventBatch]:
+        from .lifecycle_trace import mark
+        device = select_device(address)
+        mark("compatible_device_selected")
+        return OpoSession.bootstrap(device)
+
     def discover(self) -> tuple[Device, ...]:
         return tuple(device for device in connected_devices() if device.looks_compatible)
 
