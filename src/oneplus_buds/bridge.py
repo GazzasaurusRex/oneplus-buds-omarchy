@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from collections.abc import Callable, Mapping
 from threading import Event
 from typing import TypeAlias
@@ -176,12 +178,7 @@ class BudsFrontendBridge:
             )
 
     def _safe_error(self, error: Exception) -> str:
-        message = str(error)
-        address = self.controller.address
-        if address:
-            for form in (address, address.lower(), address.upper()):
-                message = message.replace(form, "[device]")
-        return message
+        return re.sub(r"(?i)(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", "[device]", str(error))
 
     @staticmethod
     def _serialize_control(result: ControlResult) -> JsonObject:

@@ -16,6 +16,7 @@ class BudsController:
     def __init__(self, backend: BudsBackend | None = None, address: str | None = None,
                  *, reuse_session: bool = True) -> None:
         self.backend = backend or BudsBackend()
+        self._selected_address = address
         self.address = address
         self.reuse_session = reuse_session
         self._lock = RLock()
@@ -33,26 +34,21 @@ class BudsController:
         with self._lock:
             if self._running:
                 return self.snapshot()
-            self._status = self.backend.status(self.address)
-            self.address = self._status.device.address
-            self._running = True
+            self.shutdown()
             try:
+                self._status = self.backend.status(self._selected_address)
+                self.address = self._status.device.address
                 self._connect_session()
+                self._running = True
             except Exception:
-                self._running = False
-                self._close_session()
+                self.shutdown()
                 raise
             return self.snapshot()
 
     def refresh(self) -> ControllerSnapshot:
         with self._lock:
-            self._close_session()
-            self._status = self.backend.status(self.address)
-            self.address = self._status.device.address
-            if self._running:
-                self._connect_session()
-            self._generation += 1
-            return self.snapshot()
+            self.shutdown()
+            return self.start()
 
     def set_anc(self, mode: str) -> ControlResult:
         timer = PhaseTimer()
@@ -142,13 +138,12 @@ class BudsController:
         with self._lock:
             self._require_running()
             if self._session is None:
-                self._connect_session()
+                return self.refresh()
             try:
                 batch = cast(OpoSession, self._session).poll(wait)
             except OSError:
-                self._close_session()
                 self._reconnect_count += 1
-                self._connect_session()
+                return self.refresh()
             else:
                 self._apply_batch(batch)
             return self.snapshot()
@@ -157,6 +152,13 @@ class BudsController:
         with self._lock:
             self._running = False
             self._close_session()
+            self.address = self._selected_address
+            self._status = None
+            self._feature_switches.clear()
+            self._advertised_event_codes = ()
+            self._notification_event_codes = ()
+            self._ignored_frames = 0
+            self._generation += 1
             return self.snapshot()
 
     def snapshot(self) -> ControllerSnapshot:

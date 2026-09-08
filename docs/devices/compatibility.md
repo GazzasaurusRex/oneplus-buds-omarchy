@@ -38,3 +38,8 @@ features are not implemented. Unknown feature IDs and notification schemas remai
 unnamed. Physical earbud changes are not guaranteed to update the UI immediately.
 
 Read the [contribution guide](../../CONTRIBUTING.md) before reporting a new model.
+
+Device switching uses the generic controller lifecycle: automatic selection is
+rerun after transport loss, old device state is cleared, and the next compatible
+device is queried and authenticated with its own product profile. Explicit
+`--device` selection stays pinned. See [lifecycle details](../backend-api.md#switching-physical-devices).

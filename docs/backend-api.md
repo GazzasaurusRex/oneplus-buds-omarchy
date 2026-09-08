@@ -152,3 +152,26 @@ clears cached ANC, and returns failure without replaying the write or waiting fo
 monitoring restoration; polling handles recovery. `set_anc_with_snapshot()` returns
 a result/snapshot pair captured under the same lock, used by the bridge to avoid
 waiting behind a later reconnect just to serialize already-verified state.
+
+## Switching physical devices
+
+Automatic selection is a lifecycle policy, separate from the active Bluetooth
+address. After a polling transport failure, the controller closes the old
+session, clears its status, feature switches, advertised/observed event codes,
+and ignored-frame count, then reruns BlueZ connected-device selection. A newly
+selected device gets fresh product/firmware/battery/ANC queries and a new
+profile-specific authenticated, subscribed session. No model-pair special case
+is involved. Recovery after a failed control session follows the same path.
+
+Failed discovery or authentication leaves an empty disconnected snapshot. The
+runner publishes that snapshot before retry backoff, so the frontend removes the
+old model, batteries and controls while no compatible device is available.
+Retries retain the existing one-to-30-second interruptible backoff. Generation
+and reconnect counters describe the controller lifetime; device data does not.
+Shutdown also clears device state. Refresh starts a fresh authenticated lifecycle.
+
+An explicitly supplied controller address remains pinned across retries. Automatic
+selection still rejects multiple simultaneously connected compatible devices;
+it does not arbitrarily choose one. Error redaction works after active identity
+has been cleared. The read-only widget IPC status includes address-free device
+status, session connection and generation for lifecycle verification.

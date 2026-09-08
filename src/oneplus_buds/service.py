@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from threading import Event
@@ -93,14 +95,16 @@ class BudsServiceRunner:
         attempt: int,
         retry_delay: float,
     ) -> tuple[int, float]:
-        self.controller.shutdown()
+        safe_error = self._safe_error(error)
+        snapshot = self.controller.shutdown()
+        self._publish_snapshot(snapshot)
         attempt += 1
         self._publish_state(
             ServiceState(
                 "disconnected",
                 attempt=attempt,
                 retry_delay=retry_delay,
-                error=self._safe_error(error),
+                error=safe_error,
             )
         )
         if not cancelled.wait(retry_delay):
@@ -109,13 +113,7 @@ class BudsServiceRunner:
         return attempt, retry_delay
 
     def _safe_error(self, error: Exception) -> str:
-        message = str(error)
-        address = self.controller.address
-        if address:
-            message = message.replace(address, "[device]")
-            message = message.replace(address.lower(), "[device]")
-            message = message.replace(address.upper(), "[device]")
-        return message
+        return re.sub(r"(?i)(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", "[device]", str(error))
 
     def _publish_state(self, state: ServiceState) -> None:
         if self.on_state is not None:

@@ -266,3 +266,42 @@ on these warm-session results.
   and dependency preflight. No hardware or desktop configuration was changed.
 - No release tag was created. Marketplace submission remains a separate external
   publication action.
+
+## Generic physical-device switching fix — 2026-09-08
+
+- Reproduced before editing: BlueZ showed only original Buds Pro connected while
+  the unchanged installed plugin remained disconnected with Pro 2 controls and
+  a selected-device-unavailable error. A controlled controller reproduction also
+  demonstrated that `start()` promoted automatic selection into a permanent
+  address pin. Existing 82 tests passed despite the bug.
+- Diagnosis: shutdown retained device/profile-derived status and feature/event
+  caches; retry discovery ran with A's address; immediate session recovery reused
+  A's cached status without BlueZ selection. Retry shutdown did not publish a
+  cleared snapshot, leaving stale identity/capabilities in the frontend.
+- Fix separates explicit selection from active identity. Recovery closes the
+  old session, clears all device data, reruns selection and status queries, then
+  creates/authenticates/subscribes a fresh session using the selected product's
+  profile. Failed setup clears partial state. The runner publishes empty state
+  during backoff. Explicit selection remains pinned; ambiguous automatic
+  selection retains the existing error. Error redaction survives identity reset.
+- Automated: 86 Python tests pass, including both orders through the real runner,
+  bridge and JS reducer; independent batteries/firmware/ANC/capabilities; fresh
+  authentication; cleared A-only feature/event/counter state; immediate switch;
+  repeated empty retries; explicit pinning; failed authentication cleanup.
+  Qt interaction tests pass (3 results); plugin validation and diff checks pass.
+- Live verification used one fixed helper PID 4404 throughout both directions:
+  original Pro (`060C14`, firmware `541.541.510`, L/R 90%, ANC Off) → Pro 2
+  (`062014`, firmware `196.196.101`, L/R 100%, ANC Off) → original Pro with
+  its original readings. Session-connected was true after each recovery; Medium
+  appeared only for Pro 2. BlueZ independently confirmed each final device.
+- Between Pro 2 and Pro, repeated live retries showed null identity/firmware/
+  battery, empty battery label/ANC controls/selection, and session disconnected.
+  Evidence is read-only widget IPC state used by the actual UI, not screenshot
+  or subjective visual acceptance. No ANC setting command was sent.
+- No shell restart occurred and no matching plugin runtime errors appeared in
+  the inspected journal. The fixed live plugin remains enabled at
+  `~/.config/omarchy/plugins/oneplus-switch-fixed`; original installation is
+  preserved at `/tmp/oneplus-switch-original`. The final connected device is
+  original Buds Pro, ANC Off. Address-free transition samples are in
+  `/tmp/oneplus-switch-evidence.jsonl`; durable verification summary is in
+  `docs/measurements/device-switching.md`.
