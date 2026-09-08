@@ -51,7 +51,7 @@ checks availability only and does not connect to the earbuds.
 Install from GitHub using Omarchy's supported installer:
 
 ```bash
-omarchy plugin add https://github.com/scoobysti29-design/oneplus-buds-omarchy.git
+omarchy plugin add https://github.com/GazzasaurusRex/oneplus-buds-omarchy.git
 python3 "$HOME/.config/omarchy/plugins/oneplus-buds.control/scripts/check_dependencies.py"
 omarchy plugin enable oneplus-buds.control --section right
 ```

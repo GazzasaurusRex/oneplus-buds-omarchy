@@ -13,12 +13,11 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/scoobysti29-design/oneplus-buds-omarchy"
-Issues = "https://github.com/scoobysti29-design/oneplus-buds-omarchy/issues"
+Repository = "https://github.com/GazzasaurusRex/oneplus-buds-omarchy"
+Issues = "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues"
 
 [project.scripts]
 oneplus-buds = "oneplus_buds.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

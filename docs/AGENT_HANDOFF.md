@@ -94,7 +94,7 @@ contribution/compatibility guides, issue templates, dependency preflight, CLI
 launcher, safe exporter, metadata and marketplace submission draft are present.
 The clean export passes 82 tests, Qt interaction checks and plugin validation.
 
-The user selected https://github.com/scoobysti29-design/oneplus-buds-omarchy.git.
+The repository URL is https://github.com/GazzasaurusRex/oneplus-buds-omarchy.git.
 The remote initially contained one MIT-license commit; its history is preserved.
 The user requested the original project MIT license, Copyright (c) 2026 Gaz and
 contributors, which replaced the initial GitHub copy. The reviewed snapshot is

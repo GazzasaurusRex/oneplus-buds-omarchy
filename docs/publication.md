@@ -15,7 +15,7 @@ known limitations are documented. The plugin runs from bundled source without
 install hooks. A read-only dependency preflight and a clean exporter are included.
 
 The version remains an unreleased development snapshot; this task does not tag a
-release, upload a repository or submit a listing. The user selected `https://github.com/scoobysti29-design/oneplus-buds-omarchy.git`. Its initial
+release, upload a repository or submit a listing. The repository is `https://github.com/GazzasaurusRex/oneplus-buds-omarchy.git`. Its initial
 commit is preserved in history. At the user's request, the current LICENSE uses
 the project's original MIT notice, Copyright (c) 2026 Gaz and contributors.
 
@@ -23,7 +23,7 @@ the project's original MIT notice, Copyright (c) 2026 Gaz and contributors.
 
 | Field | Proposed value |
 |---|---|
-| Repository URL | https://github.com/scoobysti29-design/oneplus-buds-omarchy |
+| Repository URL | https://github.com/GazzasaurusRex/oneplus-buds-omarchy |
 | Category | Hardware |
 | Tags | Bar, Media, Quickshell |
 | Plugin name | OnePlus Buds Control |
@@ -60,7 +60,7 @@ content. Existing temporary desktop captures are not committed preview assets.
 For a public Git URL, the current install flow is:
 
 ```bash
-omarchy plugin add https://github.com/scoobysti29-design/oneplus-buds-omarchy.git
+omarchy plugin add https://github.com/GazzasaurusRex/oneplus-buds-omarchy.git
 python3 "$HOME/.config/omarchy/plugins/oneplus-buds.control/scripts/check_dependencies.py"
 omarchy plugin enable oneplus-buds.control --section right
 ```

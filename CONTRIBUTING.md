@@ -13,7 +13,7 @@ both earbuds were worn or in their case. Do not include Bluetooth addresses,
 pairing data, unrelated devices or raw notification payloads. The latter can
 contain information about peer devices. Redact personal text from device names.
 
-Use the [GitHub issue templates](https://github.com/scoobysti29-design/oneplus-buds-omarchy/issues/new/choose)
+Use the [GitHub issue templates](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new/choose)
 for bugs and compatibility reports.
 
 ## Adding a device or feature
