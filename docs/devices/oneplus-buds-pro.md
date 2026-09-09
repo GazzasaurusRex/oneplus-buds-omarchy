@@ -22,6 +22,8 @@ Compatibility status: **Verified for the Phase 1 basic milestone** on real OnePl
   on firmware `541.541.510`, so the model is preset-only. Balanced, Deep Sea Bass,
   Pure Vocals and Bright & Crisp were each selected, freshly read back and audibly
   confirmed; the original Balanced state was restored in a fresh session.
+  A closed-case 60-second disconnect/reconnect retained Balanced through a fresh
+  post-cycle query.
 
 The Bluetooth address is deliberately not recorded.
 

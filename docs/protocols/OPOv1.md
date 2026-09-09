@@ -120,9 +120,12 @@ by that connected device and rejects wrong band counts, non-integer gains,
 out-of-range gains, malformed UTF-8, duplicate/zero frequencies, truncation and
 trailing data before a packet can be sent.
 
-Both products expose factory IDs 0 Balanced, 1 Deep Sea Bass, 2 Pure Vocals and
-3 Bright & Crisp. Every preset was selected, freshly read back, and audibly
-confirmed on both reference devices. Warm authenticated command/read-back time was
+Factory names are profile-specific. Buds Pro exposes IDs 0 Balanced, 1 Deep Sea
+Bass, 2 Pure Vocals, and 3 Bright & Crisp. On Buds Pro 2 firmware `196.196.101`,
+HeyMelody maps IDs 0 Balanced, 1 Bass, 2 Serenade, 3 Bold, and 7 Hans Zimmer
+Soundscape Tuning. IDs 1-3 were mapped by selecting each phone label and freshly
+querying the protocol after reconnect; ID 7 was likewise observed as current.
+Warm authenticated command/read-back time was
 approximately 97–123 ms on Buds Pro and 194–244 ms on Buds Pro 2 in the recorded
 runs (excluding the required pre-write preservation read). See the
 [hardware verification record](../measurements/native-eq.md).
@@ -136,11 +139,12 @@ to all zero; ID 4 was reselected and both curves were verified in a separate
 session. Buds Pro firmware `541.541.510` returned zero custom entries, so its
 profile correctly exposes preset-only EQ.
 
-State survived independent RFCOMM session teardown/reconnect on both models. Full
-earbud power-off/reboot persistence has not been isolated from normal app/device
-behavior and remains an explicit follow-up. A Pro 2 registry mentions firmware-
-gated ID 7 Clear Vocals, but it is not exposed because the device does not provide
-a factory catalogue and that ID was not hardware-tested.
+State survived independent RFCOMM session teardown/reconnect on both models. A
+separate closed-case 60-second disconnect/reconnect on each model cleared the
+frontend cache and retained the original EQ through a fresh query, verifying
+power-cycle persistence on the tested firmware. Registry-derived naming for the
+firmware-gated ID 7 was superseded by the live HeyMelody label, fresh hardware
+read-back, and an audibly confirmed panel write.
 
 ## Handshake variants
 

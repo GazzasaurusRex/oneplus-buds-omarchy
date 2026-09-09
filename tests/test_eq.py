@@ -89,6 +89,28 @@ class EqProtocolTests(unittest.TestCase):
                 encode_eq_detail_payload(entry, gains)
 
 
+class EqProfileTests(unittest.TestCase):
+    def test_factory_presets_are_model_specific(self):
+        pro = PROFILES["060C14"].eq
+        pro_2 = PROFILES["062014"].eq
+        self.assertEqual(
+            [(item.eq_id, item.name) for item in pro.presets],
+            [(0, "Balanced"), (1, "Deep Sea Bass"), (2, "Pure Vocals"),
+             (3, "Bright & Crisp")],
+        )
+        self.assertEqual(
+            [(item.eq_id, item.name) for item in pro_2.presets],
+            [(0, "Balanced"), (1, "Bass"), (2, "Serenade"), (3, "Bold"),
+             (7, "Hans Zimmer Soundscape Tuning")],
+        )
+
+    def test_pro_2_accepts_current_and_legacy_preset_keys(self):
+        profile = PROFILES["062014"].eq
+        self.assertEqual(profile.preset_for("serenade").eq_id, 2)
+        self.assertEqual(profile.preset_for("pure-vocals").eq_id, 2)
+        self.assertEqual(profile.preset_for("hans-zimmer-soundscape-tuning").eq_id, 7)
+
+
 class EqSessionTests(unittest.TestCase):
     def session(self, product="062014"):
         session = OpoSession(DEVICE, PROFILES[product])

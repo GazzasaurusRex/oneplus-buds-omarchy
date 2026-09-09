@@ -13,6 +13,13 @@
 - Compact idle icon, battery hover expansion and delayed collapse.
 - Portrait panel with themed full-width controls, grouped ANC modes/strengths,
   wrapping text and vertical scrolling; accepted in live user review.
+- Native earbud EQ with model-specific verified presets, fresh read-back, Pro 2
+  device-defined six-band custom curves, and capability-driven panel controls.
+- Live EQ-panel acceptance on both reference models, including device switching,
+  HeyMelody-originated state reload, and closed-case power-cycle persistence.
+- Fixed Pro 2 custom-slot selection being reset by routine snapshot replacement;
+  current HeyMelody names and protocol ID 7 are hardware-mapped on firmware
+  `196.196.101`.
 - Publication documentation, MIT license, dependency preflight, checkout-local
   CLI launcher and clean plugin exporter.
 

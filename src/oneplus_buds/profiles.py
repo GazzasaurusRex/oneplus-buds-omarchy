@@ -28,6 +28,7 @@ class EqPresetProfile:
     eq_id: int
     key: str
     name: str
+    aliases: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -40,14 +41,22 @@ class EqProfile:
     def preset_for(self, value: str) -> EqPresetProfile | None:
         normalized = value.strip().lower()
         return next((preset for preset in self.presets
-                     if normalized in (preset.key, str(preset.eq_id))), None)
+                     if normalized in (preset.key, str(preset.eq_id), *preset.aliases)), None)
 
 
-FACTORY_EQ_PRESETS = (
+PRO_EQ_PRESETS = (
     EqPresetProfile(0, "balanced", "Balanced"),
     EqPresetProfile(1, "deep-sea-bass", "Deep Sea Bass"),
     EqPresetProfile(2, "pure-vocals", "Pure Vocals"),
     EqPresetProfile(3, "bright-and-crisp", "Bright & Crisp"),
+)
+
+PRO_2_EQ_PRESETS = (
+    EqPresetProfile(0, "balanced", "Balanced"),
+    EqPresetProfile(1, "bass", "Bass", ("deep-sea-bass",)),
+    EqPresetProfile(2, "serenade", "Serenade", ("pure-vocals",)),
+    EqPresetProfile(3, "bold", "Bold", ("bright-and-crisp",)),
+    EqPresetProfile(7, "hans-zimmer-soundscape-tuning", "Hans Zimmer Soundscape Tuning"),
 )
 
 
@@ -73,7 +82,7 @@ PROFILES = {
             read_levels={2: "light", 3: "deep", 4: "smart"},
             sequences={"off": 0x40},
         ),
-        eq=EqProfile(FACTORY_EQ_PRESETS, supports_custom=False, write_verified=True,
+        eq=EqProfile(PRO_EQ_PRESETS, supports_custom=False, write_verified=True,
                      custom_write_verified=False),
         capabilities=frozenset(
             {
@@ -107,7 +116,7 @@ PROFILES = {
             read_levels={4: "deep", 5: "medium", 6: "light", 7: "smart"},
             sequences={"off": 0x40},
         ),
-        eq=EqProfile(FACTORY_EQ_PRESETS, supports_custom=True, write_verified=True,
+        eq=EqProfile(PRO_2_EQ_PRESETS, supports_custom=True, write_verified=True,
                      custom_write_verified=True),
         capabilities=frozenset(
             {

@@ -92,10 +92,19 @@ TestCase {
   compare(widget.selectedCustom.bands.length, 2)
   service.lastResponse = ({request_id:widget.pendingRequestId,ok:true,result:service.snapshot.eq})
   wait(0)
+  service.snapshot.eq.custom_entries.push({eq_id:5,name:"Custom1",min_gain_db:-6,max_gain_db:6,
+   bands:[{frequency_hz:62,gain_db:0},{frequency_hz:250,gain_db:0}]})
+  service.snapshot = JSON.parse(JSON.stringify(service.snapshot))
+  wait(0)
+  widget.selectCustomSlot(1)
+  compare(widget.selectedCustom.eq_id, 5)
+  service.snapshot = JSON.parse(JSON.stringify(service.snapshot))
+  wait(0)
+  compare(widget.selectedCustom.eq_id, 5)
   widget.applyCustomEq()
   verify(service.customRequest !== null)
-  compare(service.customRequest.entry_id, 4)
-  compare(service.customRequest.gains.join(","), "3,1")
+  compare(service.customRequest.entry_id, 5)
+  compare(service.customRequest.gains.join(","), "0,0")
   widget.pendingRequestId = -1
   widget.popupOpen = false
  }

@@ -11,7 +11,7 @@ controls. This is an independent project, unaffiliated with OnePlus or OPPO.
 - Automatic selection of one connected compatible OnePlus device.
 - Connection status, left/right battery, case battery when returned, and firmware.
 - Independently verified ANC On, Off, Transparency and profile-supported strengths.
-- Native earbud EQ presets on both models, plus device-defined custom EQ on Pro 2.
+- Model-correct native earbud EQ presets on both models, plus device-defined custom EQ on Pro 2.
 - Icon-only idle widget; hover reveals known batteries, with delayed collapse.
 - Portrait panel with grouped, full-width controls, theme integration and vertical scrolling.
 - A privacy-safe diagnostic report for compatibility investigations.
@@ -113,6 +113,8 @@ Native EQ controls live only in the opened panel. Both models show verified
 factory presets; Pro 2 also shows controls generated from its returned custom-band
 definition. Changes are written to the earbuds and persist independently of the
 Linux audio route—no system-wide software EQ is installed or configured.
+The tested Pro 2 firmware labels its presets Balanced, Bass, Serenade, Bold, and
+Hans Zimmer Soundscape Tuning; the original Buds Pro retains its own four names.
 Connection startup uses BlueZ availability notifications while retaining bounded
 retry fallback; both models' phase-by-phase results are in the
 [connection lifecycle measurements](docs/measurements/connection-lifecycle.md).

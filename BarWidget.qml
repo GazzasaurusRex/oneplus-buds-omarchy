@@ -40,7 +40,9 @@ BarWidget {
   property string outcome: ""
   property string pendingKind: ""
   property int customSlotIndex: 0
-  onEqStatusChanged: {
+  property bool customSelectionDirty: false
+
+  function syncCustomSlotFromEq() {
     if (!eqStatus || !customEqEntries.length) return
     for (var i = 0; i < customEqEntries.length; i++) {
       if (customEqEntries[i].eq_id === eqStatus.current_id) {
@@ -50,12 +52,24 @@ BarWidget {
     }
     customSlotIndex = 0
   }
+
+  function selectCustomSlot(index) {
+    if (index < 0 || index >= customEqEntries.length) return
+    customSlotIndex = index
+    customSelectionDirty = true
+  }
+
+  onEqStatusChanged: {
+    if (!customSelectionDirty) syncCustomSlotFromEq()
+  }
   property bool hoverExpanded: false
   readonly property bool batteryExpanded: !vertical && presentation.label !== ""
     && (hoverExpanded || popupOpen)
 
   onPopupOpenChanged: {
     if (popupOpen) {
+      customSelectionDirty = false
+      syncCustomSlotFromEq()
       collapseTimer.stop()
       if (bar) bar.hideTooltip(root)
       if (budsService && connection === "connected" && snapshot
@@ -122,6 +136,11 @@ BarWidget {
     pendingMode = ""
     var completedKind = pendingKind
     pendingKind = ""
+    if (response.ok === true && (completedKind === "eq_status"
+        || completedKind === "eq" || completedKind === "custom_eq")) {
+      customSelectionDirty = false
+      syncCustomSlotFromEq()
+    }
     if (response.ok === true && response.result && response.result.verified === true) {
       outcome = "Verified on earbuds"
     } else if (response.ok === true && completedKind === "eq_status") {
@@ -353,7 +372,7 @@ BarWidget {
             model: root.customEqEntries.map(function(entry) { return entry.name })
             currentIndex: root.customSlotIndex
             enabled: root.pendingRequestId < 0
-            onActivated: function(index) { root.customSlotIndex = index }
+            onActivated: function(index) { root.selectCustomSlot(index) }
           }
 
           Repeater {
