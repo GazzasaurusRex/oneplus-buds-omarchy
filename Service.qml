@@ -18,13 +18,17 @@ Item {
     }]).slice(-32)
   }
 
-  readonly property string sourceDir: manifest && manifest.__sourceDir
-    ? String(manifest.__sourceDir) : ""
-  readonly property string helperPath: sourceDir ? sourceDir + "/oneplus-buds-bridge" : ""
+  readonly property string helperPath: localPath(Qt.resolvedUrl("oneplus-buds-bridge"))
   readonly property string connection: String(state.connection || "stopped")
   readonly property var snapshot: state.snapshot || null
   readonly property var lastResponse: state.lastResponse || null
   readonly property string lastError: String(state.lastError || "")
+
+  function localPath(url) {
+    var value = String(url || "")
+    return value.indexOf("file://") === 0
+      ? decodeURIComponent(value.slice(7)) : value
+  }
 
   function startHelper() {
     if (!stopping && helperPath && !helper.running) {
@@ -88,6 +92,8 @@ Item {
   }
 
   onHelperPathChanged: startHelper()
+
+  Component.onCompleted: startHelper()
 
   Component.onDestruction: {
     stopping = true

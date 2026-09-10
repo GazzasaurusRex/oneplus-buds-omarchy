@@ -28,7 +28,7 @@ spatial audio and other HeyMelody features are not implemented controls.
 
 ## Requirements
 
-Live-tested with Omarchy **4.0.2-1** and validated with **4.0.3-1**, its
+Live-tested with Omarchy **4.0.2-1** and **4.0.3-1**, its
 Quickshell/Quattro shell, BlueZ 5.87 and Python 3.14.7. Python 3.11+ is required;
 older Python releases have not been tested here.
 The native widget needs Omarchy's `qs.Ui` and `qs.Commons` modules, not a standalone

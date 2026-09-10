@@ -20,6 +20,8 @@
 - Fixed Pro 2 custom-slot selection being reset by routine snapshot replacement;
   current HeyMelody names and protocol ID 7 are hardware-mapped on firmware
   `196.196.101`.
+- Restored helper startup on Omarchy 4.0.3 by resolving the bundled executable
+  relative to the service component instead of private manifest metadata.
 - Publication documentation, MIT license, dependency preflight, checkout-local
   CLI launcher and clean plugin exporter.
 

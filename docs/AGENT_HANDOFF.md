@@ -23,6 +23,14 @@ were restored to their original EQ state.
 - On Omarchy 4.0.3-1, all 110 Python/JavaScript tests and all 4 Qt offscreen tests
   pass. Checkout and clean-export plugin validation, CLI help, dependency
   preflight, and `git diff --check` pass. No hardware or desktop state changed.
+- A post-update live test exposed that Omarchy 4.0.3 removes private
+  `manifest.__sourceDir` metadata before handing third-party manifests to QML.
+  The service now resolves its bundled helper relative to `Service.qml` and also
+  starts it on component completion; scaffold coverage prevents reintroducing
+  the private-field dependency. A fresh canonical export on Omarchy 4.0.3-1
+  launched one helper and remained connected to Pro 2 with the correct firmware,
+  battery, ANC profile, and no backend error. The user confirmed the menu works
+  as intended. No ANC or EQ write was sent.
 
 ## Native earbud EQ milestone — 2026-09-08
 
