@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "oneplus-buds.control",
   "name": "OnePlus Buds Control",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "author": "Gaz",
-  "description": "Linux monitoring and verified ANC control for compatible OnePlus earbuds.",
+  "description": "Linux monitoring and verified ANC and native EQ control for compatible OnePlus earbuds.",
   "kinds": [
     "service",
     "bar-widget"

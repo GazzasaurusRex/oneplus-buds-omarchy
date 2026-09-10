@@ -3,8 +3,9 @@
 A native Omarchy bar widget and Linux backend for OnePlus earbuds. Check battery
 levels and change noise control from a compact, theme-aware panel.
 
-**Status: pre-release 0.0.1.** Buds Pro and Buds Pro 2 have hardware-verified basic
-controls. This is an independent project, unaffiliated with OnePlus or OPPO.
+**Status: 0.1.0 release candidate.** Buds Pro and Buds Pro 2 have hardware-verified
+basic controls and native EQ. No release tag has been created yet. This is an
+independent project, unaffiliated with OnePlus or OPPO.
 
 ## What works
 
@@ -27,8 +28,9 @@ spatial audio and other HeyMelody features are not implemented controls.
 
 ## Requirements
 
-Tested with Omarchy **4.0.2-1**, its Quickshell/Quattro shell, BlueZ 5.87 and Python
-3.14.7. Python 3.11+ is required; older Python releases have not been tested here.
+Live-tested with Omarchy **4.0.2-1** and validated with **4.0.3-1**, its
+Quickshell/Quattro shell, BlueZ 5.87 and Python 3.14.7. Python 3.11+ is required;
+older Python releases have not been tested here.
 The native widget needs Omarchy's `qs.Ui` and `qs.Commons` modules, not a standalone
 Quickshell session. Other desktop environments can use the CLI only.
 
@@ -58,7 +60,7 @@ omarchy plugin enable oneplus-buds.control --section right
 ```
 
 If the installer offers to enable immediately, decline until the dependency check
-passes. This is a development snapshot; no tagged release is available yet.
+passes. This is a release candidate; no tagged release is available yet.
 
 For an existing local checkout, copy it into the user plugin directory without
 Git internals or caches. The destination must not already exist:

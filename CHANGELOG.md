@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — 0.0.1 development snapshot
+## Unreleased — 0.1.0 release candidate
 
 - Hardware-verified OnePlus Buds Pro and Buds Pro 2 identity, battery, firmware,
   ANC On/Off/Transparency and supported strengths.

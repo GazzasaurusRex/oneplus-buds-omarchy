@@ -1,21 +1,22 @@
 # Publication preparation
 
 Checked against the current [publishing guide](https://plugins.omarchy.org/publish.html),
-[development guide](https://plugins.omarchy.org/develop.html), and
-[submission form source](https://github.com/omacom/omarchy-plugin-marketplace/blob/main/.github/ISSUE_TEMPLATE/submit-plugin.yml)
-on 2026-09-07. The installed Omarchy 4.0.2-1 `plugin add`, `remove` and `validate`
-commands were inspected too.
+[development guide](https://plugins.omarchy.org/develop.html),
+[submission guide](https://github.com/omacom/omarchy-plugin-marketplace/blob/main/SUBMISSION.md),
+and [verification policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/main/VERIFICATION.md)
+on 2026-09-10. The installed Omarchy 4.0.3-1 validator was exercised too.
 
 ## Prepared locally
 
-The root manifest declares `oneplus-buds.control`, version `0.0.1`, with service
+The root manifest declares `oneplus-buds.control`, version `0.1.0`, with service
 and bar-widget entry points. README, MIT license, changelog, contribution guidance,
 compatibility matrix and issue templates are present. Runtime dependencies and
 known limitations are documented. The plugin runs from bundled source without
 install hooks. A read-only dependency preflight and a clean exporter are included.
 
-The version remains an unreleased development snapshot; this task does not tag a
-release, upload a repository or submit a listing. The repository is `https://github.com/GazzasaurusRex/oneplus-buds-omarchy.git`. Its initial
+The version remains an unreleased release candidate; preparing it does not create
+a tag, GitHub release, or marketplace listing. The repository is
+`https://github.com/GazzasaurusRex/oneplus-buds-omarchy.git`. Its initial
 commit is preserved in history. At the user's request, the current LICENSE uses
 the project's original MIT notice, Copyright (c) 2026 Gaz and contributors.
 
@@ -25,37 +26,41 @@ the project's original MIT notice, Copyright (c) 2026 Gaz and contributors.
 |---|---|
 | Repository URL | https://github.com/GazzasaurusRex/oneplus-buds-omarchy |
 | Category | Hardware |
-| Tags | Bar, Media, Quickshell |
+| Tags | `bar`, `media`, `quickshell` |
 | Plugin name | OnePlus Buds Control |
 | ID | `oneplus-buds.control` |
-| Version | `0.0.1` (pre-release) |
+| Version | `0.1.0` (release candidate; not tagged) |
 | License | MIT |
 
 Maintainer notes:
 
 > Native Omarchy service/bar widget for OnePlus earbuds, with a Python backend
-> using BlueZ D-Bus and Bluetooth Classic RFCOMM. Buds Pro and Buds Pro 2 basic
-> battery, firmware and noise controls are hardware-verified. Requires system
+> using BlueZ D-Bus and Bluetooth Classic RFCOMM. Buds Pro and Buds Pro 2 battery,
+> firmware, noise controls, and model-appropriate native EQ are hardware-verified. Requires system
 > Python 3.11+, python-dbus and BlueZ. No PyPI runtime dependencies or install
 > hooks. One helper follows plugin lifecycle inside the existing shell; no second
 > Quickshell instance. Only advertised verified controls are exposed. Installation
 > and removal use Omarchy commands. The project is independent of OnePlus/OPPO.
 
-Submission is through the [marketplace issue form](https://github.com/omacom/omarchy-plugin-marketplace/issues/new?template=submit-plugin.yml).
-The form requires a public repository, one category and one to three listed tags.
-Its declarations about ownership, permissions and installation behavior must be
-reviewed by the submitting owner. Marketplace approval is not a security review.
+Submission is through the [marketplace issue form](https://github.com/omacom/omarchy-plugin-marketplace/issues/new?template=submit-plugin.yml)
+or the documented CLI issue format. It requires a public repository, one category,
+and one to three controlled lowercase tags. Validation and the automated security
+baseline bind to the exact submitted commit; publication requires the marketplace
+maintainer's later `approved-and-verified` decision. The submitting owner must
+review the ownership, permissions, installation, and security-disclaimer checklist.
+Marketplace validation and approval are not a security review.
 An optional preview should show only the panel/widget, with no personal desktop
 content. Existing temporary desktop captures are not committed preview assets.
 
 ## Remaining external steps
 
-1. Review the published source/history at the user-selected repository. README
-   and metadata contain its actual URL, and the initial license history is retained.
-2. Re-run validation for the actual release commit; choose whether to publish
-   0.0.1 as a pre-release or continue toward the 0.1 target. Keep manifest,
-   pyproject and Python `__version__` consistent.
-3. Submit the draft listing only after the repository is public and reviewed.
+1. Review and commit the `0.1.0` release-candidate changes, then push that exact
+   commit to the public repository. Keep manifest, pyproject and Python
+   `__version__` consistent.
+2. Decide whether to create the annotated `v0.1.0` tag and GitHub release from
+   that commit. Tagging and release publication require explicit authorization.
+3. Submit the marketplace draft only after the owner reviews and confirms every
+   checklist statement and explicitly approves creation of the external issue.
 
 For a public Git URL, the current install flow is:
 
@@ -90,8 +95,8 @@ been tested on this host, where setuptools is absent. Wheels are not the Omarchy
 installation path. Prior live lifecycle, two-model ANC and accepted portrait UI
 results remain in the handoff; packaging work should not repeat hardware cycles.
 
-Validation result (2026-09-07): the clean source export passed Omarchy validation,
-CLI help, dependency preflight, all 82 Python tests (including JavaScript checks),
-and the Qt hover suite. The missing-dbus preflight path exited 1 as expected under
-`python3 -S`. Documentation link checks and whitespace checks passed. No hardware
-or desktop configuration was changed during packaging validation.
+Validation result (2026-09-10): the checkout and a clean source export passed
+Omarchy 4.0.3-1 validation, CLI help, dependency preflight, all 110
+Python/JavaScript tests, and all 4 Qt offscreen interaction tests. Whitespace
+checks passed. No hardware or desktop configuration was changed during packaging
+validation.

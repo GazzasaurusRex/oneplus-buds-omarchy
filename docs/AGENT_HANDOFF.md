@@ -1,6 +1,7 @@
 # Agent handoff
 
-Last updated: 2026-09-09. Live native-EQ panel acceptance, persistence verification, and hardware-derived Pro 2 preset corrections added to the prior completed milestones.
+Last updated: 2026-09-10. The completed native-EQ work is now prepared as an
+unreleased 0.1.0 release candidate and validated against Omarchy 4.0.3-1.
 
 ## Current status
 
@@ -9,6 +10,19 @@ The no-PyPI-dependency backend now sits inside a validated, minimally installabl
 The completed native-EQ implementation and live-acceptance fixes are published on
 `origin/main`. No PipeWire/software processing is used. Both reference devices
 were restored to their original EQ state.
+
+## 0.1.0 release-candidate preparation — 2026-09-10
+
+- Version metadata is staged consistently as `0.1.0` in the manifest, Python
+  package metadata, and backend version. README and changelog still describe it
+  as unreleased; no tag or GitHub release has been created.
+- Current official publication guidance was rechecked. New marketplace listings
+  are validated and security-scanned at an exact commit and require a later
+  `approved-and-verified` maintainer decision. The publication notes now record
+  that workflow and use the controlled lowercase tags.
+- On Omarchy 4.0.3-1, all 110 Python/JavaScript tests and all 4 Qt offscreen tests
+  pass. Checkout and clean-export plugin validation, CLI help, dependency
+  preflight, and `git diff --check` pass. No hardware or desktop state changed.
 
 ## Native earbud EQ milestone — 2026-09-08
 
@@ -139,12 +153,13 @@ were restored to their original EQ state.
 - The device exposes one RFCOMM control channel. `BudsServiceRunner` uses `BudsController` as its sole serialized session owner rather than opening concurrent sessions directly.
 - Bridge callbacks are synchronous by default; a frontend adapter must supply the dispatcher hook to marshal them onto its event loop rather than doing UI work in the polling thread.
 - Omarchy caches QML components by source URL in this long-running development session. Use a unique temporary source directory when a same-path hot reload retains an older component; do not restart the user's shell solely to invalidate development cache.
-- Marketplace metadata and submission remain external follow-up; the repository, README, LICENSE, dependency/install documentation and validation are complete.
+- The 0.1.0 release-candidate edits are not yet committed or pushed. Tagging,
+  creating a GitHub release, and marketplace submission remain external actions.
 
 ## Next recommended task
 
-Review and publish the completed acceptance changes, then make a separate explicit
-release/tag decision. Marketplace submission remains separately authorized work.
+Review, commit, and push the 0.1.0 release candidate, then make a separate explicit
+tag/GitHub-release decision. Marketplace submission remains separately authorized work.
 Do not infer unknown notification schemas or shorten cold authentication waits
 without new model-specific evidence.
 
