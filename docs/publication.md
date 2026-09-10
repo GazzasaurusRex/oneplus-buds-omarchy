@@ -49,8 +49,9 @@ baseline bind to the exact submitted commit; publication requires the marketplac
 maintainer's later `approved-and-verified` decision. The submitting owner must
 review the ownership, permissions, installation, and security-disclaimer checklist.
 Marketplace validation and approval are not a security review.
-An optional preview should show only the panel/widget, with no personal desktop
-content. Existing temporary desktop captures are not committed preview assets.
+The root `preview.png` is a user-supplied 563×1080 live panel capture. It was
+reviewed for visible personal information and unrelated application content before
+being committed for marketplace use.
 
 ## Remaining external steps
 

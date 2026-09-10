@@ -22,6 +22,7 @@
   `196.196.101`.
 - Restored helper startup on Omarchy 4.0.3 by resolving the bundled executable
   relative to the service component instead of private manifest metadata.
+- Added a privacy-reviewed live panel screenshot for the marketplace preview.
 - Publication documentation, MIT license, dependency preflight, checkout-local
   CLI launcher and clean plugin exporter.
 

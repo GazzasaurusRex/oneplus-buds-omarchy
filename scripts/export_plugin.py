@@ -9,8 +9,8 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
     "manifest.json", "BarWidget.qml", "BarModel.js", "BridgeModel.js", "Service.qml",
-    "oneplus-buds", "oneplus-buds-bridge", "README.md", "LICENSE", "CHANGELOG.md",
-    "CONTRIBUTING.md", "pyproject.toml",
+    "oneplus-buds", "oneplus-buds-bridge", "README.md", "preview.png", "LICENSE",
+    "CHANGELOG.md", "CONTRIBUTING.md", "pyproject.toml",
 )
 DIRECTORIES = ("src", "docs", "scripts", "tests")
 

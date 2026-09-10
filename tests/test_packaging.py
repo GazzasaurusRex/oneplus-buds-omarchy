@@ -21,6 +21,10 @@ class PackagingTests(unittest.TestCase):
             self.assertTrue(os.access(destination / "oneplus-buds", os.X_OK))
             self.assertTrue(os.access(destination / "oneplus-buds-bridge", os.X_OK))
             self.assertTrue((destination / "src/oneplus_buds/cli.py").is_file())
+            self.assertEqual(
+                (destination / "preview.png").read_bytes(),
+                (ROOT / "preview.png").read_bytes(),
+            )
             self.assertFalse((destination / ".git").exists())
             self.assertFalse(list(destination.rglob("__pycache__")))
             original = (destination / "manifest.json").read_bytes()

@@ -31,6 +31,8 @@ were restored to their original EQ state.
   launched one helper and remained connected to Pro 2 with the correct firmware,
   battery, ANC profile, and no backend error. The user confirmed the menu works
   as intended. No ANC or EQ write was sent.
+- The user supplied a live 563×1080 panel screenshot for marketplace use. It was
+  reviewed for visible personal information and added as root `preview.png`.
 
 ## Native earbud EQ milestone — 2026-09-08
 
