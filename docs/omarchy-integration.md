@@ -92,7 +92,7 @@ A live Pro 2 click from Off to Transparency completed through QML → shared ser
 
 ## Compact hover presentation
 
-The ANC latency milestone is complete; see [the handoff](AGENT_HANDOFF.md) and
+The ANC latency milestone is complete; see the
 [recorded measurements](measurements/anc-baseline.md). Do not repeat those cycles
 for presentation work.
 

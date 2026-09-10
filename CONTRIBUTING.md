@@ -1,7 +1,8 @@
 # Contributing
 
-Start with the [README](README.md) and [current handoff](docs/AGENT_HANDOFF.md).
-Keep changes focused; reuse verified evidence rather than repeating hardware tests.
+Start with the [README](README.md) and the recorded evidence under
+[`docs/measurements`](docs/measurements). Keep changes focused; reuse verified
+evidence rather than repeating hardware tests.
 
 ## Compatibility reports
 

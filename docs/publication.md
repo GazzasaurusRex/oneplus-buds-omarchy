@@ -94,7 +94,8 @@ executable modes and excludes caches/Git internals. This validates a source plug
 export, not a Python wheel. Wheel builds require setuptools >=77 and have not
 been tested on this host, where setuptools is absent. Wheels are not the Omarchy
 installation path. Prior live lifecycle, two-model ANC and accepted portrait UI
-results remain in the handoff; packaging work should not repeat hardware cycles.
+results remain in the recorded measurement and integration documentation;
+packaging work should not repeat hardware cycles.
 
 Validation result (2026-09-10): the checkout and a clean source export passed
 Omarchy 4.0.3-1 validation, CLI help, dependency preflight, all 110
