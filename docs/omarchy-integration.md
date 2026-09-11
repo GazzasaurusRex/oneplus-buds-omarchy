@@ -139,5 +139,7 @@ and continues to let PopupCard cap both dimensions to the active screen.
 Short EQ presets share rows while long device-provided names receive a full row.
 Device-defined custom bands remain in the EQ section and use a two-across editor,
 reducing six bands to three rows without changing any command or capability logic.
-The offscreen Qt test covers both sides of the responsive breakpoint. Live visual
-approval is pending on the local UI feature branch.
+The offscreen Qt test covers both sides of the responsive breakpoint. Live review
+on a 1920×1080 display at 1.5× scale reported a 600×474 panel with the full Pro 2
+ANC, five-preset and six-band custom-EQ surfaces visible without scrolling. The
+user accepted the revised layout on 2026-09-11.
