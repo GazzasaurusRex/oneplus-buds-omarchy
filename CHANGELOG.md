@@ -11,8 +11,9 @@
   time was not measured; explicit strengths retain conservative setup.
 - Combined Omarchy service/bar plugin with one backend helper and reconnect logic.
 - Compact idle icon, battery hover expansion and delayed collapse.
-- Portrait panel with themed full-width controls, grouped ANC modes/strengths,
-  wrapping text and vertical scrolling; accepted in live user review.
+- Responsive themed panel with full-width device status, balanced noise-control
+  and earbud-EQ columns, compact preset/custom-EQ grids, and a narrow scrolling
+  fallback.
 - Native earbud EQ with model-specific verified presets, fresh read-back, Pro 2
   device-defined six-band custom curves, and capability-driven panel controls.
 - Live EQ-panel acceptance on both reference models, including device switching,

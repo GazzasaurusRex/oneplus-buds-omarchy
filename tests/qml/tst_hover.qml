@@ -26,6 +26,7 @@ TestCase {
   property color foreground: "white"
   property color background: "black"
   property string fontFamily: "sans-serif"
+  property real panelAvailableWidth: 600
   property var shell: host
   function serviceFor(name) { return service }
   function showTooltip(item, text) {}
@@ -87,6 +88,7 @@ TestCase {
   })
   widget.popupOpen = true
   tryCompare(service, "eqStatusCalls", 1)
+  verify(widget.useTwoColumnLayout)
   compare(widget.eqPresets.length, 1)
   compare(widget.customEqEntries.length, 1)
   compare(widget.selectedCustom.bands.length, 2)
@@ -107,5 +109,14 @@ TestCase {
   compare(service.customRequest.gains.join(","), "0,0")
   widget.pendingRequestId = -1
   widget.popupOpen = false
+ }
+ function test_panel_falls_back_when_width_is_narrow() {
+  service.snapshot = ({status:{model:"Test buds",battery:{}}, anc_modes:["off","on"],
+   capabilities:["eq"], session_connected:true, eq_write_verified:true,
+   eq:{current_id:0,current_name:"Hans Zimmer Soundscape Tuning",presets:[],custom_entries:[]}})
+  host.panelAvailableWidth = 559
+  tryCompare(widget, "useTwoColumnLayout", false)
+  host.panelAvailableWidth = 600
+  tryCompare(widget, "useTwoColumnLayout", true)
  }
 }

@@ -127,3 +127,17 @@ cleanup passed, with exact configuration restoration, helper shutdown and no she
 restart. Publication documentation and dependency/export checks are now complete; see
 [publication preparation](publication.md). Public repository selection, remote
 installation verification and marketplace submission remain outstanding.
+
+## Responsive control panel revision
+
+The post-submission UI revision keeps the device header and battery status across
+the full panel width, then uses equal Noise control and Earbud EQ columns whenever
+PopupCard reports at least 560 logical px of usable screen width. The panel targets
+600 logical px, falls back to the established 320 px width below that breakpoint,
+and continues to let PopupCard cap both dimensions to the active screen.
+
+Short EQ presets share rows while long device-provided names receive a full row.
+Device-defined custom bands remain in the EQ section and use a two-across editor,
+reducing six bands to three rows without changing any command or capability logic.
+The offscreen Qt test covers both sides of the responsive breakpoint. Live visual
+approval is pending on the local UI feature branch.

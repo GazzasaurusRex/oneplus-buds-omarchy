@@ -14,7 +14,8 @@ independent project, unaffiliated with OnePlus or OPPO.
 - Independently verified ANC On, Off, Transparency and profile-supported strengths.
 - Model-correct native earbud EQ presets on both models, plus device-defined custom EQ on Pro 2.
 - Icon-only idle widget; hover reveals known batteries, with delayed collapse.
-- Portrait panel with grouped, full-width controls, theme integration and vertical scrolling.
+- Responsive panel with full-width device status, balanced ANC/EQ columns when
+  space permits, and a compact scrolling fallback on narrow displays.
 - A privacy-safe diagnostic report for compatibility investigations.
 
 | Device | Evidence | Tested firmware | ANC strengths |

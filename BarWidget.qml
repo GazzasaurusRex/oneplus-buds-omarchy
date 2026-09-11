@@ -24,6 +24,10 @@ BarWidget {
   readonly property var customEqEntries: BarModel.customEqEntries(snapshot)
   readonly property var selectedCustom: customEqEntries.length > 0
     ? customEqEntries[Math.max(0, Math.min(customSlotIndex, customEqEntries.length - 1))] : null
+  readonly property bool eqAvailable: !!(snapshot && snapshot.capabilities
+    && snapshot.capabilities.indexOf("eq") !== -1)
+  readonly property bool useTwoColumnLayout: eqAvailable
+    && popup.availableCardWidth >= Style.space(560)
 
   readonly property bool lifecycleUsable: connection === "connected"
     && snapshot !== null && snapshot.session_connected === true
@@ -223,8 +227,9 @@ BarWidget {
     bar: root.bar
     owner: root
     open: root.popupOpen
-    contentWidth: popup.fittedContentWidth(Style.space(320))
-    contentHeight: popup.fittedContentHeight(Math.max(Style.space(380), panelContent.implicitHeight))
+    contentWidth: popup.fittedContentWidth(root.useTwoColumnLayout
+      ? Style.space(600) : Style.space(320))
+    contentHeight: popup.fittedContentHeight(panelContent.implicitHeight)
 
     Flickable {
       id: panelScroll
@@ -270,18 +275,84 @@ BarWidget {
           wrapMode: Text.Wrap
         }
 
-        Repeater {
-          model: BarModel.ancGroups(root.snapshot)
+        Item {
+          id: controlSections
+          width: parent.width
+          height: implicitHeight
+          implicitHeight: root.useTwoColumnLayout
+            ? Math.max(noiseColumn.implicitHeight, eqColumn.implicitHeight)
+            : noiseColumn.implicitHeight
+              + (eqColumn.visible ? Style.space(14) + eqColumn.implicitHeight : 0)
 
-          delegate: Column {
-            id: section
-            required property var modelData
-            width: panelContent.width
-            spacing: Style.space(6)
+          Column {
+            id: noiseColumn
+            x: 0
+            y: 0
+            width: root.useTwoColumnLayout
+              ? (controlSections.width - Style.space(16)) / 2 : controlSections.width
+            spacing: Style.space(8)
+
+            Repeater {
+              model: BarModel.ancGroups(root.snapshot)
+
+              delegate: Column {
+                id: section
+                required property var modelData
+                width: noiseColumn.width
+                spacing: Style.space(5)
+
+                Text {
+                  width: parent.width
+                  text: section.modelData.title
+                  textFormat: Text.PlainText
+                  color: root.bar.foreground
+                  font.family: root.bar.fontFamily
+                  font.pixelSize: Style.font.bodySmall
+                  font.bold: true
+                }
+
+                Repeater {
+                  model: section.modelData.options
+
+                  delegate: Button {
+                    required property var modelData
+                    width: section.width
+                    height: Math.max(implicitHeight, Style.space(32))
+                    text: modelData.label
+                    selected: modelData.value === root.currentAncMode
+                      || (modelData.value === "on" && root.snapshot
+                        && root.snapshot.status && root.snapshot.status.anc === "on")
+                    bordered: true
+                    leftAlign: true
+                    enabled: root.connection === "connected" && root.pendingRequestId < 0
+                    opacity: enabled ? 1.0 : 0.5
+                    foreground: root.bar.foreground
+                    background: root.bar.background
+                    accent: Color.accent
+                    fontFamily: root.bar.fontFamily
+                    focusable: true
+                    onActiveFocusChanged: if (activeFocus) panelScroll.reveal(this)
+                    Keys.onDownPressed: nextItemInFocusChain().forceActiveFocus(Qt.TabFocusReason)
+                    Keys.onUpPressed: nextItemInFocusChain(false).forceActiveFocus(Qt.BacktabFocusReason)
+                    Keys.onEscapePressed: root.close()
+                    onClicked: root.selectAnc(modelData.value)
+                  }
+                }
+              }
+            }
+          }
+
+          Column {
+            id: eqColumn
+            x: root.useTwoColumnLayout ? noiseColumn.width + Style.space(16) : 0
+            y: root.useTwoColumnLayout ? 0 : noiseColumn.implicitHeight + Style.space(14)
+            width: root.useTwoColumnLayout ? noiseColumn.width : controlSections.width
+            spacing: Style.space(5)
+            visible: root.eqAvailable
 
             Text {
               width: parent.width
-              text: section.modelData.title
+              text: "Earbud EQ"
               textFormat: Text.PlainText
               color: root.bar.foreground
               font.family: root.bar.fontFamily
@@ -289,140 +360,121 @@ BarWidget {
               font.bold: true
             }
 
-            Repeater {
-              model: section.modelData.options
+            Text {
+              width: parent.width
+              text: root.eqStatus ? "Current: " + root.eqStatus.current_name : "Loading native EQ…"
+              textFormat: Text.PlainText
+              color: root.bar.foreground
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              wrapMode: Text.Wrap
+            }
 
-              delegate: Button {
-                required property var modelData
-                width: section.width
-                height: Math.max(implicitHeight, Style.space(36))
-                text: modelData.label
-                selected: modelData.value === root.currentAncMode
-                  || (modelData.value === "on" && root.snapshot
-                    && root.snapshot.status && root.snapshot.status.anc === "on")
-                bordered: true
-                leftAlign: true
-                enabled: root.connection === "connected" && root.pendingRequestId < 0
-                opacity: enabled ? 1.0 : 0.5
-                foreground: root.bar.foreground
-                background: root.bar.background
-                accent: Color.accent
-                fontFamily: root.bar.fontFamily
-                focusable: true
-                onActiveFocusChanged: if (activeFocus) panelScroll.reveal(this)
-                Keys.onDownPressed: nextItemInFocusChain().forceActiveFocus(Qt.TabFocusReason)
-                Keys.onUpPressed: nextItemInFocusChain(false).forceActiveFocus(Qt.BacktabFocusReason)
-                Keys.onEscapePressed: root.close()
-                onClicked: root.selectAnc(modelData.value)
+            Flow {
+              id: eqPresetFlow
+              width: parent.width
+              spacing: Style.space(5)
+
+              Repeater {
+                model: root.eqPresets
+                delegate: Button {
+                  required property var modelData
+                  width: modelData.name.length > 22 ? eqPresetFlow.width
+                    : (eqPresetFlow.width - eqPresetFlow.spacing) / 2
+                  height: Math.max(implicitHeight, Style.space(32))
+                  text: modelData.name
+                  selected: !!(root.eqStatus && root.eqStatus.current_id === modelData.id)
+                  bordered: true
+                  leftAlign: true
+                  enabled: root.connection === "connected" && root.pendingRequestId < 0
+                    && root.snapshot.eq_write_verified === true
+                  opacity: enabled ? 1.0 : 0.5
+                  foreground: root.bar.foreground
+                  background: root.bar.background
+                  accent: Color.accent
+                  fontFamily: root.bar.fontFamily
+                  onClicked: root.selectEq(modelData.key)
+                }
               }
             }
-          }
-        }
 
-
-        Column {
-          width: parent.width
-          spacing: Style.space(6)
-          visible: !!(root.snapshot && root.snapshot.capabilities
-            && root.snapshot.capabilities.indexOf("eq") !== -1)
-
-          Text {
-            width: parent.width
-            text: "Earbud EQ"
-            textFormat: Text.PlainText
-            color: root.bar.foreground
-            font.family: root.bar.fontFamily
-            font.pixelSize: Style.font.bodySmall
-            font.bold: true
-          }
-
-          Text {
-            width: parent.width
-            text: root.eqStatus ? "Current: " + root.eqStatus.current_name : "Loading native EQ…"
-            textFormat: Text.PlainText
-            color: root.bar.foreground
-            font.family: root.bar.fontFamily
-            font.pixelSize: Style.font.bodySmall
-          }
-
-          Repeater {
-            model: root.eqPresets
-            delegate: Button {
-              required property var modelData
+            Text {
               width: parent.width
-              height: Math.max(implicitHeight, Style.space(36))
-              text: modelData.name
-              selected: !!(root.eqStatus && root.eqStatus.current_id === modelData.id)
+              visible: root.customEqEntries.length > 0
+              text: "Custom EQ"
+              textFormat: Text.PlainText
+              color: root.bar.foreground
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              font.bold: true
+              topPadding: Style.space(3)
+            }
+
+            Controls.ComboBox {
+              width: parent.width
+              visible: root.customEqEntries.length > 0
+              model: root.customEqEntries.map(function(entry) { return entry.name })
+              currentIndex: root.customSlotIndex
+              enabled: root.pendingRequestId < 0
+              onActivated: function(index) { root.selectCustomSlot(index) }
+            }
+
+            Flow {
+              id: customBandFlow
+              width: parent.width
+              spacing: Style.space(5)
+
+              Repeater {
+                id: bandRepeater
+                model: root.selectedCustom ? root.selectedCustom.bands : []
+                delegate: Column {
+                  required property var modelData
+                  property alias gainValue: gainBox.value
+                  width: (customBandFlow.width - customBandFlow.spacing) / 2
+                  spacing: Style.space(2)
+
+                  Text {
+                    width: parent.width
+                    text: modelData.frequency_hz >= 1000
+                      ? (modelData.frequency_hz / 1000) + " kHz" : modelData.frequency_hz + " Hz"
+                    color: root.bar.foreground
+                    font.family: root.bar.fontFamily
+                    font.pixelSize: Style.font.bodySmall
+                  }
+                  Controls.SpinBox {
+                    id: gainBox
+                    width: parent.width
+                    from: root.selectedCustom ? root.selectedCustom.min_gain_db : -6
+                    to: root.selectedCustom ? root.selectedCustom.max_gain_db : 6
+                    stepSize: root.eqStatus && root.eqStatus.gain_step_db
+                      ? root.eqStatus.gain_step_db : 1
+                    value: modelData.gain_db
+                    editable: true
+                    enabled: root.snapshot && root.snapshot.custom_eq_write_verified === true
+                      && root.pendingRequestId < 0
+                    textFromValue: function(value) { return (value > 0 ? "+" : "") + value + " dB" }
+                    valueFromText: function(text) { return parseInt(text) || 0 }
+                  }
+                }
+              }
+            }
+
+            Button {
+              width: parent.width
+              height: Math.max(implicitHeight, Style.space(32))
+              visible: root.selectedCustom !== null
+              text: "Apply " + (root.selectedCustom ? root.selectedCustom.name : "custom EQ")
               bordered: true
               leftAlign: true
-              enabled: root.connection === "connected" && root.pendingRequestId < 0
-                && root.snapshot.eq_write_verified === true
+              enabled: root.snapshot && root.snapshot.custom_eq_write_verified === true
+                && root.pendingRequestId < 0
               opacity: enabled ? 1.0 : 0.5
               foreground: root.bar.foreground
               background: root.bar.background
               accent: Color.accent
               fontFamily: root.bar.fontFamily
-              onClicked: root.selectEq(modelData.key)
+              onClicked: root.applyCustomEq()
             }
-          }
-
-          Controls.ComboBox {
-            width: parent.width
-            visible: root.customEqEntries.length > 0
-            model: root.customEqEntries.map(function(entry) { return entry.name })
-            currentIndex: root.customSlotIndex
-            enabled: root.pendingRequestId < 0
-            onActivated: function(index) { root.selectCustomSlot(index) }
-          }
-
-          Repeater {
-            id: bandRepeater
-            model: root.selectedCustom ? root.selectedCustom.bands : []
-            delegate: Row {
-              required property var modelData
-              property alias gainValue: gainBox.value
-              width: parent.width
-              spacing: Style.space(8)
-
-              Text {
-                width: parent.width - gainBox.width - parent.spacing
-                anchors.verticalCenter: parent.verticalCenter
-                text: modelData.frequency_hz >= 1000
-                  ? (modelData.frequency_hz / 1000) + " kHz" : modelData.frequency_hz + " Hz"
-                color: root.bar.foreground
-                font.family: root.bar.fontFamily
-                font.pixelSize: Style.font.bodySmall
-              }
-              Controls.SpinBox {
-                id: gainBox
-                from: root.selectedCustom ? root.selectedCustom.min_gain_db : -6
-                to: root.selectedCustom ? root.selectedCustom.max_gain_db : 6
-                stepSize: root.eqStatus && root.eqStatus.gain_step_db
-                  ? root.eqStatus.gain_step_db : 1
-                value: modelData.gain_db
-                editable: true
-                enabled: root.snapshot && root.snapshot.custom_eq_write_verified === true
-                  && root.pendingRequestId < 0
-                textFromValue: function(value) { return (value > 0 ? "+" : "") + value + " dB" }
-                valueFromText: function(text) { return parseInt(text) || 0 }
-              }
-            }
-          }
-
-          Button {
-            width: parent.width
-            visible: root.selectedCustom !== null
-            text: "Apply " + (root.selectedCustom ? root.selectedCustom.name : "custom EQ")
-            bordered: true
-            leftAlign: true
-            enabled: root.snapshot && root.snapshot.custom_eq_write_verified === true
-              && root.pendingRequestId < 0
-            opacity: enabled ? 1.0 : 0.5
-            foreground: root.bar.foreground
-            background: root.bar.background
-            accent: Color.accent
-            fontFamily: root.bar.fontFamily
-            onClicked: root.applyCustomEq()
           }
         }
 
@@ -461,6 +513,7 @@ BarWidget {
         popup_open: root.popupOpen,
         panel_width: popup.contentWidth,
         panel_height: popup.contentHeight,
+        two_column: root.useTwoColumnLayout,
         anc_modes: root.ancOptions.map(function(option) { return option.value }),
         current_anc: root.currentAncMode,
         pending: root.pendingRequestId >= 0,
