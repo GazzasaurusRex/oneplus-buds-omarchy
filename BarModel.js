@@ -115,6 +115,11 @@ function compatibilityLabel(snapshot) {
   return ""
 }
 
+function reportActionLabel(snapshot) {
+  return compatibility(snapshot) === "experimental"
+    ? "Report compatibility" : "Report a problem"
+}
+
 function presentation(connection, snapshot) {
   var connected = connection === "connected"
   var parts = connected ? batteryParts(snapshot) : []
@@ -150,6 +155,7 @@ if (typeof module !== "undefined") {
     customEqEntries: customEqEntries,
     compatibility: compatibility,
     compatibilityLabel: compatibilityLabel,
+    reportActionLabel: reportActionLabel,
     presentation: presentation,
     validPercentage: validPercentage
   }

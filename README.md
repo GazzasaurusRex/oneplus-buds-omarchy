@@ -35,10 +35,12 @@ by the maintainer. Other recognised OnePlus/OPO-compatible models are
 owner reports successful, reproducible checks on their own hardware; that label
 does not mean maintainer hardware verification.
 
-Experimental devices show a quiet notice and a **Report compatibility** link at
-the bottom of the control panel. The panel explains the report contents, lets you
-choose where to save a privacy-safe JSON file, and never uploads it. After saving,
-you may open the [new compatibility issue form](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md)
+Every connected device has a quiet reporting link at the bottom of the control
+panel. Verified and Community Tested devices show **Report a problem**;
+Experimental devices show **Report compatibility** beneath their compatibility
+notice. All use the same workflow: the panel explains the report contents, lets
+you choose where to save a privacy-safe JSON file, and never uploads it. After
+saving, you may open the [GitHub issue chooser](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new/choose)
 and attach the report yourself. Reports covering detection, battery, ANC,
 Transparency and EQ are welcome even when everything works.
 

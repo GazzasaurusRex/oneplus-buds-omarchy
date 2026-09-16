@@ -42,7 +42,9 @@ Maintainer notes:
 > Quickshell instance. Only advertised verified controls are exposed. Installation
 > and removal use Omarchy commands. Other recognised OnePlus/OPO-compatible
 > devices are explicitly labelled Experimental and can generate a local,
-> privacy-safe compatibility report. The project is independent of OnePlus/OPPO.
+> privacy-safe compatibility report. Verified and Community Tested devices can
+> generate the same report without showing an Experimental warning. The project
+> is independent of OnePlus/OPPO.
 
 Submission is through the [marketplace issue form](https://github.com/omacom/omarchy-plugin-marketplace/issues/new?template=submit-plugin.yml)
 or the documented CLI issue format. It requires a public repository, one category,

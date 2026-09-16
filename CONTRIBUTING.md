@@ -6,8 +6,9 @@ evidence rather than repeating hardware tests.
 
 ## Compatibility reports
 
-For an Experimental device, prefer **Report compatibility** in the panel. It uses
-cached state, lets you choose the destination and never uploads automatically.
+For any connected device, prefer the panel's **Report a problem** or **Report
+compatibility** action. Both use cached state, let you choose the destination and
+never upload automatically.
 If the panel is unavailable, disable the plugin so only one process owns RFCOMM,
 run `./oneplus-buds diagnostics --report`, and attach the reviewed report to a
 compatibility issue with model, firmware, plugin version and what you observed.

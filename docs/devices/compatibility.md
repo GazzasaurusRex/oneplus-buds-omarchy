@@ -51,12 +51,14 @@ write controls. Spatial audio, gestures, finding earbuds and phone-side sound
 features are not implemented. Unknown feature IDs and notification schemas remain
 unnamed. Physical earbud changes are not guaranteed to update the UI immediately.
 
-Experimental devices show their status in the panel. Select **Report
-compatibility**, review the collection/privacy explanation, choose where to save
-the JSON report, then optionally open a GitHub compatibility issue. The report is
-created locally and is never uploaded automatically. You can also disable the
-plugin and run `./oneplus-buds diagnostics --report` as a CLI fallback. Read the
-[contribution guide](../../CONTRIBUTING.md) before reporting a new model.
+Experimental devices show their status and **Report compatibility** in the panel.
+Verified and Community Tested devices omit the Experimental warning and offer
+**Report a problem** instead. Both labels open the same workflow: review the
+collection/privacy explanation, choose where to save the JSON report, then
+optionally open GitHub Issues. The report is created locally and is never uploaded
+automatically. You can also disable the plugin and run
+`./oneplus-buds diagnostics --report` as a CLI fallback. Read the [contribution
+guide](../../CONTRIBUTING.md) before reporting a new model.
 
 Device switching uses the generic controller lifecycle: automatic selection is
 rerun after transport loss, old device state is cleared, and the next compatible

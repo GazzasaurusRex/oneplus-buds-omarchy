@@ -12,11 +12,13 @@ TestCase {
   property int nextId: 1
   property int eqStatusCalls: 0
   property var customRequest: null
+  property int reportRequests: 0
   function eqStatus() { eqStatusCalls++; return nextId++ }
   function setEq(value) { return nextId++ }
   function setCustomEq(entryId, gains) {
    customRequest = ({entry_id: entryId, gains: gains}); return nextId++
   }
+  function saveDiagnosticReport(path) { reportRequests++; return nextId++ }
  }
  QtObject {
   id: host
@@ -40,6 +42,7 @@ TestCase {
   service.lastResponse = null
   service.eqStatusCalls = 0
   service.customRequest = null
+  service.reportRequests = 0
   host.panelAvailableWidth = 600
   widget.popupOpen = false
   widget.pendingRequestId = -1
@@ -105,6 +108,9 @@ TestCase {
   compare(widget.eqPresets.length, 1)
   compare(widget.customEqEntries.length, 1)
   compare(widget.selectedCustom.bands.length, 2)
+  verify(widget.reportActionShown)
+  compare(widget.reportActionLabel, "Report a problem")
+  verify(widget.panelHeight <= 510)
   service.lastResponse = ({request_id:widget.pendingRequestId,ok:true,result:service.snapshot.eq})
   wait(0)
   service.snapshot.eq.custom_entries.push({eq_id:5,name:"Custom1",min_gain_db:-6,max_gain_db:6,
@@ -139,12 +145,16 @@ TestCase {
   compare(widget.experimentalDevice, false)
   compare(widget.communityTestedDevice, false)
   verify(!widget.compatibilityNoticeShown)
+  verify(widget.reportActionShown)
+  compare(widget.reportActionLabel, "Report a problem")
 
   service.snapshot = ({status:{model:"OnePlus Buds Pro 2",product_id:"062014",battery:{}},
    compatibility:"verified", anc_modes:["off","on"], capabilities:[], session_connected:true})
   wait(0)
   compare(widget.experimentalDevice, false)
   verify(!widget.compatibilityNoticeShown)
+  verify(widget.reportActionShown)
+  compare(widget.reportActionLabel, "Report a problem")
 
   service.snapshot = ({status:{model:null,product_id:"A1B2C3",battery:{}},
    compatibility:"experimental", anc_modes:[], capabilities:[], session_connected:false})
@@ -152,6 +162,7 @@ TestCase {
   verify(widget.experimentalDevice)
   verify(widget.compatibilityNoticeShown)
   verify(widget.reportActionShown)
+  compare(widget.reportActionLabel, "Report compatibility")
   verify(widget.panelHeight <= 560)
 
   service.snapshot = ({status:{model:"Community model",product_id:"C0FFEE",battery:{}},
@@ -159,8 +170,23 @@ TestCase {
   wait(0)
   verify(widget.communityTestedDevice)
   verify(widget.compatibilityNoticeShown)
-  verify(!widget.reportActionShown)
+  verify(widget.reportActionShown)
+  compare(widget.reportActionLabel, "Report a problem")
   verify(widget.panelHeight <= 560)
   widget.popupOpen = false
+ }
+
+ function test_all_compatibility_states_share_report_workflow() {
+  var states = ["verified", "community_tested", "experimental"]
+  for (var i = 0; i < states.length; i++) {
+   service.snapshot = ({status:{model:"Test buds",product_id:"TEST",battery:{}},
+    compatibility:states[i], anc_modes:[], capabilities:[], session_connected:true})
+   wait(0)
+   widget.saveDiagnosticReport("file:///tmp/report.json")
+   compare(widget.pendingKind, "diagnostic_report")
+   widget.pendingRequestId = -1
+   widget.pendingKind = ""
+  }
+  compare(service.reportRequests, 3)
  }
 }

@@ -5,7 +5,8 @@
 - Distinguish Verified, Community Tested and Experimental device evidence in the
   backend and panel; only Buds Pro and Buds Pro 2 remain hardware-verified.
 - Add a compact experimental-device notice and user-controlled compatibility
-  report workflow with backend privacy redaction and no automatic upload.
+  report workflow, available to every connected device, with backend privacy
+  redaction and no automatic upload.
 - Clarify marketplace metadata, compatibility documentation and GitHub issue
   intake for untested OnePlus/OPO-compatible models.
 

@@ -49,7 +49,7 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("delegate: Button {", widget)
         self.assertIn("budsService.setAnc(mode)", widget)
         self.assertIn("response.result.verified === true", widget)
-        self.assertIn('objectName: "reportCompatibilityAction"', widget)
+        self.assertIn('objectName: "reportAction"', widget)
         self.assertIn('objectName: "saveDiagnosticReportAction"', widget)
         self.assertIn("FileDialog.SaveFile", widget)
         self.assertIn("Number(response.request_id) !== pendingRequestId", widget)
@@ -89,6 +89,9 @@ if (model.eqPresets({}).length || model.customEqEntries({}).length) process.exit
 if (model.compatibility({compatibility:"verified"}) !== "verified") process.exit(14);
 if (model.compatibilityLabel({compatibility:"community_tested"}) !== "Community tested") process.exit(15);
 if (model.compatibility({compatibility:"something-new"}) !== "experimental") process.exit(16);
+if (model.reportActionLabel({compatibility:"verified"}) !== "Report a problem") process.exit(17);
+if (model.reportActionLabel({compatibility:"community_tested"}) !== "Report a problem") process.exit(18);
+if (model.reportActionLabel({compatibility:"experimental"}) !== "Report compatibility") process.exit(19);
 '''
         subprocess.run(
             ["node", "-e", script, str(ROOT / "BarModel.js")],

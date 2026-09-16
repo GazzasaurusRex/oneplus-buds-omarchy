@@ -25,10 +25,13 @@ BarWidget {
   readonly property var customEqEntries: BarModel.customEqEntries(snapshot)
   readonly property string compatibilityKind: BarModel.compatibility(snapshot)
   readonly property string compatibilityLabel: BarModel.compatibilityLabel(snapshot)
+  readonly property string reportActionLabel: BarModel.reportActionLabel(snapshot)
   readonly property bool experimentalDevice: compatibilityKind === "experimental"
   readonly property bool communityTestedDevice: compatibilityKind === "community_tested"
   readonly property bool compatibilityNoticeShown: experimentalDevice || communityTestedDevice
-  readonly property bool reportActionShown: experimentalDevice && !reportDetailsOpen
+  readonly property bool reportAvailable: connection === "connected"
+    && snapshot !== null && snapshot.status !== null
+  readonly property bool reportActionShown: reportAvailable && !reportDetailsOpen
   readonly property var selectedCustom: customEqEntries.length > 0
     ? customEqEntries[Math.max(0, Math.min(customSlotIndex, customEqEntries.length - 1))] : null
   readonly property bool eqAvailable: !!(snapshot && snapshot.capabilities
@@ -543,13 +546,23 @@ BarWidget {
             wrapMode: Text.Wrap
           }
 
+        }
+
+        Column {
+          id: reportSection
+          objectName: "diagnosticReportSection"
+          width: parent.width
+          spacing: Style.space(3)
+          visible: root.reportAvailable
+
           Text {
             id: reportAction
-            objectName: "reportCompatibilityAction"
+            objectName: "reportAction"
             visible: root.reportActionShown
-            text: "Report compatibility"
+            text: root.reportActionLabel
             textFormat: Text.PlainText
             color: Color.accent
+            opacity: 0.82
             font.family: root.bar.fontFamily
             font.pixelSize: Style.font.bodySmall
             font.underline: reportActionMouse.containsMouse
@@ -566,7 +579,7 @@ BarWidget {
           Column {
             width: parent.width
             spacing: Style.space(3)
-            visible: root.experimentalDevice && root.reportDetailsOpen
+            visible: root.reportDetailsOpen
 
             Text {
               width: parent.width
@@ -605,7 +618,7 @@ BarWidget {
               id: openIssueAction
               objectName: "openCompatibilityIssueAction"
               visible: root.reportSaved
-              text: "Open GitHub compatibility issue"
+              text: "Open GitHub issue"
               textFormat: Text.PlainText
               color: Color.accent
               font.family: root.bar.fontFamily
@@ -618,7 +631,7 @@ BarWidget {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: Qt.openUrlExternally(
-                  "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md")
+                  "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new/choose")
               }
             }
           }
@@ -675,7 +688,8 @@ BarWidget {
         pending: root.pendingRequestId >= 0,
         eq: root.eqStatus,
         compatibility: root.compatibilityKind,
-        compatibility_notice: compatibilityNotice.visible,
+        compatibility_notice: root.compatibilityNoticeShown,
+        report_available: root.reportAvailable,
         report_action: reportAction.visible,
         error: root.budsService ? String(root.budsService.lastError || "") : ""
       })
