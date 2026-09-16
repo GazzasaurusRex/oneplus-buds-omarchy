@@ -9,13 +9,10 @@ evidence rather than repeating hardware tests.
 For any connected device, prefer the panel's **Report a problem** or **Report
 compatibility** action. Both use cached state, let you choose the destination and
 never upload automatically.
-If the panel is unavailable, disable the plugin so only one process owns RFCOMM,
-run `./oneplus-buds diagnostics --report`, and attach the reviewed report to a
-compatibility issue with model, firmware, plugin version and what you observed.
-Distinguish a command response from an audible/physical change. Include whether
-both earbuds were worn or in their case. Do not include Bluetooth addresses,
-pairing data, unrelated devices or raw notification payloads. The latter can
-contain information about peer devices.
+Attach the reviewed `.txt` report to a compatibility issue and describe what you
+physically heard or observed. Do not include Bluetooth addresses, pairing data,
+unrelated devices or raw notification payloads. The latter can contain information
+about peer devices.
 
 Use the [compatibility report template](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md)
 for device reports, or the [issue chooser](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new/choose)

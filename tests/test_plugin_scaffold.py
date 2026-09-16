@@ -10,6 +10,38 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PluginScaffoldTests(unittest.TestCase):
+    def test_compatibility_issue_template_uses_generated_report(self):
+        template = (ROOT / ".github/ISSUE_TEMPLATE/compatibility.md").read_text()
+        self.assertIn("Attach the diagnostic report", template)
+        self.assertIn("generated `.txt` file", template)
+        for feature in (
+            "The plugin detects the earbuds",
+            "Battery information appears correct",
+            "ANC works",
+            "Transparency mode works",
+            "ANC strength controls work",
+            "EQ presets work",
+            "Custom EQ works",
+        ):
+            self.assertIn(f"- [ ] {feature}", template)
+        for duplicate in (
+            "**Exact model**",
+            "**Firmware version**",
+            "**Plugin version**",
+            "backend version",
+            "diagnostics --report",
+            "RFCOMM",
+            "BlueZ",
+            "OPO",
+        ):
+            self.assertNotIn(duplicate, template)
+
+    def test_issue_templates_do_not_offer_command_line_diagnostics(self):
+        templates = (ROOT / ".github/ISSUE_TEMPLATE").glob("*.md")
+        for template in templates:
+            with self.subTest(template=template.name):
+                self.assertNotIn("diagnostics --report", template.read_text())
+
     def test_manifest_declares_combined_service_widget(self):
         manifest = json.loads((ROOT / "manifest.json").read_text())
         self.assertEqual(manifest["schemaVersion"], 1)

@@ -56,9 +56,8 @@ Verified and Community Tested devices omit the Experimental warning and offer
 **Report a problem** instead. Both labels open the same workflow: review the
 collection/privacy explanation, choose where to save the `.txt` report, then
 optionally open the repository's compatibility issue template and attach it manually.
-The report is created locally and is never uploaded automatically. You can also disable the plugin and run
-`./oneplus-buds diagnostics --report` as a CLI fallback. Read the [contribution
-guide](../../CONTRIBUTING.md) before reporting a new model.
+The report is created locally and is never uploaded automatically. Read the
+[contribution guide](../../CONTRIBUTING.md) before reporting a new model.
 
 Device switching uses the generic controller lifecycle: automatic selection is
 rerun after transport loss, old device state is cleared, and the next compatible

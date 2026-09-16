@@ -1,52 +1,48 @@
 ---
 name: New device / compatibility report
-about: Share evidence for an untested OnePlus or OPO-compatible earbud model
-title: '[Compatibility] Brand and model'
+about: Tell us what works—or does not work—with your earbuds
+title: '[Compatibility] '
 labels: ''
 assignees: ''
 ---
 
-Thanks for helping improve device coverage. Community Tested status may be granted
-after a user successfully verifies functionality on their hardware. It does not
-mean the maintainer owns or has hardware-verified that model.
+Thanks for helping improve device support. You do not need any Bluetooth or
+command-line knowledge to complete this report.
 
-**Brand**
+## What are you testing, or what went wrong?
 
-**Exact model**
+Briefly describe the problem or the compatibility check you performed.
 
-**Firmware version**
+## Attach the diagnostic report
 
-**Plugin version**
+In the earbuds panel, choose **Report compatibility** or **Report a problem**, save
+the generated `.txt` file, then drag that file here to attach it.
 
-**Does the plugin detect and identify the earbuds?**
+<!-- Drag the diagnostic .txt file below this line. -->
 
-**Battery status**
+The plugin does not upload anything automatically. You remain in control of what
+you attach. You may review the file before sharing it.
 
-What values appear for the left bud, right bud and case?
+## What worked?
 
-**ANC status**
+Check only features you personally tested. Leave unavailable or untested features
+unchecked.
 
-What can you read or change, and did you physically verify the result?
+- [ ] The plugin detects the earbuds
+- [ ] Battery information appears correct
+- [ ] ANC works
+- [ ] Transparency mode works
+- [ ] ANC strength controls work
+- [ ] EQ presets work
+- [ ] Custom EQ works
 
-**Transparency status**
+## What did you physically hear or observe?
 
-**EQ status**
+Describe anything software cannot confirm by itself—for example, whether the sound
+actually changed, whether Transparency let outside sound through, or whether the
+displayed battery levels seemed plausible.
 
-Which presets/custom controls appear, and do changes work?
+## Anything else? (optional)
 
-**What does not work?**
-
-**Diagnostic report attachment/output**
-
-For an Experimental device, use **Report compatibility** in the panel, read the
-privacy summary, and choose where to save the report. Nothing is uploaded until
-you attach it here. If the panel is unavailable, disable the plugin and run
-`./oneplus-buds diagnostics --report`.
-
-Review the file before posting. Do not add Bluetooth addresses, pairing data,
-tokens, environment variables, raw packets/notifications, or unrelated device
-details.
-
-**Observed features and physical checks**
-Distinguish successful queries, acknowledged commands and verified audible changes.
-Do not send guessed commands to unknown devices to fill out this report.
+Add any other detail that may help. Screenshots are welcome when they do not expose
+private information.

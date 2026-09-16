@@ -1,18 +1,32 @@
 ---
 name: Bug report
-about: Report a reproducible backend or Omarchy widget problem
+about: Report a problem with the OnePlus Buds plugin
 title: ''
 labels: ''
 assignees: ''
 ---
 
-**Model / firmware / Omarchy version**
+## What happened?
 
-**Steps, expected behavior and observed behavior**
+Briefly describe what you expected and what happened instead.
 
-**Earbuds worn or in case? Other controller applications running?**
+## How can we reproduce it?
 
-**Diagnostic report (optional)**
-Use the panel's **Report compatibility** workflow when available, or disable the
-plugin and run `./oneplus-buds diagnostics --report`. Review before posting; do
-not attach addresses, pairing data, raw notifications or unrelated desktop content.
+List the steps that trigger the problem, if known.
+
+## Attach the diagnostic report
+
+In the earbuds panel, choose **Report a problem**, save the generated `.txt` file,
+then drag that file here to attach it.
+
+<!-- Drag the diagnostic .txt file below this line. -->
+
+The plugin does not upload anything automatically. You may review the file before
+sharing it.
+
+## What did you physically hear or observe? (optional)
+
+Include anything software cannot confirm by itself, such as whether the sound
+actually changed or whether the displayed battery levels seemed plausible.
+
+## Anything else? (optional)

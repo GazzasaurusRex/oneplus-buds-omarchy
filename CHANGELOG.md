@@ -9,6 +9,8 @@
   redaction and no automatic upload.
 - Propose privacy-safe model/date report filenames and guide successful saves to
   the dedicated GitHub compatibility template for manual attachment.
+- Simplify public issue templates around the generated report and plain-language
+  physical compatibility checks.
 - Clarify marketplace metadata, compatibility documentation and GitHub issue
   intake for untested OnePlus/OPO-compatible models.
 
