@@ -658,6 +658,9 @@ BarWidget {
     id: reportFileDialog
     title: "Save compatibility report"
     fileMode: FileDialog.SaveFile
+    // The GTK native chooser can abort the in-process Quickshell host while
+    // creating its GVFS directory monitor. Keep the chooser inside Qt Quick.
+    options: FileDialog.DontUseNativeDialog
     defaultSuffix: "json"
     nameFilters: ["JSON reports (*.json)"]
     onAccepted: root.saveDiagnosticReport(selectedFile)

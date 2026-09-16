@@ -52,6 +52,7 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn('objectName: "reportAction"', widget)
         self.assertIn('objectName: "saveDiagnosticReportAction"', widget)
         self.assertIn("FileDialog.SaveFile", widget)
+        self.assertIn("FileDialog.DontUseNativeDialog", widget)
         self.assertIn("Number(response.request_id) !== pendingRequestId", widget)
         self.assertEqual(widget.count("IpcHandler {"), 1)
         self.assertIn('target: "oneplus-buds.control"', widget)
