@@ -13,6 +13,6 @@ assignees: ''
 **Earbuds worn or in case? Other controller applications running?**
 
 **Diagnostic report (optional)**
-Disable the plugin first, then run `./oneplus-buds diagnostics --report`.
-Review before posting. Redact personal device names; do not attach addresses,
-pairing data, raw notifications or unrelated desktop content.
+Use the panel's **Report compatibility** workflow when available, or disable the
+plugin and run `./oneplus-buds diagnostics --report`. Review before posting; do
+not attach addresses, pairing data, raw notifications or unrelated desktop content.

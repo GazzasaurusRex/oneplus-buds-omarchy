@@ -56,8 +56,17 @@ Bluetooth addresses, raw OPO frames, pairing data, and raw notification payloads
 - `set_custom_eq` with exactly `{"entry_id": number, "gains_db": [integers...]}`:
   delegates strict band-count/range validation to the device capability layer,
   sends once, and emits only freshly verified state.
+- `save_diagnostic_report` with exactly `{"path": local-file-url}`: builds a
+  privacy-safe report from the cached snapshot and bounded recent errors, then
+  writes it to the user-selected local path. It performs no device query or write
+  and never uploads the report.
 
 Every call returns a `command_response` dictionary containing the schema version, request ID, command, `ok`, `result`, and `error`. Unknown commands and malformed parameter objects are rejected without hardware access. Runtime command errors are address-redacted. The bridge does not add unverified controls or bypass backend capability/profile checks.
+
+Report sanitisation lives in `oneplus_buds.report`, not QML. Reports omit device
+aliases, Bluetooth addresses, usernames, hostnames, home paths, credentials,
+unrelated devices and raw protocol frames. Only bounded numeric protocol counters
+and event codes are included for protocol diagnostics.
 
 ## Process adapter
 

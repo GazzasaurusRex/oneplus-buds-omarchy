@@ -6,13 +6,15 @@ evidence rather than repeating hardware tests.
 
 ## Compatibility reports
 
-Disable the plugin before using the CLI so only one process owns RFCOMM. Run
-`./oneplus-buds diagnostics --report`, review it, and attach it to a compatibility
-issue with model name, firmware, Omarchy version and exactly what you observed.
+For an Experimental device, prefer **Report compatibility** in the panel. It uses
+cached state, lets you choose the destination and never uploads automatically.
+If the panel is unavailable, disable the plugin so only one process owns RFCOMM,
+run `./oneplus-buds diagnostics --report`, and attach the reviewed report to a
+compatibility issue with model, firmware, plugin version and what you observed.
 Distinguish a command response from an audible/physical change. Include whether
 both earbuds were worn or in their case. Do not include Bluetooth addresses,
 pairing data, unrelated devices or raw notification payloads. The latter can
-contain information about peer devices. Redact personal text from device names.
+contain information about peer devices.
 
 Use the [GitHub issue templates](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new/choose)
 for bugs and compatibility reports.

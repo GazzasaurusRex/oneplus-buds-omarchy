@@ -62,7 +62,7 @@ Select among multiple connected compatible devices by putting the global option 
 PYTHONPATH=src python -m oneplus_buds.cli --device AA:BB:CC:DD:EE:FF status
 ```
 
-`devices` prints addresses for connected compatible devices because they are needed for explicit selection. `diagnostics --report` deliberately omits the Bluetooth address and does not enumerate unrelated devices.
+`devices` prints addresses for connected compatible devices because they are needed for explicit selection. `diagnostics --report` deliberately omits Bluetooth addresses, device aliases, user/host identity, home paths, credentials, unrelated devices and raw frames. The panel uses the same dedicated report layer and adds safe cached connection/protocol counters without issuing a hardware command.
 
 ## Tests and fixtures
 

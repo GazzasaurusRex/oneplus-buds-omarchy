@@ -4,7 +4,7 @@
   "name": "OnePlus Buds Control",
   "version": "0.1.0",
   "author": "Gaz",
-  "description": "Linux monitoring and verified ANC and native EQ control for compatible OnePlus earbuds.",
+  "description": "Native OnePlus earbuds controls for Omarchy. Hardware verified on OnePlus Buds Pro and Buds Pro 2; other compatible OnePlus/OPO devices are experimental.",
   "kinds": [
     "service",
     "bar-widget"
@@ -16,7 +16,7 @@
   },
   "barWidget": {
     "displayName": "OnePlus Buds",
-    "description": "Connection, battery, and verified controls for compatible OnePlus earbuds.",
+    "description": "Controls for Buds Pro and Buds Pro 2; other compatible OnePlus/OPO devices are experimental.",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"

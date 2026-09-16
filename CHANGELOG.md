@@ -2,6 +2,13 @@
 
 ## Unreleased — 0.1.0 release candidate
 
+- Distinguish Verified, Community Tested and Experimental device evidence in the
+  backend and panel; only Buds Pro and Buds Pro 2 remain hardware-verified.
+- Add a compact experimental-device notice and user-controlled compatibility
+  report workflow with backend privacy redaction and no automatic upload.
+- Clarify marketplace metadata, compatibility documentation and GitHub issue
+  intake for untested OnePlus/OPO-compatible models.
+
 - Hardware-verified OnePlus Buds Pro and Buds Pro 2 identity, battery, firmware,
   ANC On/Off/Transparency and supported strengths.
 - Generic transport-independent OPO framing, RFCOMM transport, device profiles,

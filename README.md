@@ -9,7 +9,7 @@ independent project, unaffiliated with OnePlus or OPPO.
 
 ## What works
 
-- Automatic selection of one connected compatible OnePlus device.
+- Automatic selection of one connected compatible OnePlus/OPPO device.
 - Connection status, left/right battery, case battery when returned, and firmware.
 - Independently verified ANC On, Off, Transparency and profile-supported strengths.
 - Model-correct native earbud EQ presets on both models, plus device-defined custom EQ on Pro 2.
@@ -22,10 +22,25 @@ independent project, unaffiliated with OnePlus or OPPO.
 |---|---|---|---|
 | OnePlus Buds Pro | Verified on hardware | 541.541.510 | Light, Deep, Smart |
 | OnePlus Buds Pro 2 | Verified on hardware | 196.196.101 | Light, Medium, Deep, Smart |
-| Other OnePlus devices | Experimental if recognised; no verified controls | Unknown | Not exposed |
+| Other compatible OnePlus/OPO devices | Experimental if recognised; no verified controls | Unknown | Not exposed |
 
 See [compatibility and limitations](docs/devices/compatibility.md). Gestures,
 spatial audio and other HeyMelody features are not implemented controls.
+
+## Compatibility and reports
+
+OnePlus Buds Pro and Buds Pro 2 are the only models currently hardware-verified
+by the maintainer. Other recognised OnePlus/OPO-compatible models are
+**Experimental** until tested. A model may become **Community Tested** after an
+owner reports successful, reproducible checks on their own hardware; that label
+does not mean maintainer hardware verification.
+
+Experimental devices show a quiet notice and a **Report compatibility** link at
+the bottom of the control panel. The panel explains the report contents, lets you
+choose where to save a privacy-safe JSON file, and never uploads it. After saving,
+you may open the [new compatibility issue form](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md)
+and attach the report yourself. Reports covering detection, battery, ANC,
+Transparency and EQ are welcome even when everything works.
 
 ## Requirements
 
@@ -142,10 +157,11 @@ omarchy plugin enable oneplus-buds.control --section right
 
 Use `./oneplus-buds --help` for all commands. Explicit selection puts
 `--device ADDRESS` before the command. `devices` prints Bluetooth addresses for
-selection; do not paste it into public issues. `diagnostics --report` omits Bluetooth
-addresses and unrelated devices. Review the report before sharing and redact any
-personal text in a custom device name. Do not post raw packet captures or pairing
-material. See [CLI details](docs/backend-cli.md).
+selection; do not paste it into public issues. The panel report uses the already
+connected service and does not alter earbud state. The CLI report is the fallback
+when the panel is unavailable. Both omit Bluetooth addresses, device aliases,
+user/host identity, home paths, credentials, unrelated devices and raw packets.
+Review any report before sharing it. See [CLI details](docs/backend-cli.md).
 
 ## Troubleshooting
 

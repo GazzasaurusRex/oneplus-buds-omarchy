@@ -6,17 +6,22 @@ Compatibility describes evidence, not a promise that every firmware works.
 |---|---|---|---|
 | OnePlus Buds Pro | `060C14` | Verified | [Device record](oneplus-buds-pro.md) |
 | OnePlus Buds Pro 2 | `062014` | Verified | [Device record](oneplus-buds-pro-2.md) |
-| Other OnePlus products | Unknown | Experimental if discovered | No maintainer verification |
+| Other compatible OnePlus/OPO products | Unknown | Experimental if discovered | No maintainer verification |
 
-There are no community-tested models recorded yet. “Verified” means tested on the
-two reference devices and their recorded firmware. “Community-tested” will mean
-reported by another user with reproducible evidence. “Experimental” means
-recognised protocol/service evidence without verified device support.
+There are no community-tested models recorded yet. **Verified** means maintainer
+hardware testing on the two reference devices and their recorded firmware.
+**Community Tested** means a device owner has supplied reproducible evidence that
+the advertised functions work on that model. **Experimental** means recognised
+protocol/service evidence without that device evidence. Community testing never
+upgrades a model to maintainer-verified status.
+Community Tested is an evidence label; write controls remain gated to
+maintainer-hardware-verified profiles.
 
 Current discovery requires a connected BlueZ device whose name contains
-`oneplus` and whose UUIDs contain one of the two known OPO services. Renamed devices
-may not match. Similar OPPO/Realme hardware is a research target, not automatic
-support today. BLE-only products and other protocol families are not supported.
+`oneplus` or `oppo` and whose UUIDs contain one of the two known OPO services.
+Renamed devices may not match. An OPPO match is only an Experimental candidate,
+not a support claim. Realme hardware remains a research target rather than an
+automatic match. BLE-only products and other protocol families are not supported.
 
 Unknown candidates may receive existing read-only queries over RFCOMM channel 15;
 this does not prove they implement that transport or protocol. Unknown product IDs
@@ -46,7 +51,12 @@ write controls. Spatial audio, gestures, finding earbuds and phone-side sound
 features are not implemented. Unknown feature IDs and notification schemas remain
 unnamed. Physical earbud changes are not guaranteed to update the UI immediately.
 
-Read the [contribution guide](../../CONTRIBUTING.md) before reporting a new model.
+Experimental devices show their status in the panel. Select **Report
+compatibility**, review the collection/privacy explanation, choose where to save
+the JSON report, then optionally open a GitHub compatibility issue. The report is
+created locally and is never uploaded automatically. You can also disable the
+plugin and run `./oneplus-buds diagnostics --report` as a CLI fallback. Read the
+[contribution guide](../../CONTRIBUTING.md) before reporting a new model.
 
 Device switching uses the generic controller lifecycle: automatic selection is
 rerun after transport loss, old device state is cleared, and the next compatible
