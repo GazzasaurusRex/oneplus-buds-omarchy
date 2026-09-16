@@ -38,10 +38,10 @@ does not mean maintainer hardware verification.
 Every connected device has a quiet reporting link at the bottom of the control
 panel. Verified and Community Tested devices show **Report a problem**;
 Experimental devices show **Report compatibility** beneath their compatibility
-notice. All use the same workflow: the panel explains the report contents, lets
-you choose where to save a privacy-safe JSON file, and never uploads it. After
-saving, you may open the [GitHub issue chooser](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new/choose)
-and attach the report yourself. Reports covering detection, battery, ANC,
+notice. All use the same workflow: the panel explains the report contents, proposes
+a safe `.txt` filename, lets you choose where to save it, and never uploads it.
+After saving, open the [compatibility report template](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md)
+and attach the reviewed report yourself. Reports covering detection, battery, ANC,
 Transparency and EQ are welcome even when everything works.
 
 ## Requirements

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls as Controls
 import QtQuick.Dialogs
+import QtCore
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -26,6 +27,10 @@ BarWidget {
   readonly property string compatibilityKind: BarModel.compatibility(snapshot)
   readonly property string compatibilityLabel: BarModel.compatibilityLabel(snapshot)
   readonly property string reportActionLabel: BarModel.reportActionLabel(snapshot)
+  readonly property string reportIssueUrl: BarModel.compatibilityIssueUrl(snapshot)
+  readonly property string reportSubmissionActionLabel: experimentalDevice
+    ? "Submit compatibility report on GitHub" : "Open GitHub issue"
+  readonly property string reportDialogSelectedFile: String(reportFileDialog.selectedFile || "")
   readonly property bool experimentalDevice: compatibilityKind === "experimental"
   readonly property bool communityTestedDevice: compatibilityKind === "community_tested"
   readonly property bool compatibilityNoticeShown: experimentalDevice || communityTestedDevice
@@ -58,10 +63,14 @@ BarWidget {
   property bool customSelectionDirty: false
   property bool reportDetailsOpen: false
   property bool reportSaved: false
+  property string proposedReportFilename: ""
+  property string pendingReportLocation: ""
+  property string savedReportFilename: ""
+  property string savedReportLocation: ""
 
   onCompatibilityKindChanged: {
     reportDetailsOpen = false
-    reportSaved = false
+    clearReportResult()
   }
 
   function syncCustomSlotFromEq() {
@@ -153,13 +162,56 @@ BarWidget {
 
   function saveDiagnosticReport(fileUrl) {
     if (!budsService || pendingRequestId >= 0) return
-    var requestId = budsService.saveDiagnosticReport(String(fileUrl || ""))
+    var destination = String(fileUrl || "")
+    var requestId = budsService.saveDiagnosticReport(destination)
     if (requestId === null) { outcome = "Could not start report"; return }
     pendingRequestId = requestId
     pendingKind = "diagnostic_report"
     pendingMode = ""
+    pendingReportLocation = destination
     outcome = ""
+    clearReportResult()
+  }
+
+  function clearReportResult() {
     reportSaved = false
+    savedReportFilename = ""
+    savedReportLocation = ""
+  }
+
+  function prepareReportFileDialog() {
+    clearReportResult()
+    outcome = ""
+    proposedReportFilename = BarModel.reportFilename(snapshot, new Date())
+    var folder = String(reportFileDialog.currentFolder || "")
+    reportFileDialog.selectedFile = folder + (folder.endsWith("/") ? "" : "/")
+      + proposedReportFilename
+  }
+
+  function openReportFileDialog() {
+    prepareReportFileDialog()
+    reportFileDialog.open()
+  }
+
+  function acceptReportFile(fileUrl) {
+    var selected = String(fileUrl || "")
+    var textDestination = BarModel.textReportUrl(selected)
+    if (selected !== textDestination) {
+      reportFileDialog.selectedFile = textDestination
+      Qt.callLater(function() { reportFileDialog.open() })
+      return
+    }
+    saveDiagnosticReport(textDestination)
+  }
+
+  function cancelDiagnosticReport() {
+    clearReportResult()
+    pendingReportLocation = ""
+    outcome = ""
+  }
+
+  function openReportIssue() {
+    Qt.openUrlExternally(reportIssueUrl)
   }
 
   onLastResponseChanged: {
@@ -172,11 +224,18 @@ BarWidget {
     if (completedKind === "diagnostic_report") {
       if (response.ok === true) {
         reportSaved = true
-        outcome = "Diagnostic report saved"
+        savedReportFilename = response.result && response.result.filename
+          ? String(response.result.filename) : "diagnostic report"
+        savedReportLocation = BarModel.reportLocationLabel(
+          pendingReportLocation, savedReportFilename,
+          StandardPaths.writableLocation(StandardPaths.HomeLocation))
+        outcome = ""
       } else {
+        clearReportResult()
         outcome = response.error && response.error.message
           ? String(response.error.message) : "Diagnostic report could not be saved"
       }
+      pendingReportLocation = ""
       return
     }
     if (response.ok === true && (completedKind === "eq_status"
@@ -595,6 +654,7 @@ BarWidget {
             Text {
               id: saveReportAction
               objectName: "saveDiagnosticReportAction"
+              visible: !root.reportSaved
               text: "Choose where to save report…"
               textFormat: Text.PlainText
               color: Color.accent
@@ -610,28 +670,71 @@ BarWidget {
                 hoverEnabled: true
                 cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 enabled: parent.enabled
-                onClicked: reportFileDialog.open()
+                onClicked: root.openReportFileDialog()
               }
             }
 
-            Text {
-              id: openIssueAction
-              objectName: "openCompatibilityIssueAction"
+            Column {
+              id: reportSavedGuidance
+              objectName: "reportSavedGuidance"
               visible: root.reportSaved
-              text: "Open GitHub issue"
-              textFormat: Text.PlainText
-              color: Color.accent
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.bodySmall
-              font.underline: openIssueMouse.containsMouse
+              width: parent.width
+              spacing: Style.space(3)
 
-              MouseArea {
-                id: openIssueMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: Qt.openUrlExternally(
-                  "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new/choose")
+              Text {
+                objectName: "reportSavedConfirmation"
+                width: parent.width
+                text: "Your diagnostic report has been saved."
+                textFormat: Text.PlainText
+                color: root.bar.foreground
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+                font.bold: true
+                wrapMode: Text.Wrap
+              }
+
+              Text {
+                objectName: "reportSavedLocation"
+                width: parent.width
+                text: root.savedReportLocation !== ""
+                  ? "Saved to: " + root.savedReportLocation
+                  : "Saved as: " + root.savedReportFilename
+                textFormat: Text.PlainText
+                color: root.bar.foreground
+                opacity: 0.76
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+                wrapMode: Text.WrapAnywhere
+              }
+
+              Text {
+                width: parent.width
+                text: "Open a GitHub issue and manually attach the report file so the problem can be investigated. Nothing is uploaded automatically."
+                textFormat: Text.PlainText
+                color: root.bar.foreground
+                opacity: 0.72
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+                wrapMode: Text.Wrap
+              }
+
+              Text {
+                id: openIssueAction
+                objectName: "openCompatibilityIssueAction"
+                text: root.reportSubmissionActionLabel
+                textFormat: Text.PlainText
+                color: Color.accent
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+                font.underline: openIssueMouse.containsMouse
+
+                MouseArea {
+                  id: openIssueMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.openReportIssue()
+                }
               }
             }
           }
@@ -661,9 +764,15 @@ BarWidget {
     // The GTK native chooser can abort the in-process Quickshell host while
     // creating its GVFS directory monitor. Keep the chooser inside Qt Quick.
     options: FileDialog.DontUseNativeDialog
-    defaultSuffix: "json"
-    nameFilters: ["JSON reports (*.json)"]
-    onAccepted: root.saveDiagnosticReport(selectedFile)
+    currentFolder: {
+      var documents = StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
+      return String(documents || "") !== "" ? documents
+        : StandardPaths.writableLocation(StandardPaths.HomeLocation)
+    }
+    defaultSuffix: "txt"
+    nameFilters: ["Text reports (*.txt)"]
+    onAccepted: root.acceptReportFile(selectedFile)
+    onRejected: root.cancelDiagnosticReport()
   }
 
   IpcHandler {

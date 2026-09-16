@@ -53,6 +53,9 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn('objectName: "saveDiagnosticReportAction"', widget)
         self.assertIn("FileDialog.SaveFile", widget)
         self.assertIn("FileDialog.DontUseNativeDialog", widget)
+        self.assertIn('defaultSuffix: "txt"', widget)
+        self.assertIn("root.openReportFileDialog()", widget)
+        self.assertIn("root.openReportIssue()", widget)
         self.assertIn("Number(response.request_id) !== pendingRequestId", widget)
         self.assertEqual(widget.count("IpcHandler {"), 1)
         self.assertIn('target: "oneplus-buds.control"', widget)
@@ -93,6 +96,17 @@ if (model.compatibility({compatibility:"something-new"}) !== "experimental") pro
 if (model.reportActionLabel({compatibility:"verified"}) !== "Report a problem") process.exit(17);
 if (model.reportActionLabel({compatibility:"community_tested"}) !== "Report a problem") process.exit(18);
 if (model.reportActionLabel({compatibility:"experimental"}) !== "Report compatibility") process.exit(19);
+const date = new Date(2026, 8, 16);
+if (model.reportFilename(snapshot, date) !== "oneplus-buds-pro-2-report-2026-09-16.txt") process.exit(20);
+if (model.reportFilename({status:{model:"OnePlus Nord Buds 3"}}, date) !== "oneplus-nord-buds-3-report-2026-09-16.txt") process.exit(21);
+if (model.reportFilename({status:{model:"Alice's OnePlus Buds / AA:BB:CC:DD:EE:FF"}}, date) !== "oneplus-buds-report-2026-09-16.txt") process.exit(22);
+if (model.reportFilename({status:{model:null}}, date) !== "oneplus-buds-report-2026-09-16.txt") process.exit(23);
+if (model.textReportUrl("file:///tmp/report.json") !== "file:///tmp/report.txt") process.exit(24);
+const issue = "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md&title=%5BCompatibility%5D%20OnePlus%20Buds%20Pro%202";
+if (model.compatibilityIssueUrl(snapshot) !== issue) process.exit(25);
+if (model.compatibilityIssueUrl({status:{model:null}}) !== model.COMPATIBILITY_ISSUE_URL) process.exit(26);
+if (model.compatibilityIssueUrl(snapshot).includes("report=") || model.compatibilityIssueUrl(snapshot).includes("path=")) process.exit(27);
+if (model.reportLocationLabel("file:///home/test/Documents/report.txt", "report.txt", "file:///home/test") !== "~/Documents/report.txt") process.exit(28);
 '''
         subprocess.run(
             ["node", "-e", script, str(ROOT / "BarModel.js")],

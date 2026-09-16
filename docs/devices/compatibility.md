@@ -54,9 +54,9 @@ unnamed. Physical earbud changes are not guaranteed to update the UI immediately
 Experimental devices show their status and **Report compatibility** in the panel.
 Verified and Community Tested devices omit the Experimental warning and offer
 **Report a problem** instead. Both labels open the same workflow: review the
-collection/privacy explanation, choose where to save the JSON report, then
-optionally open GitHub Issues. The report is created locally and is never uploaded
-automatically. You can also disable the plugin and run
+collection/privacy explanation, choose where to save the `.txt` report, then
+optionally open the repository's compatibility issue template and attach it manually.
+The report is created locally and is never uploaded automatically. You can also disable the plugin and run
 `./oneplus-buds diagnostics --report` as a CLI fallback. Read the [contribution
 guide](../../CONTRIBUTING.md) before reporting a new model.
 

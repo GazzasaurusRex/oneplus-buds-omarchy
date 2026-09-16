@@ -7,6 +7,8 @@
 - Add a compact experimental-device notice and user-controlled compatibility
   report workflow, available to every connected device, with backend privacy
   redaction and no automatic upload.
+- Propose privacy-safe model/date report filenames and guide successful saves to
+  the dedicated GitHub compatibility template for manual attachment.
 - Clarify marketplace metadata, compatibility documentation and GitHub issue
   intake for untested OnePlus/OPO-compatible models.
 

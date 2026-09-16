@@ -120,6 +120,63 @@ function reportActionLabel(snapshot) {
     ? "Report compatibility" : "Report a problem"
 }
 
+var COMPATIBILITY_ISSUE_URL = "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md"
+
+function safeReportModel(snapshot) {
+  var status = snapshot && snapshot.status
+  var model = status && status.model ? String(status.model).trim() : ""
+  if (!model || model.length > 60) return ""
+  if (!/^oneplus\b.*\bbuds\b/i.test(model)
+      && !/^oppo\b.*\b(?:buds|enco)\b/i.test(model)) return ""
+  if (!/^[A-Za-z0-9][A-Za-z0-9 .()+_-]*$/.test(model)) return ""
+  if (/(?:[0-9a-f]{2}:){5}[0-9a-f]{2}/i.test(model)
+      || /\b[0-9a-f]{6,}\b/i.test(model)) return ""
+  return model
+}
+
+function reportFilename(snapshot, date) {
+  var when = date instanceof Date && !isNaN(date.getTime()) ? date : new Date()
+  var year = String(when.getFullYear()).padStart(4, "0")
+  var month = String(when.getMonth() + 1).padStart(2, "0")
+  var day = String(when.getDate()).padStart(2, "0")
+  var model = safeReportModel(snapshot)
+  var slug = model.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+  if (!slug) slug = "oneplus-buds"
+  return slug + "-report-" + year + "-" + month + "-" + day + ".txt"
+}
+
+function textReportUrl(value) {
+  var url = String(value || "")
+  if (/\.txt$/i.test(url)) return url
+  var slash = url.lastIndexOf("/")
+  var dot = url.lastIndexOf(".")
+  if (dot > slash) url = url.slice(0, dot)
+  return url + ".txt"
+}
+
+function reportLocationLabel(fileUrl, filename, homeUrl) {
+  var url = String(fileUrl || "")
+  if (url.indexOf("file://") !== 0) return String(filename || "")
+  try {
+    var path = decodeURIComponent(url.slice(7))
+    var home = String(homeUrl || "")
+    if (home.indexOf("file://") === 0) home = decodeURIComponent(home.slice(7))
+    if (home && (path === home || path.indexOf(home + "/") === 0))
+      path = "~" + path.slice(home.length)
+    return path || String(filename || "")
+  } catch (_error) {
+    return String(filename || "")
+  }
+}
+
+function compatibilityIssueUrl(snapshot) {
+  var model = safeReportModel(snapshot)
+  if (!model) return COMPATIBILITY_ISSUE_URL
+  return COMPATIBILITY_ISSUE_URL + "&title="
+    + encodeURIComponent("[Compatibility] " + model)
+}
+
 function presentation(connection, snapshot) {
   var connected = connection === "connected"
   var parts = connected ? batteryParts(snapshot) : []
@@ -156,6 +213,12 @@ if (typeof module !== "undefined") {
     compatibility: compatibility,
     compatibilityLabel: compatibilityLabel,
     reportActionLabel: reportActionLabel,
+    safeReportModel: safeReportModel,
+    reportFilename: reportFilename,
+    textReportUrl: textReportUrl,
+    reportLocationLabel: reportLocationLabel,
+    compatibilityIssueUrl: compatibilityIssueUrl,
+    COMPATIBILITY_ISSUE_URL: COMPATIBILITY_ISSUE_URL,
     presentation: presentation,
     validPercentage: validPercentage
   }
