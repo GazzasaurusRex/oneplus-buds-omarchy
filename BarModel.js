@@ -101,6 +101,20 @@ function customEqEntries(snapshot) {
   return eq && Array.isArray(eq.custom_entries) ? eq.custom_entries : []
 }
 
+function compatibility(snapshot) {
+  var value = snapshot ? String(snapshot.compatibility || "") : ""
+  if (value === "verified" || value === "community_tested") return value
+  return value ? "experimental" : ""
+}
+
+function compatibilityLabel(snapshot) {
+  var value = compatibility(snapshot)
+  if (value === "verified") return "Verified"
+  if (value === "community_tested") return "Community tested"
+  if (value === "experimental") return "Experimental device"
+  return ""
+}
+
 function presentation(connection, snapshot) {
   var connected = connection === "connected"
   var parts = connected ? batteryParts(snapshot) : []
@@ -134,6 +148,8 @@ if (typeof module !== "undefined") {
     currentAncMode: currentAncMode,
     eqPresets: eqPresets,
     customEqEntries: customEqEntries,
+    compatibility: compatibility,
+    compatibilityLabel: compatibilityLabel,
     presentation: presentation,
     validPercentage: validPercentage
   }

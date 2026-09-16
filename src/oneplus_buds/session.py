@@ -54,6 +54,13 @@ from .protocol import (
 from .transport import RfcommTransport
 
 
+class UnsupportedProductError(RuntimeError):
+    def __init__(self, device: Device, product_id: str | None) -> None:
+        super().__init__(f"product {product_id or 'unknown'} has no tested device profile")
+        self.device = device
+        self.product_id = product_id
+
+
 class OpoSession:
     def __init__(self, device: Device, profile: DeviceProfile,
                  *, transport: RfcommTransport | None = None) -> None:
@@ -80,7 +87,7 @@ class OpoSession:
                     QUERY_PRODUCT_ID, b"", RESPONSE_PRODUCT_ID))
             profile = profile_for_product(product)
             if profile is None:
-                raise RuntimeError("cannot open event session for an unknown product")
+                raise UnsupportedProductError(device, product)
             mark("profile_resolved", product_id=product)
             session = cls(device, profile, transport=transport)
             session._connected = True

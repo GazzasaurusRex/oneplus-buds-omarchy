@@ -3,6 +3,7 @@ import unittest
 from oneplus_buds.bluez import Device
 from oneplus_buds.controller import BudsController
 from oneplus_buds.models import ControlResult, EventBatch, SafeEvent, StatusResult
+from oneplus_buds.session import UnsupportedProductError
 
 
 DEVICE = Device(
@@ -74,6 +75,17 @@ class ControllerTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "not running"):
             BudsController(FakeBackend([])).poll()
 
+    def test_unknown_recognised_product_remains_as_read_only_snapshot(self):
+        backend = ExperimentalBackend()
+        controller = BudsController(backend)
+        started = controller.start()
+        self.assertEqual(started.status.product_id, "A1B2C3")
+        self.assertIsNone(started.status.model)
+        self.assertFalse(started.session_connected)
+        polled = controller.poll()
+        self.assertEqual(polled.status.product_id, "A1B2C3")
+        self.assertEqual(backend.starts, 1)
+
 
 class FakeBackend:
     def __init__(self, sessions):
@@ -106,6 +118,15 @@ class FakeBackend:
             set_status=0,
             verified=True,
         )
+
+
+class ExperimentalBackend:
+    def __init__(self):
+        self.starts = 0
+
+    def start_session(self, _address=None):
+        self.starts += 1
+        raise UnsupportedProductError(DEVICE, "A1B2C3")
 
 
 class FakeSession:

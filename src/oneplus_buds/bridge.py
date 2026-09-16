@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from collections.abc import Callable, Mapping
+from collections import deque
 from threading import Event
 from typing import TypeAlias
 
@@ -10,7 +11,8 @@ from .availability import Availability
 from .controller import BudsController
 from .timing import AncRequestError
 from .models import ControllerSnapshot, ControlResult, EqControlResult
-from .profiles import profile_for_product
+from .profiles import compatibility_for_product, profile_for_product
+from .report import build_snapshot_report, write_report
 from .service import BudsServiceRunner, ServiceState
 
 JsonObject: TypeAlias = dict[str, object]
@@ -26,13 +28,17 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
     capabilities.update(snapshot.feature_switches)
     return {
         "status": snapshot.status.to_dict() if snapshot.status is not None else None,
-        "compatibility": "verified" if profile and profile.verified else "experimental",
+        "compatibility": compatibility_for_product(
+            snapshot.status.product_id if snapshot.status else None
+        ),
         "capabilities": sorted(capabilities),
-        "anc_modes": sorted(profile.anc.write_indices) if profile else [],
+        "anc_modes": sorted(profile.anc.write_indices) if profile and profile.verified else [],
         "eq": snapshot.eq_status.to_dict() if snapshot.eq_status else None,
-        "eq_write_verified": bool(profile and profile.eq and profile.eq.write_verified),
+        "eq_write_verified": bool(
+            profile and profile.verified and profile.eq and profile.eq.write_verified
+        ),
         "custom_eq_write_verified": bool(
-            profile and profile.eq and profile.eq.custom_write_verified
+            profile and profile.verified and profile.eq and profile.eq.custom_write_verified
         ),
         "feature_switches": dict(snapshot.feature_switches),
         "session_connected": snapshot.session_connected,
@@ -59,6 +65,7 @@ class BudsFrontendBridge:
         self.controller = controller or BudsController()
         self.emit = emit
         self.dispatch = dispatch or (lambda callback: callback())
+        self._recent_errors: deque[str] = deque(maxlen=12)
         self.runner = BudsServiceRunner(
             self.controller,
             availability=availability,
@@ -130,6 +137,18 @@ class BudsFrontendBridge:
                 self.controller.eq_status()
                 result = self._serialize_eq_control(control)
                 self._on_snapshot(self.controller.snapshot())
+            elif command == "save_diagnostic_report":
+                self._require_parameters(command, params, {"path"})
+                path = params["path"]
+                if not isinstance(path, str) or not path:
+                    raise ValueError(
+                        "save_diagnostic_report parameter 'path' must be a non-empty string"
+                    )
+                report = build_snapshot_report(
+                    self.controller.snapshot(), recent_errors=tuple(self._recent_errors)
+                )
+                filename = write_report(report, path)
+                result = {"saved": True, "filename": filename}
             else:
                 return self._response(
                     command,
@@ -138,6 +157,7 @@ class BudsFrontendBridge:
                     error={"code": "unknown_command", "message": f"unknown command: {command}"},
                 )
         except ValueError as error:
+            self._remember_error(error)
             return self._response(
                 command,
                 request_id,
@@ -145,6 +165,7 @@ class BudsFrontendBridge:
                 error={"code": "invalid_parameters", "message": self._safe_error(error)},
             )
         except (OSError, RuntimeError) as error:
+            self._remember_error(error)
             return self._response(
                 command,
                 request_id,
@@ -159,6 +180,8 @@ class BudsFrontendBridge:
         return self._response(command, request_id, ok=True, result=result)
 
     def _on_state(self, state: ServiceState) -> None:
+        if state.error:
+            self._remember_error(RuntimeError(state.error))
         event: JsonObject = {
             "schema_version": SCHEMA_VERSION,
             "type": "connection",
@@ -213,6 +236,9 @@ class BudsFrontendBridge:
 
     def _safe_error(self, error: Exception) -> str:
         return re.sub(r"(?i)(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", "[device]", str(error))
+
+    def _remember_error(self, error: Exception) -> None:
+        self._recent_errors.append(self._safe_error(error))
 
     @staticmethod
     def _serialize_control(result: ControlResult) -> JsonObject:

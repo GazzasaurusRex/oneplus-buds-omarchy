@@ -29,7 +29,10 @@ class Device:
 
     @property
     def looks_compatible(self) -> bool:
-        return "oneplus" in self.name.lower() and bool(OPO_UUIDS.intersection(self.uuids))
+        brand = self.name.lower()
+        return ("oneplus" in brand or "oppo" in brand) and bool(
+            OPO_UUIDS.intersection(self.uuids)
+        )
 
 
 def _managed_objects() -> dict[Any, dict[Any, dict[Any, Any]]]:
@@ -74,10 +77,12 @@ def select_device(address: str | None = None) -> Device:
         normalized = address.upper()
         selected = next((device for device in matches if device.address.upper() == normalized), None)
         if selected is None:
-            raise RuntimeError(f"selected device {address} is not a connected compatible OnePlus device")
+            raise RuntimeError(
+                f"selected device {address} is not a connected compatible OnePlus/OPPO device"
+            )
         return selected
     if not matches:
-        raise RuntimeError("no connected OPO-compatible OnePlus earbuds found")
+        raise RuntimeError("no connected OPO-compatible OnePlus/OPPO earbuds found")
     if len(matches) > 1:
         raise RuntimeError("multiple compatible devices connected; select one with --device ADDRESS")
     return matches[0]

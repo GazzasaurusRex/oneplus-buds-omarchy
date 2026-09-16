@@ -33,6 +33,19 @@ TestCase {
   function hideTooltip(item) {}
  }
  BarWidget { id: widget; bar: host; x: 200; y: 20; width: implicitWidth; height: implicitHeight }
+ function init() {
+  service.connection = "connected"
+  service.snapshot = ({status:{model:"Test buds",battery:{left:{percentage:80},right:{percentage:60}}},
+   anc_modes:[], capabilities:[], compatibility:"verified", session_connected:true})
+  service.lastResponse = null
+  service.eqStatusCalls = 0
+  service.customRequest = null
+  host.panelAvailableWidth = 600
+  widget.popupOpen = false
+  widget.pendingRequestId = -1
+  widget.pendingKind = ""
+  widget.reportDetailsOpen = false
+ }
  function test_hover() {
   mouseMove(widget, -100, 50)
   wait(220)
@@ -118,5 +131,36 @@ TestCase {
   tryCompare(widget, "useTwoColumnLayout", false)
   host.panelAvailableWidth = 600
   tryCompare(widget, "useTwoColumnLayout", true)
+ }
+ function test_compatibility_notice_states_and_bounds() {
+  service.snapshot = ({status:{model:"OnePlus Buds Pro",product_id:"060C14",battery:{}},
+   compatibility:"verified", anc_modes:["off","on"], capabilities:[], session_connected:true})
+  widget.popupOpen = true
+  compare(widget.experimentalDevice, false)
+  compare(widget.communityTestedDevice, false)
+  verify(!widget.compatibilityNoticeShown)
+
+  service.snapshot = ({status:{model:"OnePlus Buds Pro 2",product_id:"062014",battery:{}},
+   compatibility:"verified", anc_modes:["off","on"], capabilities:[], session_connected:true})
+  wait(0)
+  compare(widget.experimentalDevice, false)
+  verify(!widget.compatibilityNoticeShown)
+
+  service.snapshot = ({status:{model:null,product_id:"A1B2C3",battery:{}},
+   compatibility:"experimental", anc_modes:[], capabilities:[], session_connected:false})
+  wait(0)
+  verify(widget.experimentalDevice)
+  verify(widget.compatibilityNoticeShown)
+  verify(widget.reportActionShown)
+  verify(widget.panelHeight <= 560)
+
+  service.snapshot = ({status:{model:"Community model",product_id:"C0FFEE",battery:{}},
+   compatibility:"community_tested", anc_modes:[], capabilities:[], session_connected:false})
+  wait(0)
+  verify(widget.communityTestedDevice)
+  verify(widget.compatibilityNoticeShown)
+  verify(!widget.reportActionShown)
+  verify(widget.panelHeight <= 560)
+  widget.popupOpen = false
  }
 }

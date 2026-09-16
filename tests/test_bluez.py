@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from oneplus_buds.bluez import BATTERY_INTERFACE, DEVICE_INTERFACE, connected_devices, select_device
+from oneplus_buds.bluez import BATTERY_INTERFACE, DEVICE_INTERFACE, Device, connected_devices, select_device
 
 
 OBJECTS = {
@@ -36,6 +36,26 @@ OBJECTS = {
 
 
 class BluezTests(unittest.TestCase):
+    def test_oppo_name_with_known_opo_service_is_recognised_experimental_candidate(self):
+        oppo = Device(
+            address="AA:BB:CC:DD:EE:05",
+            name="OPPO Enco Unknown",
+            connected=True,
+            uuids=("0000079a-d102-11e1-9b23-00025b00a5a5",),
+            battery=None,
+        )
+        self.assertTrue(oppo.looks_compatible)
+
+    def test_brand_name_without_known_service_is_not_recognised(self):
+        oppo = Device(
+            address="AA:BB:CC:DD:EE:05",
+            name="OPPO audio device",
+            connected=True,
+            uuids=("0000110b-0000-1000-8000-00805f9b34fb",),
+            battery=None,
+        )
+        self.assertFalse(oppo.looks_compatible)
+
     @patch("oneplus_buds.bluez._managed_objects", return_value=OBJECTS)
     def test_connected_devices_uses_object_manager_snapshot(self, managed_objects):
         devices = connected_devices()

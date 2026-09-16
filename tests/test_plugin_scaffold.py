@@ -49,6 +49,9 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("delegate: Button {", widget)
         self.assertIn("budsService.setAnc(mode)", widget)
         self.assertIn("response.result.verified === true", widget)
+        self.assertIn('objectName: "reportCompatibilityAction"', widget)
+        self.assertIn('objectName: "saveDiagnosticReportAction"', widget)
+        self.assertIn("FileDialog.SaveFile", widget)
         self.assertIn("Number(response.request_id) !== pendingRequestId", widget)
         self.assertEqual(widget.count("IpcHandler {"), 1)
         self.assertIn('target: "oneplus-buds.control"', widget)
@@ -83,6 +86,9 @@ if (model.currentAncMode({status: {anc: "transparency", anc_level: null}}) !== "
 const eq = {eq: {presets: [{id: 0, name: "Balanced"}], custom_entries: [{eq_id: 4}]}};
 if (model.eqPresets(eq).length !== 1 || model.customEqEntries(eq)[0].eq_id !== 4) process.exit(12);
 if (model.eqPresets({}).length || model.customEqEntries({}).length) process.exit(13);
+if (model.compatibility({compatibility:"verified"}) !== "verified") process.exit(14);
+if (model.compatibilityLabel({compatibility:"community_tested"}) !== "Community tested") process.exit(15);
+if (model.compatibility({compatibility:"something-new"}) !== "experimental") process.exit(16);
 '''
         subprocess.run(
             ["node", "-e", script, str(ROOT / "BarModel.js")],

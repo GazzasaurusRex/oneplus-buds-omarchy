@@ -7,8 +7,9 @@ from typing import cast
 from .lifecycle_trace import mark
 from .api import BudsBackend
 from .models import ControllerSnapshot, ControlResult, EqControlResult, EqStatusResult, EventBatch, StatusResult
+from .profiles import profile_for_product
 from .protocol import VersionRecord
-from .session import OpoSession
+from .session import OpoSession, UnsupportedProductError
 from .timing import AncRequestError, PhaseTimer
 
 
@@ -46,6 +47,21 @@ class BudsController:
                 self._apply_batch(batch)
                 self._running = True
                 mark("controller_usable")
+            except UnsupportedProductError as error:
+                self._status = StatusResult(
+                    device=error.device,
+                    product_id=error.product_id,
+                    model=None,
+                    remote_version=(),
+                    firmware_version=None,
+                    battery=None,
+                    anc=None,
+                    anc_level=None,
+                )
+                self.address = error.device.address
+                self._running = True
+                self._generation += 1
+                return self.snapshot()
             except Exception:
                 self.shutdown()
                 raise
@@ -193,6 +209,10 @@ class BudsController:
         with self._lock:
             self._require_running()
             if self._session is None:
+                if self._status is not None and profile_for_product(
+                    self._status.product_id
+                ) is None:
+                    return self.snapshot()
                 return self.refresh()
             try:
                 batch = cast(OpoSession, self._session).poll(wait)

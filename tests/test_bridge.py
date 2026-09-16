@@ -1,5 +1,8 @@
 import json
+import tempfile
 import unittest
+from dataclasses import replace
+from pathlib import Path
 
 from unittest.mock import patch
 
@@ -8,6 +11,7 @@ from oneplus_buds.bridge import BudsFrontendBridge, serialize_snapshot
 from oneplus_buds.models import (ControllerSnapshot, ControlResult, EqControlResult,
                                  EqStatusResult, StatusResult)
 from oneplus_buds.protocol import EqBand, EqEntry
+from oneplus_buds.profiles import PROFILES
 from oneplus_buds.service import ServiceState
 
 
@@ -62,6 +66,36 @@ class BridgeTests(unittest.TestCase):
         self.assertIn("anc", payload["capabilities"])
         self.assertIn("multipoint", payload["capabilities"])
         self.assertIn("transparency", payload["anc_modes"])
+
+    def test_only_two_reference_models_are_hardware_verified(self):
+        self.assertEqual(PROFILES["060C14"].compatibility, "verified")
+        self.assertEqual(PROFILES["062014"].compatibility, "verified")
+        self.assertFalse(any(
+            profile.compatibility == "verified"
+            for product_id, profile in PROFILES.items()
+            if product_id not in {"060C14", "062014"}
+        ))
+
+    def test_unknown_recognised_product_is_experimental(self):
+        unknown = replace(STATUS, product_id="A1B2C3", model=None)
+        payload = serialize_snapshot(replace(SNAPSHOT, status=unknown))
+        self.assertEqual(payload["compatibility"], "experimental")
+        self.assertEqual(payload["capabilities"], ["multipoint"])
+        self.assertEqual(payload["anc_modes"], [])
+
+    def test_community_tested_profile_has_distinct_state_without_verified_writes(self):
+        community = replace(
+            PROFILES["062014"], product_id="C0FFEE", name="Community model",
+            compatibility="community_tested",
+        )
+        status = replace(STATUS, product_id="C0FFEE", model="Community model")
+        with patch.dict(PROFILES, {"C0FFEE": community}):
+            payload = serialize_snapshot(replace(SNAPSHOT, status=status))
+        self.assertEqual(payload["compatibility"], "community_tested")
+        self.assertFalse(community.verified)
+        self.assertEqual(payload["anc_modes"], [])
+        self.assertFalse(payload["eq_write_verified"])
+        self.assertFalse(payload["custom_eq_write_verified"])
 
     def test_callbacks_are_marshaled_through_dispatcher(self):
         emitted = []
@@ -161,6 +195,23 @@ class BridgeTests(unittest.TestCase):
         self.assertFalse(response["ok"])
         self.assertNotIn(DEVICE.address, encoded)
         self.assertIn("[device]", response["error"]["message"])
+
+    def test_report_command_is_read_only_and_saves_backend_built_report(self):
+        controller = FakeController()
+        bridge = BudsFrontendBridge(lambda _event: None, controller=controller)
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "compatibility.json"
+            response = bridge.execute(
+                "save_diagnostic_report", {"path": destination.as_uri()}, request_id=8
+            )
+            report = json.loads(destination.read_text())
+        self.assertTrue(response["ok"])
+        self.assertEqual(response["result"]["filename"], "compatibility.json")
+        self.assertEqual(report["device"]["product_id"], "062014")
+        self.assertEqual(controller.refreshes, 0)
+        self.assertEqual(controller.anc_modes, [])
+        self.assertEqual(controller.eq_targets, [])
+        self.assertEqual(controller.custom_targets, [])
 
 
 class FakeController:

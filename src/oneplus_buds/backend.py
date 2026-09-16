@@ -5,10 +5,10 @@ from typing import TypeVar
 from dataclasses import replace
 
 from .lifecycle_trace import mark
-from . import __version__
 from .bluez import Device, select_device
 from .models import CapabilityResult, ControlResult, EqControlResult, EqStatusResult, StatusResult
-from .profiles import profile_for_product
+from .profiles import compatibility_for_product, profile_for_product
+from .report import build_status_report
 from .protocol import (
     HELLO,
     QUERY_ANC,
@@ -108,18 +108,21 @@ def read_capabilities(address: str | None = None) -> CapabilityResult:
     return CapabilityResult(
         model=status.model,
         product_id=status.product_id,
-        compatibility="verified" if profile and profile.verified else "experimental",
+        compatibility=compatibility_for_product(status.product_id),
         capabilities=tuple(sorted(capabilities)),
-        anc_modes=tuple(sorted(profile.anc.write_indices)) if profile else (),
+        anc_modes=tuple(sorted(profile.anc.write_indices))
+        if profile and profile.verified else (),
         feature_switches=feature_switches,
-        eq_write_verified=bool(profile and profile.eq and profile.eq.write_verified),
+        eq_write_verified=bool(
+            profile and profile.verified and profile.eq and profile.eq.write_verified
+        ),
         eq_presets=tuple(
             {"id": preset.eq_id, "key": preset.key, "name": preset.name}
             for preset in profile.eq.presets
         ) if profile and profile.eq else (),
         supports_custom_eq=bool(profile and profile.eq and profile.eq.supports_custom),
         custom_eq_write_verified=bool(
-            profile and profile.eq and profile.eq.custom_write_verified
+            profile and profile.verified and profile.eq and profile.eq.custom_write_verified
         ),
     )
 
@@ -278,36 +281,7 @@ def set_custom_eq(entry_id: int, gains_db: tuple[int, ...],
 def diagnostics_report(address: str | None = None) -> dict[str, object]:
     device = select_device(address)
     status = read_status(device.address)
-    product_id = status.product_id
-    profile = profile_for_product(product_id)
-    return {
-        "backend_version": __version__,
-        "device": {
-            "reported_name": device.name,
-            "model": status.model,
-            "product_id": product_id,
-            "remote_version": [
-                {"component": record.component, "kind": record.kind, "value": record.value}
-                for record in status.remote_version
-            ],
-            "firmware_version": status.firmware_version,
-            "connected": device.connected,
-            "bluez_modalias": device.modalias,
-            "services_resolved": device.services_resolved,
-            "discovery": "BlueZ D-Bus ObjectManager",
-            "protocol": "OPOv1/0xAA",
-            "transport": "Bluetooth Classic RFCOMM channel 15",
-            "service_uuids": sorted(device.uuids),
-            "compatibility": "verified" if profile and profile.verified else "experimental",
-        },
-        "capabilities": sorted(profile.capabilities) if profile else [],
-        "state": {
-            "battery": status.battery,
-            "anc": status.anc,
-            "anc_level": status.anc_level,
-        },
-        "privacy": "Bluetooth address and unrelated devices omitted",
-    }
+    return build_status_report(status)
 
 
 def _frame_summary(frames: list[Frame]) -> str:

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
+
+
+CompatibilityState = Literal["verified", "community_tested", "experimental"]
 
 
 @dataclass(frozen=True)
@@ -68,7 +72,12 @@ class DeviceProfile:
     anc: AncProfile
     eq: EqProfile | None
     capabilities: frozenset[str]
-    verified: bool
+    compatibility: CompatibilityState
+
+    @property
+    def verified(self) -> bool:
+        """Keep hardware write gates explicit and backwards compatible."""
+        return self.compatibility == "verified"
 
 
 PROFILES = {
@@ -96,7 +105,7 @@ PROFILES = {
                 "eq",
             }
         ),
-        verified=True,
+        compatibility="verified",
     ),
     "062014": DeviceProfile(
         product_id="062014",
@@ -131,10 +140,15 @@ PROFILES = {
                 "custom_eq",
             }
         ),
-        verified=True,
+        compatibility="verified",
     ),
 }
 
 
 def profile_for_product(product_id: str | None) -> DeviceProfile | None:
     return PROFILES.get(product_id or "")
+
+
+def compatibility_for_product(product_id: str | None) -> CompatibilityState:
+    profile = profile_for_product(product_id)
+    return profile.compatibility if profile else "experimental"

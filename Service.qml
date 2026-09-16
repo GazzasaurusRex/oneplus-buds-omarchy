@@ -91,6 +91,10 @@ Item {
     return request("set_custom_eq", { entry_id: Number(entryId), gains_db: gains })
   }
 
+  function saveDiagnosticReport(path) {
+    return request("save_diagnostic_report", { path: String(path || "") })
+  }
+
   onHelperPathChanged: startHelper()
 
   Component.onCompleted: startHelper()

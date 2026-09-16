@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls as Controls
+import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -22,12 +23,19 @@ BarWidget {
   readonly property var eqStatus: snapshot ? snapshot.eq : null
   readonly property var eqPresets: BarModel.eqPresets(snapshot)
   readonly property var customEqEntries: BarModel.customEqEntries(snapshot)
+  readonly property string compatibilityKind: BarModel.compatibility(snapshot)
+  readonly property string compatibilityLabel: BarModel.compatibilityLabel(snapshot)
+  readonly property bool experimentalDevice: compatibilityKind === "experimental"
+  readonly property bool communityTestedDevice: compatibilityKind === "community_tested"
+  readonly property bool compatibilityNoticeShown: experimentalDevice || communityTestedDevice
+  readonly property bool reportActionShown: experimentalDevice && !reportDetailsOpen
   readonly property var selectedCustom: customEqEntries.length > 0
     ? customEqEntries[Math.max(0, Math.min(customSlotIndex, customEqEntries.length - 1))] : null
   readonly property bool eqAvailable: !!(snapshot && snapshot.capabilities
     && snapshot.capabilities.indexOf("eq") !== -1)
   readonly property bool useTwoColumnLayout: eqAvailable
     && popup.availableCardWidth >= Style.space(560)
+  readonly property int panelHeight: popup.contentHeight
 
   readonly property bool lifecycleUsable: connection === "connected"
     && snapshot !== null && snapshot.session_connected === true
@@ -45,6 +53,13 @@ BarWidget {
   property string pendingKind: ""
   property int customSlotIndex: 0
   property bool customSelectionDirty: false
+  property bool reportDetailsOpen: false
+  property bool reportSaved: false
+
+  onCompatibilityKindChanged: {
+    reportDetailsOpen = false
+    reportSaved = false
+  }
 
   function syncCustomSlotFromEq() {
     if (!eqStatus || !customEqEntries.length) return
@@ -133,6 +148,17 @@ BarWidget {
     outcome = ""
   }
 
+  function saveDiagnosticReport(fileUrl) {
+    if (!budsService || pendingRequestId >= 0) return
+    var requestId = budsService.saveDiagnosticReport(String(fileUrl || ""))
+    if (requestId === null) { outcome = "Could not start report"; return }
+    pendingRequestId = requestId
+    pendingKind = "diagnostic_report"
+    pendingMode = ""
+    outcome = ""
+    reportSaved = false
+  }
+
   onLastResponseChanged: {
     var response = lastResponse
     if (!response || Number(response.request_id) !== pendingRequestId) return
@@ -140,6 +166,16 @@ BarWidget {
     pendingMode = ""
     var completedKind = pendingKind
     pendingKind = ""
+    if (completedKind === "diagnostic_report") {
+      if (response.ok === true) {
+        reportSaved = true
+        outcome = "Diagnostic report saved"
+      } else {
+        outcome = response.error && response.error.message
+          ? String(response.error.message) : "Diagnostic report could not be saved"
+      }
+      return
+    }
     if (response.ok === true && (completedKind === "eq_status"
         || completedKind === "eq" || completedKind === "custom_eq")) {
       customSelectionDirty = false
@@ -274,7 +310,6 @@ BarWidget {
           font.pixelSize: Style.font.bodySmall
           wrapMode: Text.Wrap
         }
-
         Item {
           id: controlSections
           width: parent.width
@@ -478,12 +513,124 @@ BarWidget {
           }
         }
 
+        Column {
+          id: compatibilityNotice
+          objectName: "compatibilityNotice"
+          width: parent.width
+          spacing: Style.space(3)
+          visible: root.compatibilityNoticeShown
+
+          Text {
+            width: parent.width
+            text: root.compatibilityLabel
+            textFormat: Text.PlainText
+            color: root.bar.foreground
+            opacity: root.communityTestedDevice ? 0.72 : 0.88
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            font.bold: root.experimentalDevice
+          }
+
+          Text {
+            width: parent.width
+            visible: root.experimentalDevice
+            text: "This model has not been hardware verified."
+            textFormat: Text.PlainText
+            color: root.bar.foreground
+            opacity: 0.72
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.Wrap
+          }
+
+          Text {
+            id: reportAction
+            objectName: "reportCompatibilityAction"
+            visible: root.reportActionShown
+            text: "Report compatibility"
+            textFormat: Text.PlainText
+            color: Color.accent
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            font.underline: reportActionMouse.containsMouse
+
+            MouseArea {
+              id: reportActionMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.reportDetailsOpen = true
+            }
+          }
+
+          Column {
+            width: parent.width
+            spacing: Style.space(3)
+            visible: root.experimentalDevice && root.reportDetailsOpen
+
+            Text {
+              width: parent.width
+              text: "The report includes versions, capabilities, connection state and safe protocol counters. Addresses, names, paths and secrets are omitted or redacted. Nothing is uploaded."
+              textFormat: Text.PlainText
+              color: root.bar.foreground
+              opacity: 0.72
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              wrapMode: Text.Wrap
+            }
+
+            Text {
+              id: saveReportAction
+              objectName: "saveDiagnosticReportAction"
+              text: "Choose where to save report…"
+              textFormat: Text.PlainText
+              color: Color.accent
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              font.underline: saveReportMouse.containsMouse
+              enabled: root.pendingRequestId < 0
+              opacity: enabled ? 1.0 : 0.5
+
+              MouseArea {
+                id: saveReportMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                enabled: parent.enabled
+                onClicked: reportFileDialog.open()
+              }
+            }
+
+            Text {
+              id: openIssueAction
+              objectName: "openCompatibilityIssueAction"
+              visible: root.reportSaved
+              text: "Open GitHub compatibility issue"
+              textFormat: Text.PlainText
+              color: Color.accent
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              font.underline: openIssueMouse.containsMouse
+
+              MouseArea {
+                id: openIssueMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: Qt.openUrlExternally(
+                  "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md")
+              }
+            }
+          }
+        }
+
         Text {
           width: parent.width
           visible: root.outcome !== "" || root.pendingRequestId >= 0
           textFormat: Text.PlainText
           text: root.pendingRequestId >= 0
             ? (root.pendingKind === "eq_status" ? "Reading native EQ…"
+              : root.pendingKind === "diagnostic_report" ? "Saving diagnostic report…"
               : "Verifying " + BarModel.titleCase(root.pendingMode) + "…") : root.outcome
           color: root.bar.foreground
           font.family: root.bar.fontFamily
@@ -492,6 +639,15 @@ BarWidget {
         }
       }
     }
+  }
+
+  FileDialog {
+    id: reportFileDialog
+    title: "Save compatibility report"
+    fileMode: FileDialog.SaveFile
+    defaultSuffix: "json"
+    nameFilters: ["JSON reports (*.json)"]
+    onAccepted: root.saveDiagnosticReport(selectedFile)
   }
 
   IpcHandler {
@@ -518,6 +674,9 @@ BarWidget {
         current_anc: root.currentAncMode,
         pending: root.pendingRequestId >= 0,
         eq: root.eqStatus,
+        compatibility: root.compatibilityKind,
+        compatibility_notice: compatibilityNotice.visible,
+        report_action: reportAction.visible,
         error: root.budsService ? String(root.budsService.lastError || "") : ""
       })
     }
