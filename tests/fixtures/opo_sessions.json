@@ -21,5 +21,19 @@
     "rx_feature_switches": "aa1500000d81000e000006050104010b01110018000600",
     "rx_anc_transparency": "aa0c00000c81f005000001010001",
     "rx_set_success": "aa080000048442010000"
+  },
+  "buds_4": {
+    "product_id": "065414",
+    "rx_product": "aa0b0000038102040000145406",
+    "rx_version": "aa27000005810320000004312c322c3133382c322c322c3133382c332c312c30312c332c322c313035",
+    "rx_battery": "aa0d00000681040600000201640264",
+    "rx_notification_capabilities": "aa1200000082050b00000901020304080bf1f2f3",
+    "rx_feature_switches": "aa1700000d810010000007050104010b011101180006001b00",
+    "rx_anc_off": "aa0c00000c810105000001010800",
+    "rx_anc_smart": "aa0c00000c810105000001018000",
+    "rx_anc_transparency": "aa0c00000c810105000001010001",
+    "rx_anc_adaptive": "aa0c00000c810105000001010008",
+    "tx_set_adaptive": "aa0b00000404a4040001010008",
+    "rx_set_success": "aa0800000484a4010000"
   }
 }

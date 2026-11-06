@@ -7,7 +7,7 @@ from dataclasses import replace
 from .lifecycle_trace import mark
 from .bluez import Device, select_device
 from .models import CapabilityResult, ControlResult, EqControlResult, EqStatusResult, StatusResult
-from .profiles import compatibility_for_product, profile_for_product
+from .profiles import MAIN_ANC_MODES, DeviceProfile, compatibility_for_product, profile_for_product
 from .report import build_status_report
 from .protocol import (
     HELLO,
@@ -102,7 +102,7 @@ def query_status(address: str | None = None) -> dict[str, object]:
 def read_capabilities(address: str | None = None) -> CapabilityResult:
     status = read_status(address)
     profile = profile_for_product(status.product_id)
-    feature_switches = query_feature_switches(address)
+    feature_switches = query_feature_switches(address, profile=profile)
     capabilities = set(profile.capabilities) if profile else set()
     capabilities.update(feature_switches)
     return CapabilityResult(
@@ -111,10 +111,10 @@ def read_capabilities(address: str | None = None) -> CapabilityResult:
         compatibility=compatibility_for_product(status.product_id),
         capabilities=tuple(sorted(capabilities)),
         anc_modes=tuple(sorted(profile.anc.write_indices))
-        if profile and profile.verified else (),
+        if profile and profile.can_write("anc") else (),
         feature_switches=feature_switches,
         eq_write_verified=bool(
-            profile and profile.verified and profile.eq and profile.eq.write_verified
+            profile and profile.can_write("eq_preset") and profile.eq and profile.eq.write_verified
         ),
         eq_presets=tuple(
             {"id": preset.eq_id, "key": preset.key, "name": preset.name}
@@ -122,7 +122,8 @@ def read_capabilities(address: str | None = None) -> CapabilityResult:
         ) if profile and profile.eq else (),
         supports_custom_eq=bool(profile and profile.eq and profile.eq.supports_custom),
         custom_eq_write_verified=bool(
-            profile and profile.verified and profile.eq and profile.eq.custom_write_verified
+            profile and profile.can_write("custom_eq")
+            and profile.eq and profile.eq.custom_write_verified
         ),
     )
 
@@ -131,10 +132,15 @@ def query_capabilities(address: str | None = None) -> dict[str, object]:
     return read_capabilities(address).to_dict()
 
 
-def query_feature_switches(address: str | None = None) -> dict[str, bool]:
+def query_feature_switches(address: str | None = None, *,
+                           profile: DeviceProfile | None = None) -> dict[str, bool]:
     device = select_device(address)
     with RfcommTransport(device.address, connect_attempts=4) as transport:
         transport.query(QUERY_CAPABILITIES)
+        if profile is None:
+            # Model-specific naming needs the profile; resolve it when not supplied.
+            product_frames = transport.query(QUERY_PRODUCT_ID)
+            profile = profile_for_product(_first_parsed(product_frames, parse_product_id))
         transport.exchange_raw(HELLO, wait=2.0)
         transport.exchange_raw(REGISTER, wait=1.5)
         advertised_frames = transport.query(QUERY_BROADCAST_CODES, wait=0.5)
@@ -149,10 +155,11 @@ def query_feature_switches(address: str | None = None) -> dict[str, bool]:
             wait=0.8,
         )
     switches = _first_parsed(status_frames, parse_feature_switches) or {}
+    unconfirmed = profile.unconfirmed_feature_switches if profile else frozenset()
     return {
         name: switches[feature]
         for feature, name in FEATURE_SWITCH_NAMES.items()
-        if feature in switches
+        if feature in switches and feature not in unconfirmed
     }
 
 
@@ -178,8 +185,8 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
         profile = profile_for_product(product_id)
         if profile is None:
             raise RuntimeError(f"refusing ANC write: product {product_id or 'unknown'} has no protocol profile")
-        if not profile.verified:
-            raise RuntimeError(f"refusing ANC write: {profile.name} profile is not hardware-verified")
+        if not profile.can_write("anc"):
+            raise RuntimeError(f"refusing ANC write: {profile.name} profile does not authorize ANC writes")
         if mode not in profile.anc.write_indices:
             raise RuntimeError(f"refusing ANC write: {mode} is not supported by {profile.name}")
         transport.exchange_raw(HELLO, wait=2.0)
@@ -210,8 +217,8 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
 
     timer.mark("verify_close")
     observed = _first_parsed(state_frames, lambda frame: parse_anc_state(frame, profile.anc))
-    expected_mode = mode if mode in ("off", "transparency", "on") else "on"
-    expected_level = mode if mode not in ("off", "transparency", "on") else None
+    expected_mode = mode if mode in MAIN_ANC_MODES else "on"
+    expected_level = mode if mode not in MAIN_ANC_MODES else None
     if not isinstance(observed, AncState) or observed.mode != expected_mode or (
         expected_level and observed.level != expected_level
     ):

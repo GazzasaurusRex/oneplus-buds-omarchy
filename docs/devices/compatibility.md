@@ -6,16 +6,20 @@ Compatibility describes evidence, not a promise that every firmware works.
 |---|---|---|---|
 | OnePlus Buds Pro | `060C14` | Verified | [Device record](oneplus-buds-pro.md) |
 | OnePlus Buds Pro 2 | `062014` | Verified | [Device record](oneplus-buds-pro-2.md) |
+| OnePlus Buds 4 | `065414` | Community Tested | [Device record](oneplus-buds-4.md) |
 | Other compatible OnePlus/OPO products | Unknown | Experimental if discovered | No maintainer verification |
 
-There are no community-tested models recorded yet. **Verified** means maintainer
+OnePlus Buds 4 is the first community-tested model. **Verified** means maintainer
 hardware testing on the two reference devices and their recorded firmware.
 **Community Tested** means a device owner has supplied reproducible evidence that
 the advertised functions work on that model. **Experimental** means recognised
 protocol/service evidence without that device evidence. Community testing never
 upgrades a model to maintainer-verified status.
-Community Tested is an evidence label; write controls remain gated to
-maintainer-hardware-verified profiles.
+Community Tested is an evidence label, never maintainer verification. Such profiles
+are read-only by default. A specific write class can be enabled only when its own
+operation-level permission records contributor hardware testing and fresh read-back;
+ANC, factory EQ and custom EQ permissions are independent. Buds 4 authorizes those
+three tested classes. Experimental and unknown products cannot write.
 
 Current discovery requires a connected BlueZ device whose name contains
 `oneplus` or `oppo` and whose UUIDs contain one of the two known OPO services.
@@ -39,11 +43,17 @@ Case presence and charging flags need further deliberate edge-case testing.
 Both reference models have hardware-verified native factory EQ selection. Buds Pro
 uses Balanced, Deep Sea Bass, Pure Vocals, and Bright & Crisp. Buds Pro 2 firmware
 `196.196.101` uses Balanced, Bass, Serenade, Bold, and Hans Zimmer Soundscape Tuning.
-Buds Pro 2 additionally
-returns and supports safe updates of two device-declared six-band custom entries
+Buds Pro 2 additionally returns and supports safe updates of two device-declared
+six-band custom entries
 (62/250/1000/4000/8000/16000 Hz, -6..+6 dB, 1 dB protocol resolution). Original
 Buds Pro returns an empty custom catalogue and is correctly preset-only. EQ writes
 remain unavailable to unknown/experimental products.
+
+Buds 4 is Community Tested, not maintainer Verified. Contributor Joel Tony
+(@jay-tau) captured HeyMelody traffic and tested fresh read-back for all exposed
+ANC modes and strengths, its Balanced/Serenade/Bass factory presets, custom entry
+selection and a custom gain change. Its profile therefore authorizes ANC, factory
+EQ and custom EQ writes separately; details are in its device record.
 
 Pro 2 capability discovery can report recognised boolean feature switches, but
 wear detection, multipoint, low latency and related switches have no implemented

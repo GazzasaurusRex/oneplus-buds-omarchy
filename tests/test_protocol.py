@@ -123,6 +123,24 @@ class ProtocolTests(unittest.TestCase):
             state = parse_anc_state(Frame(0x810C, 1, b"\x00\x01\x01" + bitmap), anc)
             self.assertEqual((state.mode, state.level), ("on", level))
 
+    def test_buds_4_profile_matches_official_app_commands(self):
+        profile = PROFILES["065414"]
+        anc = profile.anc
+        self.assertEqual(profile.compatibility, "community_tested")
+        # SET payloads captured from HeyMelody for each mode and strength.
+        captured = {
+            "off": "01 01 01", "on": "01 01 02", "transparency": "01 01 04",
+            "deep": "01 01 10", "medium": "01 01 20", "light": "01 01 40",
+            "smart": "01 01 80", "adaptive": "01 01 00 08",
+        }
+        for mode, payload in captured.items():
+            self.assertEqual(anc.payload_for(mode), bytes.fromhex(payload))
+        expected_levels = {4: "deep", 5: "medium", 6: "light", 7: "smart"}
+        for index, level in expected_levels.items():
+            bitmap = (1 << index).to_bytes(2, "little")
+            state = parse_anc_state(Frame(0x810C, 1, b"\x00\x01\x01" + bitmap), anc)
+            self.assertEqual((state.mode, state.level), ("on", level))
+
 
 if __name__ == "__main__":
     unittest.main()

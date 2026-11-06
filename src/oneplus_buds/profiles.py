@@ -5,6 +5,11 @@ from typing import Literal
 
 
 CompatibilityState = Literal["verified", "community_tested", "experimental"]
+WriteOperation = Literal["anc", "eq_preset", "custom_eq"]
+
+# Parent noise-control modes. Every other writable mode is an ANC strength and
+# is verified as main mode "on" plus that level.
+MAIN_ANC_MODES = ("off", "transparency", "on", "adaptive")
 
 
 @dataclass(frozen=True)
@@ -63,6 +68,13 @@ PRO_2_EQ_PRESETS = (
     EqPresetProfile(7, "hans-zimmer-soundscape-tuning", "Hans Zimmer Soundscape Tuning"),
 )
 
+# Buds 4 swaps the Pro 2 IDs for Bass and Serenade.
+BUDS_4_EQ_PRESETS = (
+    EqPresetProfile(0, "balanced", "Balanced"),
+    EqPresetProfile(1, "serenade", "Serenade", ("pure-vocals",)),
+    EqPresetProfile(2, "bass", "Bass", ("deep-sea-bass",)),
+)
+
 
 @dataclass(frozen=True)
 class DeviceProfile:
@@ -73,11 +85,23 @@ class DeviceProfile:
     eq: EqProfile | None
     capabilities: frozenset[str]
     compatibility: CompatibilityState
+    # Feature IDs whose shared names are not confirmed on this model stay unnamed.
+    unconfirmed_feature_switches: frozenset[int] = frozenset()
+    # Community-tested profiles are read-only by default. Each listed operation
+    # must have separate hardware evidence; one permission never enables another.
+    community_write_permissions: frozenset[WriteOperation] = frozenset()
 
     @property
     def verified(self) -> bool:
-        """Keep hardware write gates explicit and backwards compatible."""
+        """Maintainer hardware verification, distinct from community evidence."""
         return self.compatibility == "verified"
+
+    def can_write(self, operation: WriteOperation) -> bool:
+        """Authorize a specific write class without broadening compatibility."""
+        return self.verified or (
+            self.compatibility == "community_tested"
+            and operation in self.community_write_permissions
+        )
 
 
 PROFILES = {
@@ -141,6 +165,46 @@ PROFILES = {
             }
         ),
         compatibility="verified",
+    ),
+    "065414": DeviceProfile(
+        product_id="065414",
+        name="OnePlus Buds 4",
+        service_uuid="0000079a-d102-11e1-9b23-00025b00a5a5",
+        anc=AncProfile(
+            write_indices={
+                "off": 0,
+                "on": 1,
+                "transparency": 2,
+                "deep": 4,
+                "medium": 5,
+                "light": 6,
+                "smart": 7,
+                "adaptive": 11,
+            },
+            read_modes={3: "off", 8: "transparency", 11: "adaptive"},
+            read_levels={4: "deep", 5: "medium", 6: "light", 7: "smart"},
+            sequences={"off": 0x40},
+        ),
+        eq=EqProfile(BUDS_4_EQ_PRESETS, supports_custom=True, write_verified=True,
+                     custom_write_verified=True),
+        capabilities=frozenset(
+            {
+                "battery",
+                "case_battery",
+                "firmware",
+                "anc",
+                "transparency",
+                "anc_levels",
+                "smart_anc",
+                "adaptive_anc",
+                "eq",
+                "custom_eq",
+            }
+        ),
+        compatibility="community_tested",
+        # HeyMelody showed Hi-Res on while 0x18 read off; 0x0b has no matching toggle.
+        unconfirmed_feature_switches=frozenset({0x0B, 0x18}),
+        community_write_permissions=frozenset({"anc", "eq_preset", "custom_eq"}),
     ),
 }
 

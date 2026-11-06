@@ -41,12 +41,13 @@ function ancModes(snapshot) {
     off: "Off",
     transparency: "Transparency",
     on: "On",
+    adaptive: "Adaptive",
     light: "Light",
     medium: "Medium",
     deep: "Deep",
     smart: "Smart"
   }
-  var preferred = ["off", "transparency", "on", "light", "medium", "deep", "smart"]
+  var preferred = ["off", "transparency", "on", "adaptive", "light", "medium", "deep", "smart"]
   var seen = {}
   var options = []
 
@@ -72,7 +73,7 @@ function ancGroups(snapshot) {
   ]
   for (var i = 0; i < modes.length; i++) {
     var option = modes[i]
-    if (["off", "transparency", "on"].indexOf(option.value) !== -1) {
+    if (["off", "transparency", "on", "adaptive"].indexOf(option.value) !== -1) {
       groups[0].options.push({value: option.value,
         label: option.value === "on" ? "Noise cancellation" : option.label})
     } else if (["light", "medium", "deep", "smart"].indexOf(option.value) !== -1) {

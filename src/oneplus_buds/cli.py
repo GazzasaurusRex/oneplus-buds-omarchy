@@ -20,7 +20,7 @@ def main() -> None:
     anc_parser = subparsers.add_parser("anc", help="query or safely set ANC state")
     anc_parser.add_argument(
         "mode",
-        choices=("status", "on", "off", "transparency", "light", "medium", "deep", "smart"),
+        choices=("status", "on", "off", "transparency", "adaptive", "light", "medium", "deep", "smart"),
     )
     eq_parser = subparsers.add_parser("eq", help="query or safely set native earbud EQ")
     eq_commands = eq_parser.add_subparsers(dest="eq_command", required=True)

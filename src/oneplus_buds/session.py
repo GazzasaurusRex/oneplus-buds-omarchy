@@ -7,7 +7,7 @@ from .bluez import Device
 from .lifecycle_trace import mark, span
 from .models import ControlResult, EqControlResult, EqStatusResult, EventBatch, SafeEvent, StatusResult
 from .timing import AncRequestError, PhaseTimer
-from .profiles import DeviceProfile, profile_for_product
+from .profiles import MAIN_ANC_MODES, DeviceProfile, WriteOperation, profile_for_product
 from .protocol import (
     HELLO,
     NOTIFY_STATE,
@@ -173,8 +173,8 @@ class OpoSession:
         self._require_connected()
         if not self._authenticated:
             raise RuntimeError("session authentication has not completed")
-        if not self.profile.verified or mode not in self.profile.anc.write_indices:
-            raise ValueError("ANC mode is not supported by a verified profile")
+        if not self.profile.can_write("anc") or mode not in self.profile.anc.write_indices:
+            raise ValueError("ANC mode is not authorized for this device profile")
         timer = PhaseTimer()
         events: list[SafeEvent] = []
         ignored = 0
@@ -199,8 +199,8 @@ class OpoSession:
                 # a fresh query is still the only success criterion.
                 acknowledgement = None
             timer.mark("set_response")
-            expected_mode = mode if mode in ("off", "transparency", "on") else "on"
-            expected_level = None if mode in ("off", "transparency", "on") else mode
+            expected_mode = mode if mode in MAIN_ANC_MODES else "on"
+            expected_level = None if mode in MAIN_ANC_MODES else mode
             # SET acknowledgement can precede physical application. A first
             # fresh query may legitimately return the previous mode. Re-query
             # on each response, bounded by both time and count; never replay SET.
@@ -242,7 +242,7 @@ class OpoSession:
                                   timer.finish("session_total")) from error
 
     def eq_status(self) -> tuple[EqStatusResult, EventBatch]:
-        self._require_eq_session(write=False)
+        self._require_eq_session()
         frames: list[Frame] = []
         current_frame = self._transport.request(
             QUERY_EQ, b"", RESPONSE_EQ, on_frames=frames.extend,
@@ -258,11 +258,16 @@ class OpoSession:
 
     def set_eq(self, preset: str) -> tuple[EqControlResult, EventBatch]:
         """Select one native EQ entry once, then verify with fresh device state."""
-        self._require_eq_session(write=True)
+        self._require_eq_session()
+        eq = self.profile.eq
+        if eq is not None and eq.preset_for(preset) is not None:
+            # Factory targets can be classified and rejected before any I/O.
+            self._require_eq_session(write="eq_preset")
         timer = PhaseTimer()
         before, initial = self.eq_status()
         timer.mark("preserve_read")
-        target_id, target_name = self._resolve_eq_target(preset, before)
+        target_id, target_name, write_operation = self._resolve_eq_target(preset, before)
+        self._require_eq_session(write=write_operation)
         events = list(initial.events)
         ignored = initial.ignored_frames
 
@@ -316,9 +321,7 @@ class OpoSession:
 
     def set_custom_eq(self, entry_id: int, gains_db: tuple[int, ...]) -> tuple[EqControlResult, EventBatch]:
         """Update an existing device-declared custom curve; never invent a layout."""
-        self._require_eq_session(write=True)
-        if self.profile.eq is None or not self.profile.eq.custom_write_verified:
-            raise ValueError("custom EQ writes are not hardware-verified for this device profile")
+        self._require_eq_session(write="custom_eq")
         timer = PhaseTimer()
         before, initial = self.eq_status()
         timer.mark("preserve_read")
@@ -376,14 +379,18 @@ class OpoSession:
         except (OSError, RuntimeError) as error:
             raise RuntimeError("custom EQ session request failed: " + str(error)) from error
 
-    def _require_eq_session(self, *, write: bool) -> None:
+    def _require_eq_session(self, *, write: WriteOperation | None = None) -> None:
         self._require_connected()
         if not self._authenticated:
             raise RuntimeError("session authentication has not completed")
         if self.profile.eq is None:
             raise ValueError("native EQ is not supported by this device profile")
-        if write and (not self.profile.verified or not self.profile.eq.write_verified):
-            raise ValueError("native EQ writes are not hardware-verified for this device profile")
+        if write and not self.profile.can_write(write):
+            raise ValueError(f"{write} writes are not authorized for this device profile")
+        if write == "eq_preset" and not self.profile.eq.write_verified:
+            raise ValueError("factory EQ writes are not tested for this device profile")
+        if write == "custom_eq" and not self.profile.eq.custom_write_verified:
+            raise ValueError("custom EQ writes are not tested for this device profile")
 
     def _eq_result(self, current_id: int, entries: tuple[EqEntry, ...]) -> EqStatusResult:
         eq = self.profile.eq
@@ -405,17 +412,19 @@ class OpoSession:
             1 if entries else None,
         )
 
-    def _resolve_eq_target(self, value: str, status: EqStatusResult) -> tuple[int, str]:
+    def _resolve_eq_target(
+        self, value: str, status: EqStatusResult
+    ) -> tuple[int, str, WriteOperation]:
         eq = self.profile.eq
         if eq is None:
             raise ValueError("native EQ is not supported by this device profile")
         preset = eq.preset_for(value)
         if preset is not None:
-            return preset.eq_id, preset.name
+            return preset.eq_id, preset.name, "eq_preset"
         normalized = value.strip().lower()
         for entry in status.custom_entries:
             if normalized in (f"custom:{entry.eq_id}", entry.name.lower()):
-                return entry.eq_id, entry.name
+                return entry.eq_id, entry.name, "custom_eq"
         raise ValueError("EQ target is not a verified preset or device-declared custom entry")
 
     def poll(self, wait: float = 0.2) -> EventBatch:
@@ -474,6 +483,7 @@ class OpoSession:
                 name: switches[feature]
                 for feature, name in FEATURE_SWITCH_NAMES.items()
                 if feature in switches
+                and feature not in self.profile.unconfirmed_feature_switches
             }
             return SafeEvent("feature_switches", named)
         if frame.command == NOTIFY_STATE and frame.payload:

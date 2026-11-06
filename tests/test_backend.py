@@ -112,6 +112,43 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(result["anc"], "off")
         self.assertEqual(result["set_status"], 14)
 
+    @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
+    def test_adaptive_write_verifies_parent_mode_without_level(self, _device):
+        def write(state):
+            control = FakeTransport(
+                {
+                    QUERY_CAPABILITIES: [],
+                    QUERY_PRODUCT_ID: [Frame(0x8103, 1, b"\x00\x14\x54\x06")],
+                    SET_ANC: [Frame(0x8404, 2, b"\x00")],
+                }
+            )
+            verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 3, state)]})
+            with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
+                return set_anc("adaptive"), control
+
+        result, control = write(bytes.fromhex("00 01 01 00 08"))
+        self.assertEqual((result["anc"], result["anc_level"]), ("adaptive", None))
+        self.assertIn((SET_ANC, bytes.fromhex("01 01 00 08")), control.queries)
+        with self.assertRaises(RuntimeError):
+            write(bytes.fromhex("00 01 01 80 00"))
+
+    @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
+    def test_unconfirmed_feature_switches_stay_unnamed(self, _device):
+        status = [Frame(0x810D, 0, bytes.fromhex("00 03 04 01 0b 01 18 00"))]
+        transport = FakeTransport({QUERY_STATUS: status})
+        with patch("oneplus_buds.backend.RfcommTransport", return_value=transport):
+            result = query_feature_switches(profile=PROFILES["065414"])
+        self.assertEqual(result, {"wear_detection": True})
+        self.assertNotIn(QUERY_PRODUCT_ID, [command for command, _ in transport.queries])
+        # Without a supplied profile the product is resolved on the same connection.
+        transport = FakeTransport({
+            QUERY_PRODUCT_ID: [Frame(0x8103, 1, b"\x00\x14\x54\x06")],
+            QUERY_STATUS: status,
+        })
+        with patch("oneplus_buds.backend.RfcommTransport", return_value=transport):
+            result = query_feature_switches()
+        self.assertEqual(result, {"wear_detection": True})
+
 
 class FakeTransport:
     def __init__(self, responses):

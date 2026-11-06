@@ -110,6 +110,16 @@ class EqProfileTests(unittest.TestCase):
         self.assertEqual(profile.preset_for("pure-vocals").eq_id, 2)
         self.assertEqual(profile.preset_for("hans-zimmer-soundscape-tuning").eq_id, 7)
 
+    def test_buds_4_swaps_pro_2_bass_and_serenade_ids(self):
+        profile = PROFILES["065414"].eq
+        self.assertEqual(
+            [(item.eq_id, item.name) for item in profile.presets],
+            [(0, "Balanced"), (1, "Serenade"), (2, "Bass")],
+        )
+        self.assertEqual(profile.preset_for("pure-vocals").eq_id, 1)
+        self.assertEqual(profile.preset_for("deep-sea-bass").eq_id, 2)
+        self.assertTrue(profile.supports_custom)
+
 
 class EqSessionTests(unittest.TestCase):
     def session(self, product="062014"):
@@ -181,6 +191,89 @@ class EqSessionTests(unittest.TestCase):
         self.assertEqual((result.previous_id, result.current_id), (4, 5))
         commands = [call.args[0] for call in session._transport.request.call_args_list]
         self.assertEqual(commands.count(SET_EQ_DETAIL), 1)
+
+    def test_buds_4_factory_preset_write_is_authorized_and_verified(self):
+        session = self.session("065414")
+        session._transport.request.side_effect = [
+            Frame(RESPONSE_EQ, 1, b"\x00\x04"),
+            Frame(RESPONSE_EQ_ALL, 2, EQ_PAYLOAD),
+            Frame(RESPONSE_SET_EQ, 3, b"\x00"),
+            Frame(RESPONSE_EQ, 4, b"\x00\x01"),
+            Frame(RESPONSE_EQ, 5, b"\x00\x01"),
+            Frame(RESPONSE_EQ_ALL, 6, EQ_PAYLOAD),
+        ]
+        result, _ = session.set_eq("serenade")
+        self.assertEqual((result.current_id, result.current_name), (1, "Serenade"))
+        set_call = next(call for call in session._transport.request.call_args_list
+                        if call.args[0] == SET_EQ)
+        self.assertEqual(set_call.args[1], b"\x01")
+
+    def test_buds_4_custom_eq_write_is_authorized_and_verified(self):
+        session = self.session("065414")
+        changed = b"\x00\x02" + entry_payload(0, 4, "Custom") + entry_payload(
+            1, 5, "Custom1", (1, 0, -1, 0, 1, -1)
+        )
+        session._transport.request.side_effect = [
+            Frame(RESPONSE_EQ, 1, b"\x00\x04"),
+            Frame(RESPONSE_EQ_ALL, 2, EQ_PAYLOAD),
+            Frame(RESPONSE_SET_EQ_DETAIL, 3, b"\x00"),
+            Frame(RESPONSE_EQ_ALL, 4, changed),
+            Frame(RESPONSE_EQ, 5, b"\x00\x05"),
+        ]
+        result, _ = session.set_custom_eq(5, (1, 0, -1, 0, 1, -1))
+        self.assertEqual((result.current_id, result.current_name), (5, "Custom1"))
+        self.assertTrue(result.verified)
+
+    def test_buds_4_custom_entry_selection_uses_custom_permission(self):
+        session = self.session("065414")
+        session._transport.request.side_effect = [
+            Frame(RESPONSE_EQ, 1, b"\x00\x04"),
+            Frame(RESPONSE_EQ_ALL, 2, EQ_PAYLOAD),
+            Frame(RESPONSE_SET_EQ, 3, b"\x00"),
+            Frame(RESPONSE_EQ, 4, b"\x00\x05"),
+            Frame(RESPONSE_EQ, 5, b"\x00\x05"),
+            Frame(RESPONSE_EQ_ALL, 6, EQ_PAYLOAD),
+        ]
+        result, _ = session.set_eq("custom:5")
+        self.assertEqual((result.current_id, result.current_name), (5, "Custom1"))
+        set_call = next(call for call in session._transport.request.call_args_list
+                        if call.args[0] == SET_EQ)
+        self.assertEqual(set_call.args[1], b"\x05")
+
+    def test_community_eq_permissions_are_independent(self):
+        profile = replace(
+            PROFILES["065414"],
+            community_write_permissions=frozenset({"anc"}),
+        )
+        session = OpoSession(DEVICE, profile)
+        session._connected = session._authenticated = True
+        session._transport = MagicMock()
+        with self.assertRaises(ValueError):
+            session.set_eq("balanced")
+        with self.assertRaises(ValueError):
+            session.set_custom_eq(5, (0, 0, 0, 0, 0, 0))
+        self.assertNotIn(
+            SET_EQ,
+            [call.args[0] for call in session._transport.request.call_args_list],
+        )
+
+        factory_only = replace(
+            PROFILES["065414"],
+            community_write_permissions=frozenset({"eq_preset"}),
+        )
+        session = OpoSession(DEVICE, factory_only)
+        session._connected = session._authenticated = True
+        session._transport = MagicMock()
+        session._transport.request.side_effect = [
+            Frame(RESPONSE_EQ, 1, b"\x00\x04"),
+            Frame(RESPONSE_EQ_ALL, 2, EQ_PAYLOAD),
+        ]
+        with self.assertRaises(ValueError):
+            session.set_eq("custom:5")
+        self.assertNotIn(
+            SET_EQ,
+            [call.args[0] for call in session._transport.request.call_args_list],
+        )
 
     def test_unverified_custom_write_is_gated_before_transport(self):
         session = self.session("060C14")

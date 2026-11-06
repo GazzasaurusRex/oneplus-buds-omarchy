@@ -7,7 +7,7 @@ from typing import cast
 from .lifecycle_trace import mark
 from .api import BudsBackend
 from .models import ControllerSnapshot, ControlResult, EqControlResult, EqStatusResult, EventBatch, StatusResult
-from .profiles import profile_for_product
+from .profiles import MAIN_ANC_MODES, profile_for_product
 from .protocol import VersionRecord
 from .session import OpoSession, UnsupportedProductError
 from .timing import AncRequestError, PhaseTimer
@@ -77,7 +77,7 @@ class BudsController:
         timings: dict[str, float] = {}
         with self._lock:
             timer.mark("controller_lock_wait")
-            if self.reuse_session and self._running and mode in ("on", "off", "transparency"):
+            if self.reuse_session and self._running and mode in MAIN_ANC_MODES:
                 return self._set_session_anc(mode, timer)
             try:
                 self._close_session()

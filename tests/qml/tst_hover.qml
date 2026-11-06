@@ -11,10 +11,12 @@ TestCase {
   property var lastResponse: null
   property int nextId: 1
   property int eqStatusCalls: 0
+  property string ancRequest: ""
   property var customRequest: null
   property int reportRequests: 0
   property string reportPath: ""
   function eqStatus() { eqStatusCalls++; return nextId++ }
+  function setAnc(value) { ancRequest = value; return nextId++ }
   function setEq(value) { return nextId++ }
   function setCustomEq(entryId, gains) {
    customRequest = ({entry_id: entryId, gains: gains}); return nextId++
@@ -42,6 +44,7 @@ TestCase {
    anc_modes:[], capabilities:[], compatibility:"verified", session_connected:true})
   service.lastResponse = null
   service.eqStatusCalls = 0
+  service.ancRequest = ""
   service.customRequest = null
   service.reportRequests = 0
   service.reportPath = ""
@@ -50,6 +53,20 @@ TestCase {
   widget.pendingRequestId = -1
   widget.pendingKind = ""
   widget.reportDetailsOpen = false
+ }
+ function test_adaptive_anc_routes_through_panel_service() {
+  service.snapshot = ({
+   status:{model:"OnePlus Buds 4",product_id:"065414",battery:{},anc:"adaptive",anc_level:null},
+   compatibility:"community_tested", anc_modes:["off","on","transparency","adaptive"],
+   capabilities:["anc","adaptive_anc"], session_connected:true
+  })
+  wait(0)
+  compare(widget.currentAncMode, "adaptive")
+  compare(widget.ancOptions[3].value, "adaptive")
+  widget.selectAnc("adaptive")
+  compare(service.ancRequest, "adaptive")
+  compare(widget.pendingKind, "anc")
+  compare(widget.pendingMode, "adaptive")
  }
  function test_hover() {
   mouseMove(widget, -100, 50)

@@ -3,16 +3,18 @@
 A native Omarchy bar widget and Linux backend for OnePlus earbuds. Check battery
 levels and change noise control from a compact, theme-aware panel.
 
-**Status: 0.1.0 release candidate.** Buds Pro and Buds Pro 2 have hardware-verified
-basic controls and native EQ. No release tag has been created yet. This is an
-independent project, unaffiliated with OnePlus or OPPO.
+**Status: 0.1.0 release candidate.** Buds Pro and Buds Pro 2 have
+maintainer-verified basic controls and native EQ. Buds 4 is Community Tested on
+contributor hardware. No release tag has been created yet. This is an independent
+project, unaffiliated with OnePlus or OPPO.
 
 ## What works
 
 - Automatic selection of one connected compatible OnePlus/OPPO device.
 - Connection status, left/right battery, case battery when returned, and firmware.
-- Independently verified ANC On, Off, Transparency and profile-supported strengths.
-- Model-correct native earbud EQ presets on both models, plus device-defined custom EQ on Pro 2.
+- Read-back-verified ANC On, Off, Transparency and profile-supported strengths.
+- Model-correct native earbud EQ presets on all three supported profiles, plus
+  device-defined custom EQ on Buds Pro 2 and Buds 4.
 - Icon-only idle widget; hover reveals known batteries, with delayed collapse.
 - Responsive panel with full-width device status, balanced ANC/EQ columns when
   space permits, and a compact scrolling fallback on narrow displays.
@@ -22,6 +24,7 @@ independent project, unaffiliated with OnePlus or OPPO.
 |---|---|---|---|
 | OnePlus Buds Pro | Verified on hardware | 541.541.510 | Light, Deep, Smart |
 | OnePlus Buds Pro 2 | Verified on hardware | 196.196.101 | Light, Medium, Deep, Smart |
+| OnePlus Buds 4 | Community tested on contributor hardware | 138.138.105 | Light, Medium, Deep, Smart; Adaptive mode |
 | Other compatible OnePlus/OPO devices | Experimental if recognised; no verified controls | Unknown | Not exposed |
 
 See [compatibility and limitations](docs/devices/compatibility.md). Gestures,
@@ -33,7 +36,10 @@ OnePlus Buds Pro and Buds Pro 2 are the only models currently hardware-verified
 by the maintainer. Other recognised OnePlus/OPO-compatible models are
 **Experimental** until tested. A model may become **Community Tested** after an
 owner reports successful, reproducible checks on their own hardware; that label
-does not mean maintainer hardware verification.
+does not mean maintainer hardware verification. OnePlus Buds 4 is Community
+Tested; ANC, factory EQ and custom EQ writes are enabled only for the operation
+classes tested and read back by contributor Joel Tony (@jay-tau). See the
+[device record](docs/devices/oneplus-buds-4.md).
 
 Every connected device has a quiet reporting link at the bottom of the control
 panel. Verified and Community Tested devices show **Report a problem**;
@@ -129,9 +135,10 @@ ANC On may choose a device-dependent strength; select a specific strength if you
 need one. Cold setup and explicit strengths still take several seconds. Warm main
 mode changes reuse the authenticated session; recorded timings are in
 [the measurement notes](docs/measurements/anc-baseline.md).
-Native EQ controls live only in the opened panel. Both models show verified
-factory presets; Pro 2 also shows controls generated from its returned custom-band
-definition. Changes are written to the earbuds and persist independently of the
+Native EQ controls live only in the opened panel. The two maintainer-verified
+models and Community Tested Buds 4 expose their hardware-tested factory presets;
+Pro 2 and Buds 4 also show controls generated from returned custom-band
+definitions. Changes are written to the earbuds and persist independently of the
 Linux audio route—no system-wide software EQ is installed or configured.
 The tested Pro 2 firmware labels its presets Balanced, Bass, Serenade, Bold, and
 Hans Zimmer Soundscape Tuning; the original Buds Pro retains its own four names.

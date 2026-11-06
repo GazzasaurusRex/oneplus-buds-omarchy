@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import replace
 from threading import Event, Thread
 from unittest.mock import MagicMock, Mock, patch
 
@@ -80,8 +81,12 @@ class SessionControlTests(unittest.TestCase):
         return session
 
     def test_both_profiles_verify_query_without_reauth_or_resubscription(self):
-        for product in PROFILES:
-            session = self.session(product, ack=b'\x0e')
+        for product, profile in PROFILES.items():
+            if not profile.verified:
+                continue
+            off_index = min(i for i, mode in profile.anc.read_modes.items() if mode == 'off')
+            off_state = b'\x00\x01\x01' + (1 << off_index).to_bytes(off_index // 8 + 1, 'little')
+            session = self.session(product, state=off_state, ack=b'\x0e')
             result, batch = session.set_anc('off')
             self.assertTrue(result.verified)
             self.assertEqual(result.set_status, 14)
@@ -123,6 +128,21 @@ class SessionControlTests(unittest.TestCase):
             session.set_anc('off')
         self.assertEqual(session._transport.request.call_count, 33)
 
+    def test_adaptive_is_a_parent_mode_on_the_warm_session(self):
+        session = self.session('065414', state=bytes.fromhex('00 01 01 00 08'))
+        result, _ = session.set_anc('adaptive')
+        self.assertEqual((result.anc, result.anc_level), ('adaptive', None))
+        self.assertEqual(session._transport.request.call_args_list[0].args[1],
+                         bytes.fromhex('01 01 00 08'))
+        mismatch = self.session('065414', state=bytes.fromhex('00 01 01 80 00'))
+        with self.assertRaises(AncRequestError):
+            mismatch.set_anc('adaptive')
+
+    def test_unconfirmed_feature_switches_stay_unnamed_in_session_events(self):
+        session = OpoSession(DEVICE, PROFILES['065414'])
+        batch = session._redact([Frame(0x810D, 0, bytes.fromhex('00 03 04 01 0b 01 18 00'))])
+        self.assertEqual([event.data for event in batch.events], [{'wear_detection': True}])
+
     def test_unknown_mode_and_unauthenticated_session_cannot_write(self):
         session = self.session()
         with self.assertRaises(ValueError):
@@ -131,6 +151,27 @@ class SessionControlTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             session.set_anc('off')
         session._transport.request.assert_not_called()
+
+    def test_community_and_experimental_profiles_are_read_only_without_anc_permission(self):
+        profiles = (
+            replace(
+                PROFILES['062014'],
+                compatibility='community_tested',
+                community_write_permissions=frozenset(),
+            ),
+            replace(
+                PROFILES['065414'],
+                compatibility='community_tested',
+                community_write_permissions=frozenset({'eq_preset'}),
+            ),
+            replace(PROFILES['065414'], compatibility='experimental'),
+        )
+        for profile in profiles:
+            session = self.session()
+            session.profile = profile
+            with self.assertRaises(ValueError):
+                session.set_anc('off')
+            session._transport.request.assert_not_called()
 
 
 class ControllerReuseTests(unittest.TestCase):
@@ -153,6 +194,15 @@ class ControllerReuseTests(unittest.TestCase):
         backend.set_anc.assert_not_called()
         controller.shutdown()
         self.assertEqual(session.exits, 1)
+
+    def test_adaptive_uses_the_warm_session(self):
+        controller, session, backend = self.controller()
+        session.set_anc.return_value = (
+            ControlResult(DEVICE.name, '065414', 'adaptive', None, 0, True), EventBatch((), 0))
+        self.assertEqual(controller.set_anc('adaptive').anc, 'adaptive')
+        session.set_anc.assert_called_once_with('adaptive')
+        backend.set_anc.assert_not_called()
+        controller.shutdown()
 
     def test_atomic_result_snapshot_is_detached_from_later_monitoring(self):
         controller, session, _ = self.controller()
