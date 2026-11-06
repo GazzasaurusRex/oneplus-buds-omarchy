@@ -32,13 +32,16 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
             snapshot.status.product_id if snapshot.status else None
         ),
         "capabilities": sorted(capabilities),
-        "anc_modes": sorted(profile.anc.write_indices) if profile and profile.verified else [],
+        "anc_modes": sorted(profile.anc.write_indices)
+        if profile and profile.can_write("anc") else [],
         "eq": snapshot.eq_status.to_dict() if snapshot.eq_status else None,
         "eq_write_verified": bool(
-            profile and profile.verified and profile.eq and profile.eq.write_verified
+            profile and profile.can_write("eq_preset")
+            and profile.eq and profile.eq.write_verified
         ),
         "custom_eq_write_verified": bool(
-            profile and profile.verified and profile.eq and profile.eq.custom_write_verified
+            profile and profile.can_write("custom_eq")
+            and profile.eq and profile.eq.custom_write_verified
         ),
         "feature_switches": dict(snapshot.feature_switches),
         "session_connected": snapshot.session_connected,

@@ -129,16 +129,14 @@ class SessionControlTests(unittest.TestCase):
         self.assertEqual(session._transport.request.call_count, 33)
 
     def test_adaptive_is_a_parent_mode_on_the_warm_session(self):
-        writable = replace(PROFILES['065414'], compatibility='verified')
-        with patch.dict(PROFILES, {'065414': writable}):
-            session = self.session('065414', state=bytes.fromhex('00 01 01 00 08'))
-            result, _ = session.set_anc('adaptive')
-            self.assertEqual((result.anc, result.anc_level), ('adaptive', None))
-            self.assertEqual(session._transport.request.call_args_list[0].args[1],
-                             bytes.fromhex('01 01 00 08'))
-            mismatch = self.session('065414', state=bytes.fromhex('00 01 01 80 00'))
-            with self.assertRaises(AncRequestError):
-                mismatch.set_anc('adaptive')
+        session = self.session('065414', state=bytes.fromhex('00 01 01 00 08'))
+        result, _ = session.set_anc('adaptive')
+        self.assertEqual((result.anc, result.anc_level), ('adaptive', None))
+        self.assertEqual(session._transport.request.call_args_list[0].args[1],
+                         bytes.fromhex('01 01 00 08'))
+        mismatch = self.session('065414', state=bytes.fromhex('00 01 01 80 00'))
+        with self.assertRaises(AncRequestError):
+            mismatch.set_anc('adaptive')
 
     def test_unconfirmed_feature_switches_stay_unnamed_in_session_events(self):
         session = OpoSession(DEVICE, PROFILES['065414'])
@@ -153,6 +151,27 @@ class SessionControlTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             session.set_anc('off')
         session._transport.request.assert_not_called()
+
+    def test_community_and_experimental_profiles_are_read_only_without_anc_permission(self):
+        profiles = (
+            replace(
+                PROFILES['062014'],
+                compatibility='community_tested',
+                community_write_permissions=frozenset(),
+            ),
+            replace(
+                PROFILES['065414'],
+                compatibility='community_tested',
+                community_write_permissions=frozenset({'eq_preset'}),
+            ),
+            replace(PROFILES['065414'], compatibility='experimental'),
+        )
+        for profile in profiles:
+            session = self.session()
+            session.profile = profile
+            with self.assertRaises(ValueError):
+                session.set_anc('off')
+            session._transport.request.assert_not_called()
 
 
 class ControllerReuseTests(unittest.TestCase):

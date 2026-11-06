@@ -97,11 +97,17 @@ class BridgeTests(unittest.TestCase):
         self.assertFalse(payload["eq_write_verified"])
         self.assertFalse(payload["custom_eq_write_verified"])
 
-    def test_community_tested_writes_require_explicit_hardware_evidence(self):
+    def test_community_tested_writes_require_operation_level_hardware_evidence(self):
         buds_4 = PROFILES["065414"]
         self.assertEqual(buds_4.compatibility, "community_tested")
-        self.assertTrue(buds_4.community_writes_tested)
-        self.assertTrue(buds_4.verified)
+        self.assertFalse(buds_4.verified)
+        self.assertEqual(
+            buds_4.community_write_permissions,
+            frozenset({"anc", "eq_preset", "custom_eq"}),
+        )
+        self.assertTrue(buds_4.can_write("anc"))
+        self.assertTrue(buds_4.can_write("eq_preset"))
+        self.assertTrue(buds_4.can_write("custom_eq"))
         status = replace(STATUS, product_id="065414", model="OnePlus Buds 4")
         payload = serialize_snapshot(replace(SNAPSHOT, status=status))
         self.assertEqual(payload["compatibility"], "community_tested")
@@ -110,6 +116,31 @@ class BridgeTests(unittest.TestCase):
         self.assertTrue(payload["custom_eq_write_verified"])
         experimental = replace(buds_4, compatibility="experimental")
         self.assertFalse(experimental.verified)
+        self.assertFalse(experimental.can_write("anc"))
+
+    def test_community_write_permissions_do_not_authorize_other_classes(self):
+        anc_only = replace(
+            PROFILES["065414"],
+            product_id="C0FFEE",
+            community_write_permissions=frozenset({"anc"}),
+        )
+        status = replace(STATUS, product_id="C0FFEE", model="Community ANC model")
+        with patch.dict(PROFILES, {"C0FFEE": anc_only}):
+            payload = serialize_snapshot(replace(SNAPSHOT, status=status))
+        self.assertTrue(anc_only.can_write("anc"))
+        self.assertFalse(anc_only.can_write("eq_preset"))
+        self.assertFalse(anc_only.can_write("custom_eq"))
+        self.assertNotEqual(payload["anc_modes"], [])
+        self.assertFalse(payload["eq_write_verified"])
+        self.assertFalse(payload["custom_eq_write_verified"])
+
+    def test_verified_profiles_retain_all_write_classes(self):
+        for product_id in ("060C14", "062014"):
+            profile = PROFILES[product_id]
+            self.assertTrue(profile.verified)
+            self.assertTrue(profile.can_write("anc"))
+            self.assertTrue(profile.can_write("eq_preset"))
+            self.assertTrue(profile.can_write("custom_eq"))
 
     def test_callbacks_are_marshaled_through_dispatcher(self):
         emitted = []

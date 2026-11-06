@@ -5,6 +5,7 @@ from typing import Literal
 
 
 CompatibilityState = Literal["verified", "community_tested", "experimental"]
+WriteOperation = Literal["anc", "eq_preset", "custom_eq"]
 
 # Parent noise-control modes. Every other writable mode is an ANC strength and
 # is verified as main mode "on" plus that level.
@@ -86,15 +87,20 @@ class DeviceProfile:
     compatibility: CompatibilityState
     # Feature IDs whose shared names are not confirmed on this model stay unnamed.
     unconfirmed_feature_switches: frozenset[int] = frozenset()
-    # A community-tested profile stays read-only unless every exposed write was
-    # set and read back on the contributor's hardware.
-    community_writes_tested: bool = False
+    # Community-tested profiles are read-only by default. Each listed operation
+    # must have separate hardware evidence; one permission never enables another.
+    community_write_permissions: frozenset[WriteOperation] = frozenset()
 
     @property
     def verified(self) -> bool:
-        """Keep hardware write gates explicit and backwards compatible."""
-        return self.compatibility == "verified" or (
-            self.compatibility == "community_tested" and self.community_writes_tested
+        """Maintainer hardware verification, distinct from community evidence."""
+        return self.compatibility == "verified"
+
+    def can_write(self, operation: WriteOperation) -> bool:
+        """Authorize a specific write class without broadening compatibility."""
+        return self.verified or (
+            self.compatibility == "community_tested"
+            and operation in self.community_write_permissions
         )
 
 
@@ -198,7 +204,7 @@ PROFILES = {
         compatibility="community_tested",
         # HeyMelody showed Hi-Res on while 0x18 read off; 0x0b has no matching toggle.
         unconfirmed_feature_switches=frozenset({0x0B, 0x18}),
-        community_writes_tested=True,
+        community_write_permissions=frozenset({"anc", "eq_preset", "custom_eq"}),
     ),
 }
 

@@ -2,7 +2,7 @@
 
 Status: pre-QML bridge boundary, schema version 1, 2026-09-06.
 
-`BudsFrontendBridge` is the UI-toolkit-neutral boundary between the hardware-verified service runner and a future Omarchy frontend. It does not create a process, thread, socket, D-Bus name, or QML object. Those deployment choices remain deliberately open until current Omarchy integration requirements are inspected.
+`BudsFrontendBridge` is the UI-toolkit-neutral boundary between the profile-gated service runner and a future Omarchy frontend. It does not create a process, thread, socket, D-Bus name, or QML object. Those deployment choices remain deliberately open until current Omarchy integration requirements are inspected.
 
 The bridge owns one `BudsServiceRunner`, and the runner and all routed commands share one `BudsController`. The controller remains the sole RFCOMM session owner and serializes polling, refreshes, and verified writes.
 

@@ -15,10 +15,11 @@ hardware testing on the two reference devices and their recorded firmware.
 the advertised functions work on that model. **Experimental** means recognised
 protocol/service evidence without that device evidence. Community testing never
 upgrades a model to maintainer-verified status.
-Community Tested is an evidence label. Write controls remain gated to
-maintainer-hardware-verified profiles, unless a community profile records that
-every exposed write was set and read back on the contributor's hardware
-(`community_writes_tested`). The Buds 4 profile is the only one that does.
+Community Tested is an evidence label, never maintainer verification. Such profiles
+are read-only by default. A specific write class can be enabled only when its own
+operation-level permission records contributor hardware testing and fresh read-back;
+ANC, factory EQ and custom EQ permissions are independent. Buds 4 authorizes those
+three tested classes. Experimental and unknown products cannot write.
 
 Current discovery requires a connected BlueZ device whose name contains
 `oneplus` or `oppo` and whose UUIDs contain one of the two known OPO services.
@@ -42,11 +43,17 @@ Case presence and charging flags need further deliberate edge-case testing.
 Both reference models have hardware-verified native factory EQ selection. Buds Pro
 uses Balanced, Deep Sea Bass, Pure Vocals, and Bright & Crisp. Buds Pro 2 firmware
 `196.196.101` uses Balanced, Bass, Serenade, Bold, and Hans Zimmer Soundscape Tuning.
-Buds Pro 2 additionally
-returns and supports safe updates of two device-declared six-band custom entries
+Buds Pro 2 additionally returns and supports safe updates of two device-declared
+six-band custom entries
 (62/250/1000/4000/8000/16000 Hz, -6..+6 dB, 1 dB protocol resolution). Original
 Buds Pro returns an empty custom catalogue and is correctly preset-only. EQ writes
 remain unavailable to unknown/experimental products.
+
+Buds 4 is Community Tested, not maintainer Verified. Contributor Joel Tony
+(@jay-tau) captured HeyMelody traffic and tested fresh read-back for all exposed
+ANC modes and strengths, its Balanced/Serenade/Bass factory presets, custom entry
+selection and a custom gain change. Its profile therefore authorizes ANC, factory
+EQ and custom EQ writes separately; details are in its device record.
 
 Pro 2 capability discovery can report recognised boolean feature switches, but
 wear detection, multipoint, low latency and related switches have no implemented

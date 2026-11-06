@@ -1,5 +1,4 @@
 import unittest
-from dataclasses import replace
 from unittest.mock import patch
 
 from oneplus_buds.backend import diagnostics_report, query_capabilities, query_feature_switches, read_status, set_anc
@@ -115,8 +114,6 @@ class BackendTests(unittest.TestCase):
 
     @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
     def test_adaptive_write_verifies_parent_mode_without_level(self, _device):
-        writable = replace(PROFILES["065414"], compatibility="verified")
-
         def write(state):
             control = FakeTransport(
                 {
@@ -126,9 +123,7 @@ class BackendTests(unittest.TestCase):
                 }
             )
             verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 3, state)]})
-            with patch.dict(PROFILES, {"065414": writable}), patch(
-                "oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)
-            ):
+            with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
                 return set_anc("adaptive"), control
 
         result, control = write(bytes.fromhex("00 01 01 00 08"))

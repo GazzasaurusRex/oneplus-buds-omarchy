@@ -111,10 +111,10 @@ def read_capabilities(address: str | None = None) -> CapabilityResult:
         compatibility=compatibility_for_product(status.product_id),
         capabilities=tuple(sorted(capabilities)),
         anc_modes=tuple(sorted(profile.anc.write_indices))
-        if profile and profile.verified else (),
+        if profile and profile.can_write("anc") else (),
         feature_switches=feature_switches,
         eq_write_verified=bool(
-            profile and profile.verified and profile.eq and profile.eq.write_verified
+            profile and profile.can_write("eq_preset") and profile.eq and profile.eq.write_verified
         ),
         eq_presets=tuple(
             {"id": preset.eq_id, "key": preset.key, "name": preset.name}
@@ -122,7 +122,8 @@ def read_capabilities(address: str | None = None) -> CapabilityResult:
         ) if profile and profile.eq else (),
         supports_custom_eq=bool(profile and profile.eq and profile.eq.supports_custom),
         custom_eq_write_verified=bool(
-            profile and profile.verified and profile.eq and profile.eq.custom_write_verified
+            profile and profile.can_write("custom_eq")
+            and profile.eq and profile.eq.custom_write_verified
         ),
     )
 
@@ -184,8 +185,8 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
         profile = profile_for_product(product_id)
         if profile is None:
             raise RuntimeError(f"refusing ANC write: product {product_id or 'unknown'} has no protocol profile")
-        if not profile.verified:
-            raise RuntimeError(f"refusing ANC write: {profile.name} profile is not hardware-verified")
+        if not profile.can_write("anc"):
+            raise RuntimeError(f"refusing ANC write: {profile.name} profile does not authorize ANC writes")
         if mode not in profile.anc.write_indices:
             raise RuntimeError(f"refusing ANC write: {mode} is not supported by {profile.name}")
         transport.exchange_raw(HELLO, wait=2.0)

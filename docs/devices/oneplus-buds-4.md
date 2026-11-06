@@ -3,6 +3,12 @@
 Compatibility status: **Community Tested** on a contributor's hardware, 2026-10-17.
 This is not maintainer hardware verification. The original read-only report is
 [issue #1](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/1).
+Protocol investigation, HCI capture and hardware write/read-back verification were
+contributed by Joel Tony (GitHub: [@jay-tau](https://github.com/jay-tau)).
+
+ANC, factory EQ and custom EQ writes are authorized as three independent operation
+classes from that evidence. The Community Tested label remains unchanged; no other
+current or future write class inherits those permissions.
 
 ## Observed locally
 
