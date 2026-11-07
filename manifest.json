@@ -4,7 +4,7 @@
   "name": "OnePlus Buds Control",
   "version": "0.1.0",
   "author": "Gaz",
-  "description": "Native OnePlus earbuds controls for Omarchy. Hardware verified on OnePlus Buds Pro and Buds Pro 2; other compatible OnePlus/OPO devices are experimental.",
+  "description": "Native OnePlus earbuds controls for Omarchy. Hardware verified on OnePlus Buds Pro and Buds Pro 2; Buds 4 is Community Tested; other compatible OnePlus/OPO devices are experimental.",
   "kinds": [
     "service",
     "bar-widget"
@@ -16,7 +16,7 @@
   },
   "barWidget": {
     "displayName": "OnePlus Buds",
-    "description": "Controls for Buds Pro and Buds Pro 2; other compatible OnePlus/OPO devices are experimental.",
+    "description": "Controls for Buds Pro, Buds Pro 2 and Community Tested Buds 4; other compatible OnePlus/OPO devices are experimental.",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"
