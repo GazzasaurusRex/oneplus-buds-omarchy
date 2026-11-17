@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 
@@ -18,6 +18,10 @@ class AncProfile:
     read_modes: dict[int, str]
     read_levels: dict[int, str]
     sequences: dict[str, int]
+    # Optional display labels per internal level key. The phone app names the
+    # intensities differently per model (Low/Moderate/High/Auto on the Nord
+    # Buds 3 Pro), so the labels belong to the device profile.
+    level_labels: dict[str, str] = field(default_factory=dict)
 
     def payload_for(self, mode: str) -> bytes:
         try:
@@ -73,6 +77,18 @@ BUDS_4_EQ_PRESETS = (
     EqPresetProfile(0, "balanced", "Balanced"),
     EqPresetProfile(1, "serenade", "Serenade", ("pure-vocals",)),
     EqPresetProfile(2, "bass", "Bass", ("deep-sea-bass",)),
+)
+
+# The Nord Buds 3 Pro answers the native EQ selection with factory IDs. The
+# phone app exposes exactly three of them; the owner confirmed the mapping by
+# changing every preset in the app and reading the device back:
+#   id 3 = Balanced (Default), id 4 = Serenade, id 5 = Bass
+# The device accepts the other factory IDs as well, but the app does not offer
+# them. Its catalogue query returns no entries, so this profile is preset-only.
+NORD_BUDS_3_PRO_EQ_PRESETS = (
+    EqPresetProfile(3, "balanced", "Balanced (Default)", ("ausgewogen",)),
+    EqPresetProfile(4, "serenade", "Serenade", ("serenad",)),
+    EqPresetProfile(5, "bass", "Bass", ("bass-boost",)),
 )
 
 
@@ -205,6 +221,49 @@ PROFILES = {
         # HeyMelody showed Hi-Res on while 0x18 read off; 0x0b has no matching toggle.
         unconfirmed_feature_switches=frozenset({0x0B, 0x18}),
         community_write_permissions=frozenset({"anc", "eq_preset", "custom_eq"}),
+    ),
+    "064414": DeviceProfile(
+        product_id="064414",
+        name="OnePlus Nord Buds 3 Pro",
+        service_uuid="0000079a-d102-11e1-9b23-00025b00a5a5",
+        anc=AncProfile(
+            write_indices={
+                "off": 0,
+                "on": 1,
+                "transparency": 2,
+                "deep": 4,
+                "medium": 5,
+                "light": 6,
+                "auto": 7,
+            },
+            read_modes={0: "off", 1: "on", 2: "transparency", 3: "off", 8: "transparency"},
+            read_levels={4: "deep", 5: "medium", 6: "light", 7: "auto"},
+            sequences={"off": 0x40},
+            # The English phone app names the four intensities Low, Moderate,
+            # High and Auto; the internal keys stay light/medium/deep/auto.
+            level_labels={"deep": "High", "medium": "Moderate",
+                          "light": "Low", "auto": "Auto"},
+        ),
+        eq=EqProfile(NORD_BUDS_3_PRO_EQ_PRESETS, supports_custom=False,
+                     write_verified=True, custom_write_verified=False),
+        capabilities=frozenset(
+            {
+                "battery",
+                "case_battery",
+                "firmware",
+                "anc",
+                "transparency",
+                "anc_levels",
+                "eq",
+            }
+        ),
+        compatibility="community_tested",
+        # The capability audit found no model support for the separate game
+        # mode switch 0x06; 0x0b is Golden Sound here, not hearing enhancement.
+        unconfirmed_feature_switches=frozenset({0x06, 0x0B}),
+        # Owner hardware tests covered ANC (including Auto) and factory preset
+        # selection only; custom EQ and every other operation stay read-only.
+        community_write_permissions=frozenset({"anc", "eq_preset"}),
     ),
 }
 

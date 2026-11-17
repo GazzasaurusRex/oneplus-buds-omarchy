@@ -11,6 +11,7 @@ from .profiles import MAIN_ANC_MODES, DeviceProfile, compatibility_for_product, 
 from .report import build_status_report
 from .protocol import (
     HELLO,
+    NOTIFY_STATE,
     QUERY_ANC,
     QUERY_BATTERY,
     QUERY_BROADCAST_CODES,
@@ -219,6 +220,21 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
     observed = _first_parsed(state_frames, lambda frame: parse_anc_state(frame, profile.anc))
     expected_mode = mode if mode in MAIN_ANC_MODES else "on"
     expected_level = mode if mode not in MAIN_ANC_MODES else None
+    if mode == "auto" and (
+        not isinstance(observed, AncState)
+        or observed.mode != expected_mode
+        or observed.level != expected_level
+    ):
+        # The Nord answers the state query with the concrete adaptive
+        # intensity; only a selected-mode notification confirms Auto.
+        pushed = _first_parsed(
+            write_frames + state_frames,
+            lambda frame: parse_anc_state(frame, profile.anc)
+            if frame.command == NOTIFY_STATE and frame.payload[:3] == b"\x03\x01\x01"
+            else None,
+        )
+        if pushed is not None and pushed.mode == "on" and pushed.level == "auto":
+            observed = pushed
     if not isinstance(observed, AncState) or observed.mode != expected_mode or (
         expected_level and observed.level != expected_level
     ):

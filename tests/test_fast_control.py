@@ -4,13 +4,13 @@ from threading import Event, Thread
 from unittest.mock import MagicMock, Mock, patch
 
 from oneplus_buds.controller import BudsController
-from oneplus_buds.models import ControlResult, EventBatch
+from oneplus_buds.models import ControlResult, EventBatch, SafeEvent
 from oneplus_buds.profiles import PROFILES
 from oneplus_buds.protocol import Frame, SET_ANC, QUERY_ANC, encode_frame
 from oneplus_buds.session import OpoSession
 from oneplus_buds.timing import AncRequestError
 from oneplus_buds.transport import RfcommTransport
-from test_controller import DEVICE, FakeBackend, FakeSession
+from test_controller import DEVICE, STATUS, FakeBackend, FakeSession
 
 
 class TransactionTests(unittest.TestCase):
@@ -80,6 +80,26 @@ class SessionControlTests(unittest.TestCase):
         session._transport = transport
         return session
 
+    def test_nord_strengths_use_one_authenticated_controller_session(self):
+        for mode, bitmap in [('light', b'\x40'), ('medium', b'\x20'),
+                             ('deep', b'\x10'), ('auto', b'\x80')]:
+            with self.subTest(mode=mode):
+                session = self.session('064414', state=b'\x00\x01\x01' + bitmap)
+                backend = Mock()
+                backend.start_session.return_value = (session,
+                    replace(STATUS, product_id='064414'), EventBatch((), 0))
+                backend.set_anc.side_effect = AssertionError('unexpected standalone reconnect')
+                controller = BudsController(backend)
+                self.addCleanup(controller.shutdown)
+                controller.start()
+                result, snapshot = controller.set_anc_with_snapshot(mode)
+                self.assertTrue(result.verified)
+                self.assertTrue(snapshot.session_connected)
+                self.assertEqual(snapshot.status.anc_level, mode)
+                self.assertEqual(session._transport.request.call_args_list[0].args[:2],
+                                 (SET_ANC, b'\x01\x01' + bitmap))
+                self.assertNotIn('monitor_resume', result.timings_ms)
+
     def test_both_profiles_verify_query_without_reauth_or_resubscription(self):
         for product, profile in PROFILES.items():
             if not profile.verified:
@@ -137,6 +157,74 @@ class SessionControlTests(unittest.TestCase):
         mismatch = self.session('065414', state=bytes.fromhex('00 01 01 80 00'))
         with self.assertRaises(AncRequestError):
             mismatch.set_anc('adaptive')
+
+    def test_auto_notification_and_concrete_readback_finish_after_one_query(self):
+        session = self.session('064414')
+        def request(command, payload, response_command, **kwargs):
+            if command == SET_ANC:
+                kwargs['on_frames']([Frame(0x0204, 0xff, b'\x03\x01\x01\x80')])
+                return Frame(0x8404, 0x42, b'\x00')
+            return Frame(0x810C, 1, b'\x00\x01\x01\x10')
+        session._transport.request.side_effect = request
+        result, _ = session.set_anc('auto')
+        self.assertTrue(result.verified)
+        self.assertEqual(result.anc_level, 'auto')
+        self.assertEqual(result.verification_queries, 1)
+
+    def test_auto_notification_survives_verification_query_timeout(self):
+        session = self.session('064414')
+        def request(command, payload, response_command, **kwargs):
+            if command == SET_ANC:
+                kwargs['on_frames']([Frame(0x0204, 0xff, b'\x03\x01\x01\x80')])
+                return Frame(0x8404, 0x42, b'\x00')
+            raise TimeoutError('no selected-mode reply')
+        session._transport.request.side_effect = request
+        result, _ = session.set_anc('auto')
+        self.assertTrue(result.verified)
+        self.assertEqual(result.anc_level, 'auto')
+
+    def test_auto_ack_and_concrete_level_without_auto_notification_do_not_verify(self):
+        session = self.session('064414', state=b'\x00\x01\x01\x10')
+        with self.assertRaises(AncRequestError):
+            session.set_anc('auto')
+
+    def test_auto_active_intensity_notification_does_not_confirm_selected_mode(self):
+        session = self.session('064414')
+        def request(command, payload, response_command, **kwargs):
+            if command == SET_ANC:
+                kwargs['on_frames']([Frame(0x0204, 0xff, b'\x03\x04\x01\x80')])
+                return Frame(0x8404, 0x42, b'\x00')
+            return Frame(0x810C, 1, b'\x00\x01\x01\x40')
+        session._transport.request.side_effect = request
+        with self.assertRaises(AncRequestError):
+            session.set_anc('auto')
+
+    def test_stale_auto_query_response_is_not_a_selected_mode_notification(self):
+        session = OpoSession(DEVICE, PROFILES['064414'])
+        session._connected = session._authenticated = True
+        transport = RfcommTransport(DEVICE.address)
+        transport._socket = Mock()
+        # An unrelated Auto response must not replace the independent push.
+        stale = encode_frame(0x810C, 99, b'\x00\x01\x01\x80')
+        ack = encode_frame(0x8404, 0x42, b'\x00')
+        concrete = encode_frame(0x810C, 1, b'\x00\x01\x01\x20')
+        transport._socket.recv.side_effect = [stale + ack, concrete, TimeoutError()]
+        session._transport = transport
+        with self.assertRaises(AncRequestError):
+            session.set_anc('auto')
+
+    def test_later_selected_mode_notification_supersedes_auto_confirmation(self):
+        session = self.session('064414', state=b'\x00\x01\x01\x20')
+        def request(command, payload, response_command, **kwargs):
+            if command == SET_ANC:
+                kwargs['on_frames']([
+                    Frame(0x0204, 0xff, b'\x03\x01\x01\x80'),
+                    Frame(0x0204, 0xff, b'\x03\x01\x01\x20')])
+                return Frame(0x8404, 0x42, b'\x00')
+            return Frame(0x810C, 1, b'\x00\x01\x01\x20')
+        session._transport.request.side_effect = request
+        with self.assertRaises(AncRequestError):
+            session.set_anc('auto')
 
     def test_unconfirmed_feature_switches_stay_unnamed_in_session_events(self):
         session = OpoSession(DEVICE, PROFILES['065414'])
@@ -203,6 +291,31 @@ class ControllerReuseTests(unittest.TestCase):
         session.set_anc.assert_called_once_with('adaptive')
         backend.set_anc.assert_not_called()
         controller.shutdown()
+
+    def test_pro_2_strengths_use_the_warm_session(self):
+        controller, session, backend = self.controller()
+        session.set_anc.return_value = (
+            ControlResult(DEVICE.name, '062014', 'on', 'deep', 0, True), EventBatch((), 0))
+        result = controller.set_anc('deep')
+        self.assertEqual((result.anc, result.anc_level), ('on', 'deep'))
+        session.set_anc.assert_called_once_with('deep')
+        backend.set_anc.assert_not_called()
+        self.assertEqual(session.enters, 1)
+        controller.shutdown()
+
+    def test_selected_auto_survives_active_intensity_notifications(self):
+        nord = OpoSession(DEVICE, PROFILES['064414'])
+        batch = nord._redact([
+            Frame(0x0204, 0xff, b'\x03\x01\x01\x80'),
+            Frame(0x0204, 0xff, b'\x03\x04\x01\x10'),
+            Frame(0x0204, 0xff, b'\x03\x04\x01\x40'),
+        ])
+        session = FakeSession(polls=[batch])
+        controller = BudsController(FakeBackend([session]))
+        self.addCleanup(controller.shutdown)
+        controller.start()
+        snapshot = controller.poll()
+        self.assertEqual((snapshot.status.anc, snapshot.status.anc_level), ('on', 'auto'))
 
     def test_atomic_result_snapshot_is_detached_from_later_monitoring(self):
         controller, session, _ = self.controller()
