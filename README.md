@@ -41,8 +41,9 @@ does not mean maintainer hardware verification. OnePlus Buds 4 is Community
 Tested; ANC, factory EQ and custom EQ writes are enabled only for the operation
 classes tested and read back by contributor Joel Tony (@jay-tau). See the
 [device record](docs/devices/oneplus-buds-4.md). The Nord Buds 3 Pro is
-Community Tested from one owner unit; only ANC and factory EQ preset writes
-are enabled, without custom EQ. See its
+Community Tested from one owner unit contributed by Jörg Lehmann
+([@htwlehmann](https://github.com/htwlehmann)); only ANC and factory EQ preset
+writes are enabled, without custom EQ. See its
 [device record](docs/devices/oneplus-nord-buds-3-pro.md).
 
 Every connected device has a quiet reporting link at the bottom of the control

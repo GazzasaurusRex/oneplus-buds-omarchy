@@ -46,7 +46,9 @@ Maintainer notes:
 > generate the same report without showing an Experimental warning. The project
 > also supports Community Tested Buds 4 controls backed by contributor hardware
 > read-back evidence and independent ANC/factory-EQ/custom-EQ write permissions;
-> this is not maintainer verification. The project is independent of OnePlus/OPPO.
+> and Community Tested Nord Buds 3 Pro ANC and factory-EQ controls backed by one
+> contributor unit, with custom EQ unavailable. Community Tested is not maintainer
+> verification. The project is independent of OnePlus/OPPO.
 
 Submission is through the [marketplace issue form](https://github.com/omacom/omarchy-plugin-marketplace/issues/new?template=submit-plugin.yml)
 or the documented CLI issue format. It requires a public repository, one category,
