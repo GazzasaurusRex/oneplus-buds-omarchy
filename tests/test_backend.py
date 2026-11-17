@@ -106,7 +106,7 @@ class BackendTests(unittest.TestCase):
                 SET_ANC: [Frame(0x8404, 2, b"\x0e")],
             }
         )
-        verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 3, b"\x00\x01\x01\x01")]})
+        verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 0xF0, b"\x00\x01\x01\x01")]})
         with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
             result = set_anc("off")
         self.assertEqual(result["anc"], "off")
@@ -122,7 +122,7 @@ class BackendTests(unittest.TestCase):
                     SET_ANC: [Frame(0x8404, 2, b"\x00")],
                 }
             )
-            verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 3, state)]})
+            verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 0xF0, state)]})
             with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
                 return set_anc("adaptive"), control
 
@@ -142,7 +142,7 @@ class BackendTests(unittest.TestCase):
                           Frame(0x0204, 0xFF, b"\x03\x01\x01\x80")],
             }
         )
-        verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 3, b"\x00\x01\x01\x40")]})
+        verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 0xF0, b"\x00\x01\x01\x40")]})
         with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
             result = set_anc("auto")
         self.assertTrue(result["verified"])
@@ -158,7 +158,7 @@ class BackendTests(unittest.TestCase):
             }
         )
         verifier = FakeTransport({QUERY_ANC: [
-            Frame(0x810C, 3, b"\x00\x01\x01\x40"),
+            Frame(0x810C, 0xF0, b"\x00\x01\x01\x40"),
             Frame(0x0204, 0xFF, b"\x03\x01\x01\x80"),
         ]})
         with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
@@ -175,10 +175,91 @@ class BackendTests(unittest.TestCase):
                     SET_ANC: [Frame(0x8404, 2, b"\x00")] + push,
                 }
             )
-            verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 3, b"\x00\x01\x01\x40")]})
+            verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 0xF0, b"\x00\x01\x01\x40")]})
             with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
                 with self.assertRaises(RuntimeError):
                     set_anc("auto")
+
+    @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
+    def test_nord_auto_latest_selected_mode_push_supersedes_earlier_auto(self, _device):
+        # Auto then Moderate: the latest selection is not Auto, so the write
+        # must fail - within one window and across the write/verify windows.
+        for write_pushes, verify_pushes in (
+            ([Frame(0x0204, 0xFF, b"\x03\x01\x01\x80"),
+              Frame(0x0204, 0xFF, b"\x03\x01\x01\x20")], []),
+            ([Frame(0x0204, 0xFF, b"\x03\x01\x01\x80")],
+             [Frame(0x0204, 0xFF, b"\x03\x01\x01\x20")]),
+        ):
+            control = FakeTransport(
+                {
+                    QUERY_CAPABILITIES: [],
+                    QUERY_PRODUCT_ID: [Frame(0x8103, 1, b"\x00\x14\x44\x06")],
+                    SET_ANC: [Frame(0x8404, 2, b"\x00")] + write_pushes,
+                }
+            )
+            verifier = FakeTransport({QUERY_ANC: [
+                Frame(0x810C, 0xF0, b"\x00\x01\x01\x20")] + verify_pushes})
+            with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
+                with self.assertRaises(RuntimeError):
+                    set_anc("auto")
+
+    @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
+    def test_nord_auto_latest_selected_mode_push_confirms_after_moderate(self, _device):
+        # Moderate then Auto: the latest selection is Auto, so the write must
+        # verify - within one window and across the write/verify windows.
+        for write_pushes, verify_pushes in (
+            ([Frame(0x0204, 0xFF, b"\x03\x01\x01\x20"),
+              Frame(0x0204, 0xFF, b"\x03\x01\x01\x80")], []),
+            ([Frame(0x0204, 0xFF, b"\x03\x01\x01\x20")],
+             [Frame(0x0204, 0xFF, b"\x03\x01\x01\x80")]),
+        ):
+            control = FakeTransport(
+                {
+                    QUERY_CAPABILITIES: [],
+                    QUERY_PRODUCT_ID: [Frame(0x8103, 1, b"\x00\x14\x44\x06")],
+                    SET_ANC: [Frame(0x8404, 2, b"\x00")] + write_pushes,
+                }
+            )
+            verifier = FakeTransport({QUERY_ANC: [
+                Frame(0x810C, 0xF0, b"\x00\x01\x01\x20")] + verify_pushes})
+            with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
+                result = set_anc("auto")
+            self.assertEqual((result["anc"], result["anc_level"]), ("on", "auto"))
+
+    @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
+    def test_standalone_verification_rejects_foreign_sequence_responses(self, _device):
+        # A stale reply that happens to match must not verify the write.
+        control = FakeTransport(
+            {
+                QUERY_CAPABILITIES: [],
+                QUERY_PRODUCT_ID: [Frame(0x8103, 1, b"\x00\x14\x20\x06")],
+                SET_ANC: [Frame(0x8404, 2, b"\x00")],
+            }
+        )
+        verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 99, b"\x00\x01\x01\x01")]})
+        with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
+            with self.assertRaises(RuntimeError):
+                set_anc("off")
+        # A stale matching reply must not win over the correlated fresh state.
+        verifier = FakeTransport({QUERY_ANC: [
+            Frame(0x810C, 99, b"\x00\x01\x01\x01"),
+            Frame(0x810C, 0xF0, b"\x00\x01\x01\x04"),
+        ]})
+        with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
+            with self.assertRaises(RuntimeError):
+                set_anc("off")
+        # Same rule for Auto: a foreign-sequence Auto report is not a push.
+        control = FakeTransport(
+            {
+                QUERY_CAPABILITIES: [],
+                QUERY_PRODUCT_ID: [Frame(0x8103, 1, b"\x00\x14\x44\x06")],
+                SET_ANC: [Frame(0x8404, 2, b"\x00")],
+            }
+        )
+        verifier = FakeTransport({QUERY_ANC: [Frame(0x810C, 99, b"\x00\x01\x01\x80")]})
+        with patch("oneplus_buds.backend.RfcommTransport", side_effect=(control, verifier)):
+            with self.assertRaises(RuntimeError):
+                set_anc("auto")
 
     @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
     def test_unconfirmed_feature_switches_stay_unnamed(self, _device):

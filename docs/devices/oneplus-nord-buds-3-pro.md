@@ -57,9 +57,10 @@ Two behaviours differ from the Buds Pro 2:
   replace the selection, and a later contradictory selected-mode push
   supersedes an earlier one. An acknowledgement alone is never success.
 
-The CLI's one-shot path applies the same confirmation rule: a matching
+The CLI's one-shot path applies the same confirmation rules: the latest
 selected-mode notification confirms Auto when the fresh state query reports
-the concrete intensity; without it the write stays unverified.
+the concrete intensity, and only the sequence-correlated query reply counts
+as device state. Without confirmation the write stays unverified.
 
 The mapping is not a guess: the phone app's encrypted model table
 (`resources/res/raw/melody_app_whitelist.json`, AES/GCM with the signing
