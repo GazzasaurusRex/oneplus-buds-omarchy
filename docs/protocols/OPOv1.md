@@ -26,7 +26,7 @@ Multi-byte fields are little-endian:
 | Product ID | `0x0103` | `0x8103` | response begins status + 3-byte ID |
 | Remote version | `0x0105` | `0x8105` | response: status, record count, ASCII triples |
 | Battery | `0x0106` | `0x8106` | pairs `[component, raw]` |
-| ANC query | `0x010c` | `0x810c` | request `01 01` |
+| ANC query | `0x010c` | `0x810c` | request `01 01` selected mode, `04 01` active intensity |
 | ANC set | `0x0404` | state via `0x0204`/query | `01 01 mode` |
 | Current native EQ | `0x010f` | `0x810f` / `0x0504` | response: status, EQ ID |
 | Native EQ catalogue | `0x0122` | `0x8122` | request `01 05` |
@@ -95,6 +95,35 @@ Its ANC bitmap can span two bytes and needs a product profile with separate writ
 - Registry read aliases: Off may also report index 3; Transparency may report index 8.
 
 Main ANC On enables the parent mode but does not reliably preserve the currently reported level: one sequence retained Smart, while a later command starting from Deep returned Smart. The backend therefore verifies only parent mode for `on`; explicit Deep/Medium/Light/Smart commands verify both mode and level. All three main modes and all four levels were verified on hardware with query-after-write. This confirms that framing is generic but ANC interpretation belongs in the device capability/profile layer.
+
+## Nord Buds 3 Pro differences (community tested 2026-10-31)
+
+Product `064414` uses the same RFCOMM channel, framing, authentication and SET
+command as the Buds Pro 2, with the same `0000079a...` OPO service. Its ANC
+write indices are Off 0, ANC On 1, Transparency 2, High (`deep`) 4, Moderate
+(`medium`) 5, Low (`light`) 6 and Auto 7; the read aliases match the Pro 2 map.
+The English app labels Low/Moderate/High/Auto are display labels carried by the
+device profile; the internal keys are unchanged.
+
+Two observed differences shape verification:
+
+- ANC On reports the level it applied instead of the parent mode.
+- While Auto is selected, the selected-mode query `0x010c 01 01` can return the
+  concrete intensity the adaptive algorithm settled on, and `0x010c 04 01`
+  reports the active intelligent intensity. The device distinguishes
+  selected-mode notifications `0x0204 03 01 01 bitmap` from active-intensity
+  notifications `0x0204 03 04 01 bitmap`. Only a current selected-mode
+  notification confirming `80` verifies Auto; active-intensity pushes and
+  foreign-sequence responses are not confirmation, and a later contradictory
+  selected-mode push supersedes an earlier one. A SET acknowledgement alone is
+  never success.
+
+Factory EQ selection accepts IDs 0-6. The app exposes ID 3 Balanced (Default),
+4 Serenade and 5 Bass, confirmed by selecting each app preset and freshly
+reading `0x010f`. The catalogue query `0x0122` answers `00 00` (no entries), so
+the profile is preset-only. See the
+[device record](../devices/oneplus-nord-buds-3-pro.md) and the
+[ANC latency measurement](../measurements/2026-10-31-nord-anc-latency.json).
 
 ## Native EQ (verified 2026-09-08)
 

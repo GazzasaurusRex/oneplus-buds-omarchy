@@ -47,6 +47,28 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(batch.ignored_frames, 1)
         self.assertNotIn("secret", repr(batch))
 
+    def test_selected_mode_push_is_state_but_active_intensity_stays_diagnostic(self):
+        session = OpoSession(DEVICE, PROFILES["064414"])
+        batch = session._redact([
+            Frame(NOTIFY_STATE, 0xFF, b"\x03\x01\x01\x80"),
+            Frame(NOTIFY_STATE, 0xFF, b"\x03\x04\x01\x10"),
+        ])
+        self.assertEqual([event.kind for event in batch.events], ["anc", "notification"])
+        self.assertEqual(batch.events[0].data, {"mode": "on", "level": "auto"})
+        self.assertEqual(batch.events[1].data, {"event_code": 3})
+        unknown = session._redact([Frame(NOTIFY_STATE, 0xFF, b"\x03\x01\x01\x00\x08")])
+        self.assertEqual([event.kind for event in unknown.events], ["notification"])
+
+    def test_selected_mode_pushes_follow_existing_profile_maps(self):
+        pro_2 = OpoSession(DEVICE, PROFILES["062014"])
+        batch = pro_2._redact([Frame(NOTIFY_STATE, 0xFF, b"\x03\x01\x01\x20")])
+        self.assertEqual(batch.events[0].kind, "anc")
+        self.assertEqual(batch.events[0].data, {"mode": "on", "level": "medium"})
+        buds_4 = OpoSession(DEVICE, PROFILES["065414"])
+        batch = buds_4._redact([Frame(NOTIFY_STATE, 0xFF, b"\x03\x01\x01\x00\x08")])
+        self.assertEqual(batch.events[0].kind, "anc")
+        self.assertEqual(batch.events[0].data, {"mode": "adaptive", "level": None})
+
     def test_session_must_be_connected(self):
         session = OpoSession(DEVICE, PROFILES["062014"])
         with self.assertRaisesRegex(RuntimeError, "not connected"):

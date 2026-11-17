@@ -25,7 +25,7 @@ class TimingTests(unittest.TestCase):
         for state, succeeds in [(b'\x00\x01\x01\x01', True), (b'\x00\x01\x01\x02', False)]:
             control = FakeTransport({QUERY_PRODUCT_ID: [Frame(0x8103, 1, b'\x00\x14\x20\x06')],
                                      SET_ANC: [Frame(0x8404, 2, b'\x00')]})
-            verifier = FakeTransport({QUERY_ANC: [Frame(0x810c, 3, state)]})
+            verifier = FakeTransport({QUERY_ANC: [Frame(0x810c, 0xF0, state)]})
             with patch('oneplus_buds.backend.RfcommTransport', side_effect=[control, verifier]) as factory:
                 if succeeds:
                     result = set_anc('off')

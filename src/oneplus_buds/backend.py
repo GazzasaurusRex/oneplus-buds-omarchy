@@ -11,6 +11,7 @@ from .profiles import MAIN_ANC_MODES, DeviceProfile, compatibility_for_product, 
 from .report import build_status_report
 from .protocol import (
     HELLO,
+    NOTIFY_STATE,
     QUERY_ANC,
     QUERY_BATTERY,
     QUERY_BROADCAST_CODES,
@@ -203,10 +204,11 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
         set_status = _first_parsed(write_frames, parse_set_anc_status)
 
     timer.mark("write_close")
+    verify_sequence = 0xF0
     try:
         with RfcommTransport(device.address, connect_attempts=12) as verifier:
             timer.mark("verify_connect")
-            state_frames = verifier.query(QUERY_ANC, b"\x01\x01", sequence=0xF0, wait=0.3)
+            state_frames = verifier.query(QUERY_ANC, b"\x01\x01", sequence=verify_sequence, wait=0.3)
             timer.mark("verify_query")
     except OSError as error:
         raise RuntimeError(
@@ -216,9 +218,28 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
         ) from error
 
     timer.mark("verify_close")
-    observed = _first_parsed(state_frames, lambda frame: parse_anc_state(frame, profile.anc))
+    # Only this transaction's correlated reply verifies the write; a stale
+    # foreign-sequence response that happens to match must not confirm it.
+    observed = _first_parsed(
+        [frame for frame in state_frames if frame.sequence == verify_sequence],
+        lambda frame: parse_anc_state(frame, profile.anc),
+    )
     expected_mode = mode if mode in MAIN_ANC_MODES else "on"
     expected_level = mode if mode not in MAIN_ANC_MODES else None
+    if mode == "auto" and (
+        not isinstance(observed, AncState)
+        or observed.mode != expected_mode
+        or observed.level != expected_level
+    ):
+        # The Nord answers the state query with the concrete adaptive
+        # intensity; only the latest selected-mode notification confirms Auto,
+        # matching the warm-session path.
+        pushed = None
+        for frame in write_frames + state_frames:
+            if frame.command == NOTIFY_STATE and frame.payload[:3] == b"\x03\x01\x01":
+                pushed = parse_anc_state(frame, profile.anc)
+        if pushed is not None and pushed.mode == "on" and pushed.level == "auto":
+            observed = pushed
     if not isinstance(observed, AncState) or observed.mode != expected_mode or (
         expected_level and observed.level != expected_level
     ):

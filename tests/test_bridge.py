@@ -118,6 +118,24 @@ class BridgeTests(unittest.TestCase):
         self.assertFalse(experimental.verified)
         self.assertFalse(experimental.can_write("anc"))
 
+    def test_nord_snapshot_exposes_auto_labels_and_only_tested_write_classes(self):
+        nord = PROFILES["064414"]
+        self.assertEqual(nord.compatibility, "community_tested")
+        self.assertFalse(nord.verified)
+        self.assertEqual(nord.community_write_permissions, frozenset({"anc", "eq_preset"}))
+        status = replace(STATUS, product_id="064414", model="OnePlus Nord Buds 3 Pro")
+        payload = serialize_snapshot(replace(SNAPSHOT, status=status))
+        self.assertEqual(payload["compatibility"], "community_tested")
+        self.assertIn("auto", payload["anc_modes"])
+        self.assertEqual(payload["anc_labels"],
+                         {"deep": "High", "medium": "Moderate", "light": "Low", "auto": "Auto"})
+        self.assertTrue(payload["eq_write_verified"])
+        self.assertFalse(payload["custom_eq_write_verified"])
+
+    def test_existing_profiles_keep_default_labels(self):
+        payload = serialize_snapshot(SNAPSHOT)
+        self.assertEqual(payload["anc_labels"], {})
+
     def test_community_write_permissions_do_not_authorize_other_classes(self):
         anc_only = replace(
             PROFILES["065414"],

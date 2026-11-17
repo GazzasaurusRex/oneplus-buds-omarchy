@@ -143,6 +143,14 @@ if (model.compatibilityIssueUrl(snapshot) !== issue) process.exit(25);
 if (model.compatibilityIssueUrl({status:{model:null}}) !== model.COMPATIBILITY_ISSUE_URL) process.exit(26);
 if (model.compatibilityIssueUrl(snapshot).includes("report=") || model.compatibilityIssueUrl(snapshot).includes("path=")) process.exit(27);
 if (model.reportLocationLabel("file:///home/test/Documents/report.txt", "report.txt", "file:///home/test") !== "~/Documents/report.txt") process.exit(28);
+const nord = {anc_modes: ["off", "on", "transparency", "light", "medium", "deep", "auto"],
+  anc_labels: {deep: "High", medium: "Moderate", light: "Low", auto: "Auto"}};
+const nordGroups = model.ancGroups(nord);
+if (nordGroups[1].options.map(x => x.label).join(",") !== "Low,Moderate,High,Auto") process.exit(32);
+if (model.currentAncMode({status: {anc: "on", anc_level: "auto"}}) !== "auto") process.exit(33);
+const plain = model.ancModes({anc_modes: ["light", "medium", "deep", "smart"]});
+if (plain.map(x => x.label).join(",") !== "Light,Medium,Deep,Smart") process.exit(34);
+if (model.ancGroups({anc_modes: ["auto"]})[0].title !== "ANC strength") process.exit(35);
 '''
         subprocess.run(
             ["node", "-e", script, str(ROOT / "BarModel.js")],

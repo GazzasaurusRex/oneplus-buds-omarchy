@@ -120,6 +120,16 @@ class EqProfileTests(unittest.TestCase):
         self.assertEqual(profile.preset_for("deep-sea-bass").eq_id, 2)
         self.assertTrue(profile.supports_custom)
 
+    def test_nord_presets_are_the_three_measured_factory_ids(self):
+        eq = PROFILES["064414"].eq
+        self.assertEqual(
+            [(item.eq_id, item.name) for item in eq.presets],
+            [(3, "Balanced (Default)"), (4, "Serenade"), (5, "Bass")],
+        )
+        self.assertTrue(eq.write_verified)
+        self.assertFalse(eq.supports_custom)
+        self.assertFalse(eq.custom_write_verified)
+
 
 class EqSessionTests(unittest.TestCase):
     def session(self, product="062014"):
@@ -239,6 +249,50 @@ class EqSessionTests(unittest.TestCase):
         set_call = next(call for call in session._transport.request.call_args_list
                         if call.args[0] == SET_EQ)
         self.assertEqual(set_call.args[1], b"\x05")
+
+    def test_nord_factory_preset_write_uses_empty_catalogue_and_verifies(self):
+        session = self.session("064414")
+        session._transport.request.side_effect = [
+            Frame(RESPONSE_EQ, 1, b"\x00\x05"),
+            Frame(RESPONSE_EQ_ALL, 2, b"\x00\x00"),
+            Frame(RESPONSE_SET_EQ, 3, b"\x00"),
+            Frame(RESPONSE_EQ, 4, b"\x00\x03"),
+            Frame(RESPONSE_EQ, 5, b"\x00\x03"),
+            Frame(RESPONSE_EQ_ALL, 6, b"\x00\x00"),
+        ]
+        result, _ = session.set_eq("balanced")
+        self.assertTrue(result.verified)
+        self.assertEqual((result.previous_id, result.current_id, result.current_name),
+                         (5, 3, "Balanced (Default)"))
+        set_call = next(call for call in session._transport.request.call_args_list
+                        if call.args[0] == SET_EQ)
+        self.assertEqual(set_call.args[1], b"\x03")
+
+    def test_nord_preset_aliases_resolve_to_measured_ids(self):
+        eq = PROFILES["064414"].eq
+        self.assertEqual(eq.preset_for("ausgewogen").eq_id, 3)
+        self.assertEqual(eq.preset_for("serenade").eq_id, 4)
+        self.assertEqual(eq.preset_for("bass").eq_id, 5)
+        self.assertEqual(eq.preset_for("3").eq_id, 3)
+        self.assertIsNone(eq.preset_for("bold"))
+
+    def test_nord_custom_eq_writes_are_not_authorized(self):
+        session = self.session("064414")
+        with self.assertRaises(ValueError):
+            session.set_custom_eq(7, (0, 0, 0, 0, 0, 0))
+        session._transport.request.assert_not_called()
+
+    def test_nord_anc_permission_does_not_authorize_eq_writes(self):
+        profile = replace(
+            PROFILES["064414"],
+            community_write_permissions=frozenset({"anc"}),
+        )
+        session = OpoSession(DEVICE, profile)
+        session._connected = session._authenticated = True
+        session._transport = MagicMock()
+        with self.assertRaises(ValueError):
+            session.set_eq("balanced")
+        session._transport.request.assert_not_called()
 
     def test_community_eq_permissions_are_independent(self):
         profile = replace(

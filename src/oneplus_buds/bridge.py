@@ -34,6 +34,7 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
         "capabilities": sorted(capabilities),
         "anc_modes": sorted(profile.anc.write_indices)
         if profile and profile.can_write("anc") else [],
+        "anc_labels": dict(profile.anc.level_labels) if profile else {},
         "eq": snapshot.eq_status.to_dict() if snapshot.eq_status else None,
         "eq_write_verified": bool(
             profile and profile.can_write("eq_preset")

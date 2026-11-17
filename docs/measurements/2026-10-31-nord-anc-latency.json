@@ -1,0 +1,945 @@
+{
+  "product_id": "064414",
+  "date": "2026-10-31",
+  "scope": "Plugin IPC set_anc; current_anc is the QML selection model. Audible application not measured.",
+  "frontend_sampling_interval_seconds": 0.08,
+  "mapping": {
+    "light": {
+      "label": "Low",
+      "payload": "01 01 40"
+    },
+    "medium": {
+      "label": "Moderate",
+      "payload": "01 01 20"
+    },
+    "deep": {
+      "label": "High",
+      "payload": "01 01 10"
+    },
+    "auto": {
+      "label": "Auto",
+      "payload": "01 01 80"
+    }
+  },
+  "before": {
+    "initial_mode": "medium",
+    "trials": [
+      {
+        "requested": "light",
+        "wall_ms": 15522.8,
+        "selection_ms": 15522.8,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 68,
+          "result": {
+            "anc": "on",
+            "anc_level": "light",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "backend_request": 8448.844,
+              "backend_total": 8448.798,
+              "controller_lock_wait": 0.005,
+              "controller_total": 15327.392,
+              "discovery": 7.51,
+              "hello": 2200.588,
+              "monitor_close": 0.076,
+              "monitor_resume": 6878.322,
+              "profile_queries": 745.914,
+              "register": 1700.398,
+              "set_exchange": 1200.597,
+              "verify_close": 0.06,
+              "verify_connect": 1050.312,
+              "verify_query": 500.601,
+              "write_close": 0.094,
+              "write_connect": 1042.62
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "light"
+      }
+    ],
+    "restored": true,
+    "restore": {
+      "requested": "medium",
+      "wall_ms": 15304.2,
+      "selection_ms": 15304.2,
+      "response": {
+        "command": "set_anc",
+        "error": null,
+        "ok": true,
+        "request_id": 69,
+        "result": {
+          "anc": "on",
+          "anc_level": "medium",
+          "name": "OnePlus Nord Buds 3 Pro",
+          "product_id": "064414",
+          "set_status": 0,
+          "timings_ms": {
+            "backend_request": 8474.21,
+            "backend_total": 8474.16,
+            "controller_lock_wait": 0.007,
+            "controller_total": 15216.313,
+            "discovery": 7.387,
+            "hello": 2200.537,
+            "monitor_close": 0.087,
+            "monitor_resume": 6741.909,
+            "profile_queries": 764.512,
+            "register": 1700.656,
+            "set_exchange": 1200.667,
+            "verify_close": 0.092,
+            "verify_connect": 1045.084,
+            "verify_query": 500.748,
+            "write_close": 0.083,
+            "write_connect": 1054.256
+          },
+          "verification_queries": 1,
+          "verified": true
+        },
+        "schema_version": 1,
+        "type": "command_response"
+      },
+      "displayed_mode": "medium"
+    }
+  },
+  "intermediate_auto_failure": {
+    "initial_mode": "medium",
+    "trials": [
+      {
+        "requested": "light",
+        "wall_ms": 302.8,
+        "selection_ms": 302.8,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 5,
+          "result": {
+            "anc": "on",
+            "anc_level": "light",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.057,
+              "controller_lock_wait": 0.009,
+              "controller_total": 80.221,
+              "session_ready": 0.009,
+              "session_total": 79.993,
+              "set_response": 42.004,
+              "verified_elapsed": 79.979,
+              "verify_query": 37.962
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "light"
+      },
+      {
+        "requested": "medium",
+        "wall_ms": 152.4,
+        "selection_ms": 152.4,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 6,
+          "result": {
+            "anc": "on",
+            "anc_level": "medium",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.075,
+              "controller_lock_wait": 0.006,
+              "controller_total": 66.541,
+              "session_ready": 0.008,
+              "session_total": 66.366,
+              "set_response": 29.269,
+              "verified_elapsed": 66.356,
+              "verify_query": 37.072
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "medium"
+      },
+      {
+        "requested": "deep",
+        "wall_ms": 304.2,
+        "selection_ms": 304.2,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 7,
+          "result": {
+            "anc": "on",
+            "anc_level": "deep",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.057,
+              "controller_lock_wait": 0.005,
+              "controller_total": 87.054,
+              "session_ready": 0.003,
+              "session_total": 86.873,
+              "set_response": 39.801,
+              "verified_elapsed": 86.863,
+              "verify_query": 47.049
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "deep"
+      },
+      {
+        "requested": "auto",
+        "wall_ms": 2197.7,
+        "selection_ms": null,
+        "response": {
+          "command": "set_anc",
+          "error": {
+            "code": "command_failed",
+            "message": "ANC session request failed: timed out",
+            "timings_ms": {
+              "command_sent_elapsed": 0.05,
+              "controller_lock_wait": 0.001,
+              "controller_total": 2032.185,
+              "failed_phase": 2001.317,
+              "session_ready": 0.003,
+              "session_total": 2032.029,
+              "set_response": 30.688
+            }
+          },
+          "ok": false,
+          "request_id": 8,
+          "result": null,
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "deep"
+      }
+    ],
+    "restored": true,
+    "restore": {
+      "requested": "medium",
+      "wall_ms": 5918.1,
+      "selection_ms": 5918.1,
+      "response": {
+        "command": "set_anc",
+        "error": null,
+        "ok": true,
+        "request_id": 9,
+        "result": {
+          "anc": "on",
+          "anc_level": "medium",
+          "name": "OnePlus Nord Buds 3 Pro",
+          "product_id": "064414",
+          "set_status": 0,
+          "timings_ms": {
+            "command_sent_elapsed": 0.032,
+            "controller_lock_wait": 5576.197,
+            "controller_total": 5725.462,
+            "session_ready": 0.003,
+            "session_total": 148.997,
+            "set_response": 83.621,
+            "verified_elapsed": 148.984,
+            "verify_query": 65.324
+          },
+          "verification_queries": 1,
+          "verified": true
+        },
+        "schema_version": 1,
+        "type": "command_response"
+      },
+      "displayed_mode": "medium"
+    }
+  },
+  "after": {
+    "initial_mode": "medium",
+    "trials": [
+      {
+        "requested": "light",
+        "wall_ms": 149.7,
+        "selection_ms": 149.7,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 1,
+          "result": {
+            "anc": "on",
+            "anc_level": "light",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.061,
+              "controller_lock_wait": 0.008,
+              "controller_total": 60.666,
+              "session_ready": 0.01,
+              "session_total": 60.459,
+              "set_response": 30.445,
+              "verified_elapsed": 60.444,
+              "verify_query": 29.971
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "light"
+      },
+      {
+        "requested": "medium",
+        "wall_ms": 302.7,
+        "selection_ms": 302.7,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 2,
+          "result": {
+            "anc": "on",
+            "anc_level": "medium",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.072,
+              "controller_lock_wait": 0.013,
+              "controller_total": 118.301,
+              "session_ready": 0.006,
+              "session_total": 118.071,
+              "set_response": 44.007,
+              "verified_elapsed": 118.061,
+              "verify_query": 74.04
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "medium"
+      },
+      {
+        "requested": "deep",
+        "wall_ms": 152.0,
+        "selection_ms": 152.0,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 3,
+          "result": {
+            "anc": "on",
+            "anc_level": "deep",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.049,
+              "controller_lock_wait": 0.005,
+              "controller_total": 72.919,
+              "session_ready": 0.004,
+              "session_total": 72.789,
+              "set_response": 22.755,
+              "verified_elapsed": 72.783,
+              "verify_query": 50.014
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "deep"
+      },
+      {
+        "requested": "auto",
+        "wall_ms": 151.2,
+        "selection_ms": 151.2,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 4,
+          "result": {
+            "anc": "on",
+            "anc_level": "auto",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.051,
+              "controller_lock_wait": 0.005,
+              "controller_total": 60.221,
+              "session_ready": 0.004,
+              "session_total": 60.057,
+              "set_response": 26.058,
+              "verified_elapsed": 60.051,
+              "verify_query": 33.979
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "auto",
+        "auto_queries": [
+          {
+            "payload": "01 01",
+            "response": {
+              "command": "diagnostic_query",
+              "error": null,
+              "ok": true,
+              "request_id": 5,
+              "result": {
+                "frames": [
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 04 01 40",
+                    "sequence": 236
+                  },
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 01 01 80",
+                    "sequence": 237
+                  },
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 04 01 40",
+                    "sequence": 237
+                  },
+                  {
+                    "command": 33036,
+                    "command_hex": "0x810c",
+                    "payload": "00 01 01 40",
+                    "sequence": 24
+                  },
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 01 01 80",
+                    "sequence": 238
+                  },
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 04 01 40",
+                    "sequence": 238
+                  }
+                ]
+              },
+              "schema_version": 1,
+              "type": "command_response"
+            }
+          },
+          {
+            "payload": "04 01",
+            "response": {
+              "command": "diagnostic_query",
+              "error": null,
+              "ok": true,
+              "request_id": 6,
+              "result": {
+                "frames": [
+                  {
+                    "command": 33036,
+                    "command_hex": "0x810c",
+                    "payload": "00 04 01 40",
+                    "sequence": 25
+                  }
+                ]
+              },
+              "schema_version": 1,
+              "type": "command_response"
+            }
+          }
+        ],
+        "auto_observations": [
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto"
+        ]
+      }
+    ],
+    "restored": true,
+    "restore": {
+      "requested": "medium",
+      "wall_ms": 303.2,
+      "selection_ms": 303.2,
+      "response": {
+        "command": "set_anc",
+        "error": null,
+        "ok": true,
+        "request_id": 7,
+        "result": {
+          "anc": "on",
+          "anc_level": "medium",
+          "name": "OnePlus Nord Buds 3 Pro",
+          "product_id": "064414",
+          "set_status": 0,
+          "timings_ms": {
+            "command_sent_elapsed": 0.07,
+            "controller_lock_wait": 0.007,
+            "controller_total": 83.789,
+            "session_ready": 0.007,
+            "session_total": 83.617,
+            "set_response": 34.523,
+            "verified_elapsed": 83.61,
+            "verify_query": 49.077
+          },
+          "verification_queries": 1,
+          "verified": true
+        },
+        "schema_version": 1,
+        "type": "command_response"
+      },
+      "displayed_mode": "medium"
+    }
+  },
+  "app_audit": {
+    "package": "com.oplus.melody",
+    "version": "17.6.6",
+    "apk_sha256": "ed75c8f4ad06ebdb2100477b6db75c49931c2514127f390b259b6bff8c768641",
+    "heymelody_compared": false
+  },
+  "final_check_after_provenance_fix": {
+    "initial_mode": "off",
+    "trials": [
+      {
+        "requested": "light",
+        "wall_ms": 658.1,
+        "selection_ms": null,
+        "response": {
+          "command": "set_anc",
+          "error": {
+            "code": "command_failed",
+            "message": "ANC session request failed: ANC verification failed: fresh state did not match request",
+            "timings_ms": {
+              "command_sent_elapsed": 0.07,
+              "controller_lock_wait": 0.005,
+              "controller_total": 529.622,
+              "failed_phase": 0.023,
+              "session_ready": 0.012,
+              "session_total": 529.415,
+              "set_response": 28.116,
+              "verify_query": 501.265
+            }
+          },
+          "ok": false,
+          "request_id": 1,
+          "result": null,
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "off"
+      }
+    ],
+    "restored": true,
+    "restore": {
+      "requested": "off",
+      "wall_ms": 5951.1,
+      "selection_ms": 142.9,
+      "response": {
+        "command": "set_anc",
+        "error": null,
+        "ok": true,
+        "request_id": 2,
+        "result": {
+          "anc": "off",
+          "anc_level": null,
+          "name": "OnePlus Nord Buds 3 Pro",
+          "product_id": "064414",
+          "set_status": 0,
+          "timings_ms": {
+            "command_sent_elapsed": 0.056,
+            "controller_lock_wait": 5551.967,
+            "controller_total": 5759.031,
+            "session_ready": 0.006,
+            "session_total": 206.883,
+            "set_response": 189.649,
+            "verified_elapsed": 206.871,
+            "verify_query": 17.205
+          },
+          "verification_queries": 1,
+          "verified": true
+        },
+        "schema_version": 1,
+        "type": "command_response"
+      },
+      "displayed_mode": "off"
+    }
+  },
+  "final_check_note": "Resolved after owner confirmed both buds reinserted: final provenance-hardened code passed Off->Low->On->Moderate->High->Auto, then restored original Moderate. Every write ACK00 and verified with one query. Auto selected-mode notification retained Auto through ten-second observation despite concrete Low readback. Direct Off->Low works; no general ANC-On prerequisite.",
+  "final_worn_verification": {
+    "initial_mode": "medium",
+    "trials": [
+      {
+        "requested": "off",
+        "wall_ms": 337.6,
+        "selection_ms": 337.6,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 3,
+          "result": {
+            "anc": "off",
+            "anc_level": null,
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.079,
+              "controller_lock_wait": 0.009,
+              "controller_total": 131.014,
+              "session_ready": 0.005,
+              "session_total": 130.802,
+              "set_response": 81.6,
+              "verified_elapsed": 130.784,
+              "verify_query": 49.157
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "off"
+      },
+      {
+        "requested": "light",
+        "wall_ms": 303.7,
+        "selection_ms": 303.7,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 4,
+          "result": {
+            "anc": "on",
+            "anc_level": "light",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.074,
+              "controller_lock_wait": 0.007,
+              "controller_total": 82.682,
+              "session_ready": 0.004,
+              "session_total": 82.525,
+              "set_response": 57.522,
+              "verified_elapsed": 82.519,
+              "verify_query": 24.986
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "light"
+      },
+      {
+        "requested": "on",
+        "wall_ms": 293.6,
+        "selection_ms": null,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 5,
+          "result": {
+            "anc": "on",
+            "anc_level": "light",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.05,
+              "controller_lock_wait": 0.005,
+              "controller_total": 77.662,
+              "session_ready": 0.003,
+              "session_total": 77.502,
+              "set_response": 43.497,
+              "verified_elapsed": 77.496,
+              "verify_query": 33.989
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "light"
+      },
+      {
+        "requested": "medium",
+        "wall_ms": 298.0,
+        "selection_ms": 298.0,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 6,
+          "result": {
+            "anc": "on",
+            "anc_level": "medium",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.048,
+              "controller_lock_wait": 0.005,
+              "controller_total": 185.84,
+              "session_ready": 0.003,
+              "session_total": 185.678,
+              "set_response": 35.667,
+              "verified_elapsed": 185.671,
+              "verify_query": 149.99
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "medium"
+      },
+      {
+        "requested": "deep",
+        "wall_ms": 296.5,
+        "selection_ms": 296.5,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 7,
+          "result": {
+            "anc": "on",
+            "anc_level": "deep",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.048,
+              "controller_lock_wait": 0.008,
+              "controller_total": 143.718,
+              "session_ready": 0.007,
+              "session_total": 143.539,
+              "set_response": 28.187,
+              "verified_elapsed": 143.533,
+              "verify_query": 115.33
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "deep"
+      },
+      {
+        "requested": "auto",
+        "wall_ms": 297.5,
+        "selection_ms": 297.5,
+        "response": {
+          "command": "set_anc",
+          "error": null,
+          "ok": true,
+          "request_id": 8,
+          "result": {
+            "anc": "on",
+            "anc_level": "auto",
+            "name": "OnePlus Nord Buds 3 Pro",
+            "product_id": "064414",
+            "set_status": 0,
+            "timings_ms": {
+              "command_sent_elapsed": 0.046,
+              "controller_lock_wait": 0.006,
+              "controller_total": 124.038,
+              "session_ready": 0.003,
+              "session_total": 123.883,
+              "set_response": 108.532,
+              "verified_elapsed": 123.877,
+              "verify_query": 15.329
+            },
+            "verification_queries": 1,
+            "verified": true
+          },
+          "schema_version": 1,
+          "type": "command_response"
+        },
+        "displayed_mode": "auto",
+        "auto_queries": [
+          {
+            "payload": "01 01",
+            "response": {
+              "command": "diagnostic_query",
+              "error": null,
+              "ok": true,
+              "request_id": 9,
+              "result": {
+                "frames": [
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 01 01 80",
+                    "sequence": 46
+                  },
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 04 01 40",
+                    "sequence": 46
+                  },
+                  {
+                    "command": 33036,
+                    "command_hex": "0x810c",
+                    "payload": "00 01 01 40",
+                    "sequence": 221
+                  },
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 01 01 80",
+                    "sequence": 47
+                  },
+                  {
+                    "command": 516,
+                    "command_hex": "0x0204",
+                    "payload": "03 04 01 40",
+                    "sequence": 47
+                  }
+                ]
+              },
+              "schema_version": 1,
+              "type": "command_response"
+            }
+          },
+          {
+            "payload": "04 01",
+            "response": {
+              "command": "diagnostic_query",
+              "error": null,
+              "ok": true,
+              "request_id": 10,
+              "result": {
+                "frames": [
+                  {
+                    "command": 33036,
+                    "command_hex": "0x810c",
+                    "payload": "00 04 01 40",
+                    "sequence": 222
+                  }
+                ]
+              },
+              "schema_version": 1,
+              "type": "command_response"
+            }
+          }
+        ],
+        "auto_observations": [
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto"
+        ]
+      }
+    ],
+    "restored": true,
+    "restore": {
+      "requested": "medium",
+      "wall_ms": 338.0,
+      "selection_ms": 338.0,
+      "response": {
+        "command": "set_anc",
+        "error": null,
+        "ok": true,
+        "request_id": 11,
+        "result": {
+          "anc": "on",
+          "anc_level": "medium",
+          "name": "OnePlus Nord Buds 3 Pro",
+          "product_id": "064414",
+          "set_status": 0,
+          "timings_ms": {
+            "command_sent_elapsed": 0.063,
+            "controller_lock_wait": 0.008,
+            "controller_total": 107.786,
+            "session_ready": 0.004,
+            "session_total": 107.561,
+            "set_response": 88.591,
+            "verified_elapsed": 107.552,
+            "verify_query": 18.946
+          },
+          "verification_queries": 1,
+          "verified": true
+        },
+        "schema_version": 1,
+        "type": "command_response"
+      },
+      "displayed_mode": "medium"
+    }
+  }
+}

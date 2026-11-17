@@ -7,6 +7,7 @@ Compatibility describes evidence, not a promise that every firmware works.
 | OnePlus Buds Pro | `060C14` | Verified | [Device record](oneplus-buds-pro.md) |
 | OnePlus Buds Pro 2 | `062014` | Verified | [Device record](oneplus-buds-pro-2.md) |
 | OnePlus Buds 4 | `065414` | Community Tested | [Device record](oneplus-buds-4.md) |
+| OnePlus Nord Buds 3 Pro | `064414` | Community Tested | [Device record](oneplus-nord-buds-3-pro.md) |
 | Other compatible OnePlus/OPO products | Unknown | Experimental if discovered | No maintainer verification |
 
 OnePlus Buds 4 is the first community-tested model. **Verified** means maintainer
@@ -19,7 +20,8 @@ Community Tested is an evidence label, never maintainer verification. Such profi
 are read-only by default. A specific write class can be enabled only when its own
 operation-level permission records contributor hardware testing and fresh read-back;
 ANC, factory EQ and custom EQ permissions are independent. Buds 4 authorizes those
-three tested classes. Experimental and unknown products cannot write.
+three tested classes; Nord Buds 3 Pro authorizes ANC and factory EQ only.
+Experimental and unknown products cannot write.
 
 Current discovery requires a connected BlueZ device whose name contains
 `oneplus` or `oppo` and whose UUIDs contain one of the two known OPO services.
@@ -54,6 +56,14 @@ Buds 4 is Community Tested, not maintainer Verified. Contributor Joel Tony
 ANC modes and strengths, its Balanced/Serenade/Bass factory presets, custom entry
 selection and a custom gain change. Its profile therefore authorizes ANC, factory
 EQ and custom EQ writes separately; details are in its device record.
+
+Nord Buds 3 Pro is Community Tested from one owner unit on recorded firmware
+`155.155.101`. The contributor measured every ANC mode and strength including
+Auto (confirmed by the selected-mode notification), and the three factory
+presets Balanced (Default)/Serenade/Bass with fresh read-back. Its profile
+authorizes ANC and factory EQ writes only; the device returns an empty EQ
+catalogue and custom EQ stays unavailable. Details and limits are in its
+[device record](oneplus-nord-buds-3-pro.md).
 
 Pro 2 capability discovery can report recognised boolean feature switches, but
 wear detection, multipoint, low latency and related switches have no implemented

@@ -47,7 +47,14 @@ function ancModes(snapshot) {
     deep: "Deep",
     smart: "Smart"
   }
-  var preferred = ["off", "transparency", "on", "adaptive", "light", "medium", "deep", "smart"]
+  // The device profile may rename the levels the way the phone app does
+  // (Low/Moderate/High/Auto on the Nord Buds 3 Pro).
+  var profileLabels = snapshot && snapshot.anc_labels ? snapshot.anc_labels : {}
+  for (var key in profileLabels) {
+    if (Object.prototype.hasOwnProperty.call(profileLabels, key))
+      labels[key] = String(profileLabels[key])
+  }
+  var preferred = ["off", "transparency", "on", "adaptive", "light", "medium", "deep", "smart", "auto"]
   var seen = {}
   var options = []
 
@@ -76,7 +83,7 @@ function ancGroups(snapshot) {
     if (["off", "transparency", "on", "adaptive"].indexOf(option.value) !== -1) {
       groups[0].options.push({value: option.value,
         label: option.value === "on" ? "Noise cancellation" : option.label})
-    } else if (["light", "medium", "deep", "smart"].indexOf(option.value) !== -1) {
+    } else if (["light", "medium", "deep", "smart", "auto"].indexOf(option.value) !== -1) {
       groups[1].options.push(option)
     } else {
       groups[2].options.push(option)
