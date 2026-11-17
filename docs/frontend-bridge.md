@@ -38,7 +38,7 @@ Connection values are `connecting`, `connected`, `disconnected`, `reconnecting`,
 
 ## Snapshot contract
 
-`serialize_snapshot()` includes device/status data, compatibility, static and device-observed capabilities, supported ANC modes, named feature-switch state, session state, safe numeric event-code history, reconnect/ignored-frame counters, and generation. Tuples are converted to JSON arrays and mappings are copied.
+`serialize_snapshot()` includes device/status data, compatibility, static and device-observed capabilities, supported ANC modes, model-specific ANC display labels (`anc_labels`, empty unless the profile defines them), named feature-switch state, session state, safe numeric event-code history, reconnect/ignored-frame counters, and generation. Tuples are converted to JSON arrays and mappings are copied.
 
 Bluetooth addresses, raw OPO frames, pairing data, and raw notification payloads are never included. Unknown products are marked `experimental` and receive no inferred write modes or static capabilities.
 

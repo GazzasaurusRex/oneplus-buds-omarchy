@@ -4,16 +4,16 @@ A native Omarchy bar widget and Linux backend for OnePlus earbuds. Check battery
 levels and change noise control from a compact, theme-aware panel.
 
 **Status: 0.1.0 release candidate.** Buds Pro and Buds Pro 2 have
-maintainer-verified basic controls and native EQ. Buds 4 is Community Tested on
-contributor hardware. No release tag has been created yet. This is an independent
-project, unaffiliated with OnePlus or OPPO.
+maintainer-verified basic controls and native EQ. Buds 4 and Nord Buds 3 Pro
+are Community Tested on contributor hardware. No release tag has been created
+yet. This is an independent project, unaffiliated with OnePlus or OPPO.
 
 ## What works
 
 - Automatic selection of one connected compatible OnePlus/OPPO device.
 - Connection status, left/right battery, case battery when returned, and firmware.
 - Read-back-verified ANC On, Off, Transparency and profile-supported strengths.
-- Model-correct native earbud EQ presets on all three supported profiles, plus
+- Model-correct native earbud EQ presets on all four supported profiles, plus
   device-defined custom EQ on Buds Pro 2 and Buds 4.
 - Icon-only idle widget; hover reveals known batteries, with delayed collapse.
 - Responsive panel with full-width device status, balanced ANC/EQ columns when
@@ -25,6 +25,7 @@ project, unaffiliated with OnePlus or OPPO.
 | OnePlus Buds Pro | Verified on hardware | 541.541.510 | Light, Deep, Smart |
 | OnePlus Buds Pro 2 | Verified on hardware | 196.196.101 | Light, Medium, Deep, Smart |
 | OnePlus Buds 4 | Community tested on contributor hardware | 138.138.105 | Light, Medium, Deep, Smart; Adaptive mode |
+| OnePlus Nord Buds 3 Pro | Community tested on contributor hardware | 155.155.101 | Low, Moderate, High, Auto |
 | Other compatible OnePlus/OPO devices | Experimental if recognised; no verified controls | Unknown | Not exposed |
 
 See [compatibility and limitations](docs/devices/compatibility.md). Gestures,
@@ -39,7 +40,10 @@ owner reports successful, reproducible checks on their own hardware; that label
 does not mean maintainer hardware verification. OnePlus Buds 4 is Community
 Tested; ANC, factory EQ and custom EQ writes are enabled only for the operation
 classes tested and read back by contributor Joel Tony (@jay-tau). See the
-[device record](docs/devices/oneplus-buds-4.md).
+[device record](docs/devices/oneplus-buds-4.md). The Nord Buds 3 Pro is
+Community Tested from one owner unit; only ANC and factory EQ preset writes
+are enabled, without custom EQ. See its
+[device record](docs/devices/oneplus-nord-buds-3-pro.md).
 
 Every connected device has a quiet reporting link at the bottom of the control
 panel. Verified and Community Tested devices show **Report a problem**;
@@ -132,16 +136,18 @@ until verified; an acknowledgement alone never produces a success message.
 
 Wear the earbuds for ANC tests: devices in their case may reject changes. Main
 ANC On may choose a device-dependent strength; select a specific strength if you
-need one. Cold setup and explicit strengths still take several seconds. Warm main
-mode changes reuse the authenticated session; recorded timings are in
+need one. Cold setup still takes several seconds. ANC changes on a running
+controller reuse the authenticated session; recorded timings are in
 [the measurement notes](docs/measurements/anc-baseline.md).
 Native EQ controls live only in the opened panel. The two maintainer-verified
-models and Community Tested Buds 4 expose their hardware-tested factory presets;
-Pro 2 and Buds 4 also show controls generated from returned custom-band
-definitions. Changes are written to the earbuds and persist independently of the
-Linux audio route—no system-wide software EQ is installed or configured.
+models and the Community Tested Buds 4 and Nord Buds 3 Pro expose their
+hardware-tested factory presets; Pro 2 and Buds 4 also show controls generated
+from returned custom-band definitions. Changes are written to the earbuds and
+persist independently of the Linux audio route—no system-wide software EQ is
+installed or configured.
 The tested Pro 2 firmware labels its presets Balanced, Bass, Serenade, Bold, and
 Hans Zimmer Soundscape Tuning; the original Buds Pro retains its own four names.
+The Nord Buds 3 Pro exposes Balanced (Default), Serenade and Bass.
 Connection startup uses BlueZ availability notifications while retaining bounded
 retry fallback; both models' phase-by-phase results are in the
 [connection lifecycle measurements](docs/measurements/connection-lifecycle.md).

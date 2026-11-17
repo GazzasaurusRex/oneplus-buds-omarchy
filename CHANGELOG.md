@@ -2,6 +2,20 @@
 
 ## Unreleased — 0.1.0 release candidate
 
+- Add a Community Tested OnePlus Nord Buds 3 Pro profile (064414) from one
+  owner unit on recorded firmware 155.155.101: ANC Off/On/Transparency and the
+  Low/Moderate/High/Auto strengths with the English app display labels, and
+  the three measured factory EQ presets Balanced (Default), Serenade and Bass
+  over the existing preset path. Only ANC and factory EQ writes are authorized;
+  custom EQ and every other operation stay read-only.
+- Confirm Auto through the device's selected-mode notification when the state
+  query reports the concrete adaptive intensity. Active-intensity pushes and
+  foreign-sequence responses never replace the selection, and an
+  acknowledgement alone is never success. Selected-mode pushes also let the
+  panel follow phone-app noise-control changes on every profile.
+- Reuse the authenticated controller session for all ANC modes, not only the
+  parent modes; measured Nord strength transitions dropped from ~15.5 s to
+  ~0.3 s frontend-confirmed. One-shot calls keep the legacy path.
 - Add a Community Tested OnePlus Buds 4 profile: ANC mode and strengths
   matching HeyMelody's commands, the new Adaptive parent mode, and Buds 4
   factory EQ IDs (Serenade and Bass are swapped relative to the Pro 2).
