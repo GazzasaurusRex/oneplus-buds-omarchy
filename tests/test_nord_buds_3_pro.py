@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import unittest
 
-from oneplus_buds.profiles import PROFILES
+from oneplus_buds.profiles import PROFILES, feature_capabilities
 
 PRODUCT_ID = "064414"
 
@@ -18,16 +18,17 @@ class NordBuds3ProProfileTests(unittest.TestCase):
     def setUp(self) -> None:
         self.profile = PROFILES[PRODUCT_ID]
 
-    def test_profile_is_community_tested_with_two_write_classes(self) -> None:
+    def test_profile_is_community_tested_with_evidenced_write_classes(self) -> None:
         self.assertEqual(self.profile.product_id, PRODUCT_ID)
         self.assertEqual(self.profile.name, "OnePlus Nord Buds 3 Pro")
         self.assertEqual(self.profile.compatibility, "community_tested")
         self.assertFalse(self.profile.verified)
         self.assertEqual(self.profile.community_write_permissions,
-                         frozenset({"anc", "eq_preset"}))
-        self.assertTrue(self.profile.can_write("anc"))
-        self.assertTrue(self.profile.can_write("eq_preset"))
-        self.assertFalse(self.profile.can_write("custom_eq"))
+                         frozenset({"anc", "eq_preset", "custom_eq", "touch",
+                                    "hold_cycle", "feature_switch", "bass_level", "find"}))
+        for operation in ("anc", "eq_preset", "custom_eq", "touch", "hold_cycle",
+                          "feature_switch", "bass_level", "find"):
+            self.assertTrue(self.profile.can_write(operation), operation)
         self.assertEqual(self.profile.service_uuid,
                          "0000079a-d102-11e1-9b23-00025b00a5a5")
 
@@ -73,7 +74,7 @@ class NordBuds3ProProfileTests(unittest.TestCase):
             if product_id != PRODUCT_ID:
                 self.assertEqual(profile.anc.level_labels, {}, product_id)
 
-    def test_native_eq_exposes_only_the_three_measured_presets(self) -> None:
+    def test_native_eq_presets_and_measured_custom_range(self) -> None:
         eq = self.profile.eq
         self.assertIsNotNone(eq)
         assert eq is not None
@@ -81,10 +82,13 @@ class NordBuds3ProProfileTests(unittest.TestCase):
         self.assertEqual([preset.name for preset in eq.presets],
                          ["Balanced (Default)", "Serenade", "Bass"])
         self.assertTrue(eq.write_verified)
-        self.assertFalse(eq.supports_custom)
-        self.assertFalse(eq.custom_write_verified)
+        self.assertTrue(eq.supports_custom)
+        self.assertTrue(eq.custom_write_verified)
+        self.assertTrue(eq.custom_manage_verified)
+        # The device holds exactly three custom slots (7, 8, 9); it refused id 10.
+        self.assertEqual((eq.custom_base, eq.custom_max), (7, 3))
 
-    def test_capabilities_stay_within_the_tested_scope(self) -> None:
+    def test_capabilities_cover_the_measured_features(self) -> None:
         self.assertEqual(
             self.profile.capabilities,
             frozenset({
@@ -95,6 +99,12 @@ class NordBuds3ProProfileTests(unittest.TestCase):
                 "transparency",
                 "anc_levels",
                 "eq",
+                "custom_eq",
+                "bass_engine",
+                "feature_switches",
+                "find_earbuds",
+                "touch_controls",
+                "hold_cycle",
             }),
         )
 
@@ -104,6 +114,55 @@ class NordBuds3ProProfileTests(unittest.TestCase):
         # shared hearing-enhancement name.
         self.assertEqual(self.profile.unconfirmed_feature_switches,
                          frozenset({0x06, 0x0B}))
+
+    def test_touch_choices_pin_the_hardware_verified_round_trips(self) -> None:
+        self.assertEqual(self.profile.touch_functions, {
+            1: (0, 1), 2: (0, 1, 2, 3, 5, 6, 17),
+            3: (0, 2, 3, 5, 6, 17), 6: (0, 11, 12),
+        })
+
+    def test_writable_features_pin_the_six_audited_switches(self) -> None:
+        self.assertEqual(self.profile.writable_features, frozenset({
+            "bass_engine", "personal_noise", "wear_detection",
+            "click_to_take_photo", "multipoint", "high_quality_audio",
+        }))
+        self.assertTrue(self.profile.hold_cycle_supported)
+
+    def test_feature_labels_are_the_audited_allowlist(self) -> None:
+        self.assertEqual(self.profile.feature_labels, {
+            "personal_noise": "Personalised noise cancellation",
+            "bass_engine": "BassWave",
+            "wear_detection": "Auto play/pause",
+            "click_to_take_photo": "Camera control",
+            "multipoint": "Dual connection",
+            "high_quality_audio": "Hi-Res mode",
+        })
+
+    def test_feature_capabilities_filters_to_the_audited_allowlist(self) -> None:
+        switches = {"personal_noise": True, "bass_engine": False, "wear_detection": True,
+                    "click_to_take_photo": True, "multipoint": False,
+                    "high_quality_audio": True, "low_latency": False,
+                    "hearing_enhancement": False}
+        self.assertEqual(feature_capabilities(self.profile, switches),
+                         {"personal_noise", "bass_engine", "wear_detection",
+                          "click_to_take_photo", "multipoint", "high_quality_audio"})
+        # No allowlist preserves generic discovery for unaudited models.
+        self.assertEqual(feature_capabilities(PROFILES["062014"], switches), set(switches))
+        self.assertEqual(feature_capabilities(None, switches), set(switches))
+
+    def test_other_profiles_do_not_gain_new_feature_writes(self) -> None:
+        buds_4 = PROFILES["065414"]
+        for operation in ("touch", "hold_cycle", "feature_switch", "bass_level", "find"):
+            self.assertFalse(buds_4.can_write(operation), operation)
+        self.assertEqual(buds_4.community_write_permissions,
+                         frozenset({"anc", "eq_preset", "custom_eq"}))
+        for product_id in ("060C14", "062014", "065414"):
+            profile = PROFILES[product_id]
+            self.assertEqual(profile.touch_functions, {}, product_id)
+            self.assertEqual(profile.writable_features, frozenset(), product_id)
+            self.assertFalse(profile.hold_cycle_supported, product_id)
+            self.assertIsNone(profile.feature_labels, product_id)
+            self.assertFalse(profile.eq.custom_manage_verified, product_id)
 
 
 if __name__ == "__main__":

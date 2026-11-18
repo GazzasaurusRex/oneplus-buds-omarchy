@@ -122,7 +122,9 @@ class BridgeTests(unittest.TestCase):
         nord = PROFILES["064414"]
         self.assertEqual(nord.compatibility, "community_tested")
         self.assertFalse(nord.verified)
-        self.assertEqual(nord.community_write_permissions, frozenset({"anc", "eq_preset"}))
+        self.assertEqual(nord.community_write_permissions,
+                         frozenset({"anc", "eq_preset", "custom_eq", "touch",
+                                    "hold_cycle", "feature_switch", "bass_level", "find"}))
         status = replace(STATUS, product_id="064414", model="OnePlus Nord Buds 3 Pro")
         payload = serialize_snapshot(replace(SNAPSHOT, status=status))
         self.assertEqual(payload["compatibility"], "community_tested")
@@ -130,7 +132,7 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(payload["anc_labels"],
                          {"deep": "High", "medium": "Moderate", "light": "Low", "auto": "Auto"})
         self.assertTrue(payload["eq_write_verified"])
-        self.assertFalse(payload["custom_eq_write_verified"])
+        self.assertTrue(payload["custom_eq_write_verified"])
 
     def test_existing_profiles_keep_default_labels(self):
         payload = serialize_snapshot(SNAPSHOT)

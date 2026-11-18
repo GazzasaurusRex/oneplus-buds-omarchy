@@ -12,16 +12,28 @@ SUBSCRIBE_BROADCAST = 0x0205
 QUERY_PRODUCT_ID = 0x0103
 QUERY_REMOTE_VERSION = 0x0105
 QUERY_BATTERY = 0x0106
+QUERY_TOUCH = 0x0108
 QUERY_ANC = 0x010C
 QUERY_STATUS = 0x010D
 QUERY_EQ = 0x010F
 QUERY_EQ_ALL = 0x0122
+QUERY_BASS_ENGINE = 0x0124
 SET_ANC = 0x0404
 SET_EQ = 0x0406
 SET_EQ_DETAIL = 0x0418
+SET_TOUCH = 0x0401
+SET_FIND_MODE = 0x0400
+SET_FEATURE_SWITCH = 0x0403
+SET_BASS_ENGINE = 0x041B
 RESPONSE_SET_ANC = 0x8404
 RESPONSE_SET_EQ = 0x8406
 RESPONSE_SET_EQ_DETAIL = 0x8418
+RESPONSE_TOUCH = 0x8108
+RESPONSE_SET_TOUCH = 0x8401
+RESPONSE_SET_FEATURE_SWITCH = 0x8403
+RESPONSE_SET_FIND_MODE = 0x8400
+RESPONSE_SET_BASS_ENGINE = 0x841B
+RESPONSE_BASS_ENGINE = 0x8124
 
 RESPONSE_PRODUCT_ID = 0x8103
 RESPONSE_REMOTE_VERSION = 0x8105
@@ -32,14 +44,24 @@ RESPONSE_EQ = 0x810F
 RESPONSE_EQ_ALL = 0x8122
 NOTIFY_STATE = 0x0204
 NOTIFY_EQ = 0x0504
+NOTIFY_FEATURE_SWITCHES = 0x0503
+NOTIFY_BASS_ENGINE = 0x0508
 RESPONSE_BROADCAST_CODES = 0x8200
 
 FEATURE_SWITCH_NAMES = {
     0x04: "wear_detection",
     0x06: "low_latency",
+    0x09: "vocal_enhance",
     0x0B: "hearing_enhancement",
+    0x0C: "personal_noise",
+    0x0D: "click_to_take_photo",
     0x11: "multipoint",
+    0x15: "zen_mode",
     0x18: "high_quality_audio",
+    0x1B: "spatial_sound",
+    0x1D: "bass_engine",
+    0x21: "game_equalizer",
+    0x28: "game_mode_main",
 }
 
 # Authentication frames have a legacy envelope that is not representable by
@@ -48,6 +70,23 @@ HELLO = bytes.fromhex("AA 07 00 00 00 01 23 00 00 12")
 REGISTER = bytes.fromhex("AA 0C 00 00 00 85 41 05 00 00 B5 50 A0 69")
 STATUS_QUERY_PAYLOAD = bytes.fromhex("0B 05 04 0B 11 13 18 06 1B 1C 27 28")
 EQ_ALL_QUERY_PAYLOAD = bytes.fromhex("01 05")
+
+# The app asks for feature switches with a count byte followed by the wanted
+# feature ids; the device answers with the same shape for the ids it knows.
+FEATURE_SWITCH_QUERY_PREFIX = bytes((1,))
+FEATURE_SWITCH_WRITE = bytes((1,))
+
+# The phone app sends one action byte in front of a custom EQ entry definition:
+# 1 creates an entry, 2 updates it (curve or name) and 3 deletes it.
+EQ_ACTION_CREATE = 1
+EQ_ACTION_UPDATE = 2
+EQ_ACTION_DELETE = 3
+
+# The bass engine level ("BassWave") travels as [min, max, value], signed.
+BASS_LEVEL_MIN = -10
+BASS_LEVEL_MAX = 10
+BASS_LEVEL_RANGE = bytes((BASS_LEVEL_MIN & 0xFF, BASS_LEVEL_MAX & 0xFF))
+BASS_LEVEL_NOTICE = bytes((0xF6, 0x0A))
 
 
 @dataclass(frozen=True)
@@ -338,8 +377,17 @@ def parse_set_eq_status(frame: Frame) -> int | None:
     return frame.payload[0]
 
 
-def encode_eq_detail_payload(entry: EqEntry, gains_db: tuple[int, ...]) -> bytes:
-    """Encode an update of an existing custom entry after strict validation."""
+def encode_eq_detail_payload(entry: EqEntry, gains_db: tuple[int, ...], *,
+                             action: int = EQ_ACTION_UPDATE,
+                             name: str | None = None) -> bytes:
+    """Encode a custom EQ entry operation after strict validation.
+
+    ``action`` selects the device operation (1 create, 2 update, 3 delete).
+    ``name`` overrides the stored name for a rename; it defaults to the name
+    the earbuds reported for the entry.
+    """
+    if action not in (EQ_ACTION_CREATE, EQ_ACTION_UPDATE, EQ_ACTION_DELETE):
+        raise ValueError("unsupported custom EQ action")
     if not 0 <= entry.eq_id <= 0xFF:
         raise ValueError("EQ id must fit in one byte")
     if len(gains_db) != len(entry.bands):
@@ -349,12 +397,13 @@ def encode_eq_detail_payload(entry: EqEntry, gains_db: tuple[int, ...]) -> bytes
         raise ValueError(
             f"custom EQ gains must be whole dB values from {entry.min_gain_db} to {entry.max_gain_db}"
         )
-    name = entry.name.encode("utf-8")
-    if len(name) > 0xFF or len(entry.bands) > 0xFF:
+    label = entry.name if name is None else name
+    encoded_name = label.encode("utf-8")
+    if len(encoded_name) > 0xFF or len(entry.bands) > 0xFF:
         raise ValueError("custom EQ definition is too large")
-    payload = bytearray((2, entry.min_gain_db & 0xFF, entry.max_gain_db & 0xFF,
-                         entry.eq_id, len(name)))
-    payload.extend(name)
+    payload = bytearray((action, entry.min_gain_db & 0xFF, entry.max_gain_db & 0xFF,
+                         entry.eq_id, len(encoded_name)))
+    payload.extend(encoded_name)
     payload.append(len(entry.bands))
     for band, gain in zip(entry.bands, gains_db, strict=True):
         if not 0 < band.frequency_hz <= 0xFFFF:

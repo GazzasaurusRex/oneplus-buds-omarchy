@@ -88,6 +88,16 @@ class EqProtocolTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 encode_eq_detail_payload(entry, gains)
 
+    def test_custom_encoder_action_byte_and_name_override(self):
+        entry = EqEntry(7, "Old", False, -6, 6, (EqBand(62, 0),))
+        for action in (1, 2, 3):
+            self.assertEqual(encode_eq_detail_payload(entry, (0,), action=action)[0], action)
+        renamed = encode_eq_detail_payload(entry, (0,), action=2, name="New")
+        self.assertIn(b"\x03New", renamed)
+        self.assertNotIn(b"Old", renamed)
+        with self.assertRaises(ValueError):
+            encode_eq_detail_payload(entry, (0,), action=4)
+
 
 class EqProfileTests(unittest.TestCase):
     def test_factory_presets_are_model_specific(self):
@@ -120,6 +130,11 @@ class EqProfileTests(unittest.TestCase):
         self.assertEqual(profile.preset_for("deep-sea-bass").eq_id, 2)
         self.assertTrue(profile.supports_custom)
 
+    def test_custom_management_is_nord_only_evidence(self):
+        self.assertTrue(PROFILES["064414"].eq.custom_manage_verified)
+        self.assertFalse(PROFILES["062014"].eq.custom_manage_verified)
+        self.assertFalse(PROFILES["065414"].eq.custom_manage_verified)
+
     def test_nord_presets_are_the_three_measured_factory_ids(self):
         eq = PROFILES["064414"].eq
         self.assertEqual(
@@ -127,8 +142,8 @@ class EqProfileTests(unittest.TestCase):
             [(3, "Balanced (Default)"), (4, "Serenade"), (5, "Bass")],
         )
         self.assertTrue(eq.write_verified)
-        self.assertFalse(eq.supports_custom)
-        self.assertFalse(eq.custom_write_verified)
+        self.assertTrue(eq.supports_custom)
+        self.assertTrue(eq.custom_write_verified)
 
 
 class EqSessionTests(unittest.TestCase):
@@ -276,11 +291,13 @@ class EqSessionTests(unittest.TestCase):
         self.assertEqual(eq.preset_for("3").eq_id, 3)
         self.assertIsNone(eq.preset_for("bold"))
 
-    def test_nord_custom_eq_writes_are_not_authorized(self):
+    def test_nord_custom_eq_writes_are_authorized(self):
         session = self.session("064414")
-        with self.assertRaises(ValueError):
+        # Nord holds custom-EQ evidence now: the gate must let the write reach
+        # device I/O (curve verification itself is covered by the CRUD tests).
+        session._transport.request.side_effect = RuntimeError("reached device I/O")
+        with self.assertRaisesRegex(RuntimeError, "reached device I/O"):
             session.set_custom_eq(7, (0, 0, 0, 0, 0, 0))
-        session._transport.request.assert_not_called()
 
     def test_nord_anc_permission_does_not_authorize_eq_writes(self):
         profile = replace(

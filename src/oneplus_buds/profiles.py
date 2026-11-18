@@ -5,7 +5,8 @@ from typing import Literal
 
 
 CompatibilityState = Literal["verified", "community_tested", "experimental"]
-WriteOperation = Literal["anc", "eq_preset", "custom_eq"]
+WriteOperation = Literal["anc", "eq_preset", "custom_eq", "touch", "hold_cycle",
+                         "feature_switch", "bass_level", "find"]
 
 # Parent noise-control modes. Every other writable mode is an ANC strength and
 # is verified as main mode "on" plus that level.
@@ -50,6 +51,12 @@ class EqProfile:
     supports_custom: bool
     write_verified: bool
     custom_write_verified: bool
+    # Creating/renaming/deleting custom entries needs its own hardware evidence;
+    # updating a curve does not imply management rights (Nord-only so far).
+    custom_manage_verified: bool = False
+    # Custom profiles live in their own id range above the factory presets.
+    custom_base: int | None = None
+    custom_max: int | None = None
 
     def preset_for(self, value: str) -> EqPresetProfile | None:
         normalized = value.strip().lower()
@@ -106,6 +113,14 @@ class DeviceProfile:
     # Community-tested profiles are read-only by default. Each listed operation
     # must have separate hardware evidence; one permission never enables another.
     community_write_permissions: frozenset[WriteOperation] = frozenset()
+    # Feature switches that may be written; an unlisted switch stays read-only.
+    writable_features: frozenset[str] = frozenset()
+    # Wire action -> allowed function IDs. Empty means no touch writes.
+    touch_functions: dict[int, tuple[int, ...]] = field(default_factory=dict)
+    hold_cycle_supported: bool = False
+    # None preserves generic discovery for unaudited models. An audited map
+    # lists only audited model switches and their app labels.
+    feature_labels: dict[str, str] | None = None
 
     @property
     def verified(self) -> bool:
@@ -244,8 +259,9 @@ PROFILES = {
             level_labels={"deep": "High", "medium": "Moderate",
                           "light": "Low", "auto": "Auto"},
         ),
-        eq=EqProfile(NORD_BUDS_3_PRO_EQ_PRESETS, supports_custom=False,
-                     write_verified=True, custom_write_verified=False),
+        eq=EqProfile(NORD_BUDS_3_PRO_EQ_PRESETS, supports_custom=True,
+                     write_verified=True, custom_write_verified=True,
+                     custom_manage_verified=True, custom_base=7, custom_max=3),
         capabilities=frozenset(
             {
                 "battery",
@@ -255,21 +271,60 @@ PROFILES = {
                 "transparency",
                 "anc_levels",
                 "eq",
+                "custom_eq",
+                "bass_engine",
+                "feature_switches",
+                "find_earbuds",
+                "touch_controls",
+                "hold_cycle",
             }
         ),
         compatibility="community_tested",
         # The capability audit found no model support for the separate game
         # mode switch 0x06; 0x0b is Golden Sound here, not hearing enhancement.
         unconfirmed_feature_switches=frozenset({0x06, 0x0B}),
-        # Owner hardware tests covered ANC (including Auto) and factory preset
-        # selection only; custom EQ and every other operation stay read-only.
-        community_write_permissions=frozenset({"anc", "eq_preset"}),
+        # Owner-verified writable switches; everything else stays read-only.
+        writable_features=frozenset({
+            "bass_engine", "personal_noise", "wear_detection",
+            "click_to_take_photo", "multipoint", "high_quality_audio",
+        }),
+        # Wireless Earphones 17.6.6 whitelist 064414 plus the owner's audited
+        # app labels; generic switch replies do not establish support.
+        feature_labels={
+            "personal_noise": "Personalised noise cancellation",
+            "bass_engine": "BassWave",
+            "wear_detection": "Auto play/pause",
+            "click_to_take_photo": "Camera control",
+            "multipoint": "Dual connection",
+            "high_quality_audio": "Hi-Res mode",
+        },
+        touch_functions={
+            1: (0, 1),
+            2: (0, 1, 2, 3, 5, 6, 17),
+            3: (0, 2, 3, 5, 6, 17),
+            6: (0, 11, 12),
+        },
+        hold_cycle_supported=True,
+        # Each operation has separate owner hardware evidence with fresh
+        # read-back; one permission never enables another.
+        community_write_permissions=frozenset({
+            "anc", "eq_preset", "custom_eq", "touch", "hold_cycle",
+            "feature_switch", "bass_level", "find",
+        }),
     ),
 }
 
 
 def profile_for_product(product_id: str | None) -> DeviceProfile | None:
     return PROFILES.get(product_id or "")
+
+
+def feature_capabilities(profile: DeviceProfile | None, switches: dict[str, bool]) -> set[str]:
+    """Keep raw diagnostic switch replies separate from advertised support."""
+    names = set(switches)
+    if profile is not None and profile.feature_labels is not None:
+        names.intersection_update(profile.feature_labels)
+    return names
 
 
 def compatibility_for_product(product_id: str | None) -> CompatibilityState:
