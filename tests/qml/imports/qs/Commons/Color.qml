@@ -1,3 +1,7 @@
 pragma Singleton
 import QtQuick
-QtObject { readonly property color accent: "blue" }
+QtObject {
+ property color accent: "blue"
+ property color foreground: "white"
+ property color background: "#202030"
+}
