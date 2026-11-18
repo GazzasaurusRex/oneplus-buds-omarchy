@@ -1,12 +1,10 @@
-"""App-derived hold-cycle payloads and measured Nord response.
-
-Controller/bridge integration tests are added once those layers land.
-"""
+"""App-derived hold-cycle payloads and measured Nord response."""
 import unittest
 from dataclasses import replace
 
+from oneplus_buds.bridge import BudsFrontendBridge, serialize_snapshot
 from oneplus_buds.protocol import Frame
-from test_touch import WireTransport, session_for
+from test_touch import WireTransport, controller_for, session_for
 
 
 class CyclePeer(WireTransport):
@@ -43,6 +41,22 @@ class HoldCycleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_hold_cycle(Frame(0x8404, 1, b"\x00\x02\x01\x06"))
 
+    def test_fewer_than_two_reported_modes_fail_closed_before_any_write(self):
+        from oneplus_buds.touch import parse_hold_cycle
+        for mask in (0, 1, 2, 4):
+            with self.subTest(mask=mask):
+                with self.assertRaises(ValueError):
+                    parse_hold_cycle(Frame(0x810C, 1, bytes((0, 2, 1, mask))))
+                peer = CyclePeer()
+                peer.cycle_mask = mask
+                emitted = []
+                bridge = BudsFrontendBridge(emitted.append, controller=controller_for(peer))
+                result = bridge.execute("set_hold_cycle", {"modes": ["anc", "off"]})
+                self.assertFalse(result["ok"])
+                self.assertIsNone(emitted[-1]["snapshot"]["hold_cycle"])
+                self.assertFalse(emitted[-1]["snapshot"]["session_connected"])
+                self.assertFalse(any(c == 0x0404 for c, _, _ in peer.requests))
+
     def test_all_four_app_valid_combinations_have_exact_wire_payloads(self):
         for modes, payload in (
             (("anc", "off"), b"\x02\x01\x03"),
@@ -64,11 +78,9 @@ class HoldCycleTests(unittest.TestCase):
             with self.subTest(modes=modes), self.assertRaises(ValueError):
                 session_for(peer).set_hold_cycle(modes)
             self.assertEqual(peer.requests, [])
-        # A verified profile without hold-cycle support data cannot write.
         peer = CyclePeer()
         with self.assertRaises(ValueError):
             session_for(peer, "062014").set_hold_cycle(("anc", "off"))
-        # A community profile without the hold_cycle permission cannot write.
         session = session_for(peer)
         session.profile = replace(session.profile,
                                   community_write_permissions=frozenset({"anc"}))
@@ -82,6 +94,75 @@ class HoldCycleTests(unittest.TestCase):
         session._authenticated = False
         with self.assertRaisesRegex(RuntimeError, "authentication"):
             session.set_hold_cycle(("anc", "off"))
+        self.assertEqual(peer.requests, [])
+
+    def test_snapshot_has_shared_choices_and_readback_after_write(self):
+        controller = controller_for(CyclePeer())
+        controller.touch_controls()
+        cycle = serialize_snapshot(controller.snapshot())["hold_cycle"]
+        self.assertEqual(cycle["modes"], ["anc", "transparency"])
+        self.assertEqual([x["value"] for x in cycle["options"]], ["anc", "off", "transparency"])
+        self.assertEqual(cycle["min_selected"], 2)
+        self.assertTrue(cycle["shared"])
+        emitted = []
+        bridge = BudsFrontendBridge(emitted.append, controller=controller)
+        result = bridge.execute("set_hold_cycle", {"modes": ["anc", "off"]})
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["result"]["verified"])
+        self.assertEqual(emitted[-1]["snapshot"]["hold_cycle"]["modes"], ["anc", "off"])
+
+    def test_ignored_write_does_not_pass_verification(self):
+        emitted = []
+        bridge = BudsFrontendBridge(emitted.append, controller=controller_for(CyclePeer(ignore=True)))
+        result = bridge.execute("set_hold_cycle", {"modes": ["anc", "off"]})
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["result"]["verified"])
+        self.assertEqual(emitted[-1]["snapshot"]["hold_cycle"]["modes"], ["anc", "transparency"])
+
+    def test_lost_readback_invalidates_state_and_never_retries(self):
+        peer = CyclePeer(broken_readback=True)
+        emitted = []
+        controller = controller_for(peer)
+        controller.touch_controls()
+        result = BudsFrontendBridge(emitted.append, controller=controller).execute(
+            "set_hold_cycle", {"modes": ["anc", "off"]})
+        self.assertFalse(result["ok"])
+        self.assertEqual(sum(command == 0x0404 for command, _, _ in peer.requests), 1)
+        self.assertIsNone(emitted[-1]["snapshot"]["hold_cycle"])
+        self.assertFalse(emitted[-1]["snapshot"]["session_connected"])
+
+    def test_missing_ack_is_verified_only_by_fresh_read_explicit_rejection_fails(self):
+        for ack, expected in ((None, True), (1, False)):
+            with self.subTest(ack=ack):
+                controller = controller_for(CyclePeer(ack=ack))
+                result = controller.set_hold_cycle(("anc", "off"))
+                self.assertEqual(result["verified"], expected)
+
+    def test_malformed_ack_clears_cycle_without_retrying_write(self):
+        class MalformedAck(CyclePeer):
+            def request(self, command, payload, response, **kwargs):
+                frame = super().request(command, payload, response, **kwargs)
+                return replace(frame, payload=b"\x00\x00") if command == 0x0404 else frame
+
+        peer = MalformedAck()
+        controller = controller_for(peer)
+        controller.touch_controls()
+        emitted = []
+        result = BudsFrontendBridge(emitted.append, controller=controller).execute(
+            "set_hold_cycle", {"modes": ["anc", "off"]})
+        self.assertFalse(result["ok"])
+        self.assertIsNone(emitted[-1]["snapshot"]["hold_cycle"])
+        self.assertEqual(sum(c == 0x0404 for c, _, _ in peer.requests), 1)
+
+    def test_bridge_rejects_bad_types_and_fields_before_any_request(self):
+        peer = CyclePeer()
+        bridge = BudsFrontendBridge(lambda _: None, controller=controller_for(peer))
+        for params in ({}, {"modes": "anc,off"}, {"modes": ["anc", True]},
+                       {"modes": ["anc", "off"], "side": 1}):
+            with self.subTest(params=params):
+                result = bridge.execute("set_hold_cycle", params)
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["error"]["code"], "invalid_parameters")
         self.assertEqual(peer.requests, [])
 
 

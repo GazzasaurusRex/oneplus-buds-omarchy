@@ -1,11 +1,9 @@
-"""Pin measured gesture bytes and exercise the real session boundary.
-
-Controller/bridge integration tests are added once those layers land.
-"""
+"""Pin measured gesture bytes and exercise the real session/bridge boundary."""
 from dataclasses import replace
 import unittest
 
 from oneplus_buds.bluez import Device
+from oneplus_buds.bridge import BudsFrontendBridge, serialize_snapshot
 from oneplus_buds.controller import BudsController
 from oneplus_buds.models import StatusResult
 from oneplus_buds.profiles import PROFILES
@@ -118,19 +116,56 @@ class TouchTests(unittest.TestCase):
                     session_for(peer, product).set_touch_binding(binding)
                 self.assertFalse(any(c == 0x0401 for c, _, _ in peer.requests))
 
-    def test_community_profile_without_touch_permission_cannot_write(self):
-        from oneplus_buds.touch import TouchBinding
-        peer = WireTransport()
-        with self.assertRaises(ValueError):
-            session_for(peer, "065414").set_touch_binding(TouchBinding(1, 1, 2, 5))
-        self.assertEqual(peer.requests, [])
-
     def test_missing_binding_cannot_be_created_by_accident(self):
         from oneplus_buds.touch import TouchBinding
         peer = WireTransport(payload=b"\x00\x00")
         with self.assertRaises(ValueError):
             session_for(peer).set_touch_binding(TouchBinding(1, 1, 2, 5))
         self.assertEqual(len(peer.requests), 1)
+
+    def test_ack_alone_does_not_verify_and_actual_state_is_published(self):
+        controller = controller_for(WireTransport(ignore=True))
+        emitted = []
+        bridge = BudsFrontendBridge(emitted.append, controller=controller)
+        result = bridge.execute("set_touch_control", {"side": 1, "action": 2, "function": 5})
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["result"]["verified"])
+        bindings = emitted[-1]["snapshot"]["touch_controls"]
+        self.assertEqual(next(b["function"] for b in bindings
+                              if b["side"] == 1 and b["action"] == 2), 6)
+
+    def test_missing_ack_can_be_verified_but_explicit_rejection_cannot(self):
+        for ack, verified in ((None, True), (1, False)):
+            with self.subTest(ack=ack):
+                controller = controller_for(WireTransport(ack=ack))
+                result = controller.set_touch_control(1, 2, 5)
+                self.assertEqual(result["verified"], verified)
+
+    def test_bridge_rejects_json_type_errors_and_unknown_fields(self):
+        peer = WireTransport()
+        bridge = BudsFrontendBridge(lambda _: None, controller=controller_for(peer))
+        for params in ({"side": True, "action": 2, "function": 5},
+                       {"side": 1, "action": "2", "function": 5},
+                       {"side": 1, "action": 2, "function": 1.0},
+                       {"side": 1, "action": 2},
+                       {"side": 1, "action": 2, "function": 5, "extra": 1}):
+            with self.subTest(params=params):
+                result = bridge.execute("set_touch_control", params)
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["error"]["code"], "invalid_parameters")
+        self.assertEqual(peer.requests, [])
+
+    def test_choices_match_app_masks_and_unknown_current_function_is_preserved(self):
+        controller = controller_for(WireTransport(payload=MEASURED[:-1] + b"\xfe"))
+        bridge = BudsFrontendBridge(lambda _: None, controller=controller)
+        result = bridge.execute("touch_controls")
+        self.assertTrue(result["ok"])
+        controls = serialize_snapshot(controller.snapshot())["touch_controls"]
+        choices = {c["action"]: [o["value"] for o in c["options"]]
+                   for c in controls if c["side"] == 2}
+        self.assertEqual(choices, {1: [0, 1], 2: [0, 1, 2, 3, 5, 6, 17],
+                                  3: [0, 2, 3, 5, 6, 17], 4: [], 6: [0, 11, 12]})
+        self.assertIn("254", controls[-1]["function_label"])
 
     def test_unauthenticated_session_cannot_write(self):
         from oneplus_buds.touch import TouchBinding
@@ -140,6 +175,60 @@ class TouchTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "authentication"):
             session.set_touch_binding(TouchBinding(1, 1, 2, 5))
         self.assertEqual(peer.requests, [])
+
+    def test_closing_session_clears_cached_controls(self):
+        controller = controller_for(WireTransport())
+        controller.touch_controls()
+        controller._session = None
+        controller._close_session()
+        self.assertEqual(serialize_snapshot(controller.snapshot())["touch_controls"], [])
+
+    def test_uncertain_write_invalidates_controls_and_emits_unavailable_snapshot(self):
+        class LostReadback(WireTransport):
+            def request(self, command, payload, response, **kwargs):
+                if command == 0x0108 and any(c == 0x0401 for c, _, _ in self.requests):
+                    raise TimeoutError("readback lost")
+                return super().request(command, payload, response, **kwargs)
+
+        peer = LostReadback()
+        controller = controller_for(peer)
+        controller.touch_controls()
+        emitted = []
+        bridge = BudsFrontendBridge(emitted.append, controller=controller)
+        result = bridge.execute("set_touch_control", {"side": 1, "action": 2, "function": 5})
+        self.assertFalse(result["ok"])
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0]["snapshot"]["touch_controls"], [])
+        self.assertFalse(emitted[0]["snapshot"]["session_connected"])
+        self.assertEqual(sum(c == 0x0401 for c, _, _ in peer.requests), 1)
+
+    def test_failed_refresh_invalidates_the_previously_loaded_table(self):
+        peer = WireTransport()
+        controller = controller_for(peer)
+        controller.touch_controls()
+        peer.payload = b"\x01\x00"
+        emitted = []
+        bridge = BudsFrontendBridge(emitted.append, controller=controller)
+        result = bridge.execute("touch_controls")
+        self.assertFalse(result["ok"])
+        self.assertEqual(emitted[-1]["snapshot"]["touch_controls"], [])
+
+    def test_malformed_ack_invalidates_state_without_retrying_the_write(self):
+        class MalformedAck(WireTransport):
+            def request(self, command, payload, response, **kwargs):
+                frame = super().request(command, payload, response, **kwargs)
+                return replace(frame, payload=b"") if command == 0x0401 else frame
+
+        peer = MalformedAck()
+        controller = controller_for(peer)
+        controller.touch_controls()
+        emitted = []
+        result = BudsFrontendBridge(emitted.append, controller=controller).execute(
+            "set_touch_control", {"side": 1, "action": 2, "function": 5})
+        self.assertFalse(result["ok"])
+        self.assertIn("acknowledgement", result["error"]["message"])
+        self.assertEqual(emitted[-1]["snapshot"]["touch_controls"], [])
+        self.assertEqual(sum(c == 0x0401 for c, _, _ in peer.requests), 1)
 
 
 if __name__ == "__main__":
