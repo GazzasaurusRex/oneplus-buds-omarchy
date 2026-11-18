@@ -29,8 +29,10 @@ def hold_cycle_mask(modes: tuple[str, ...]) -> int:
     return sum(values[mode] for mode in modes)
 
 
-def parse_hold_cycle(frame: Frame) -> int:
+def parse_hold_cycle(frame: Frame, *, allow_trailing_zero: bool = False) -> int:
     data = frame.payload
+    if allow_trailing_zero and len(data) == 5 and data[-1] == 0:
+        data = data[:-1]
     if (frame.command != RESPONSE_ANC or len(data) != 4
             or data[:3] != b"\x00\x02\x01" or data[3] not in (3, 5, 6, 7)):
         raise ValueError("device returned malformed hold cycle")

@@ -121,6 +121,8 @@ class DeviceProfile:
     # Wire action -> allowed function IDs. Empty means no touch writes.
     touch_functions: dict[int, tuple[int, ...]] = field(default_factory=dict)
     hold_cycle_supported: bool = False
+    # Reading support and hardware-verified write support are independent.
+    hold_cycle_write_verified: bool = False
     # None preserves generic discovery for unaudited models. An audited map
     # lists only audited model switches and their app labels.
     feature_labels: dict[str, str] | None = None
@@ -199,9 +201,23 @@ PROFILES = {
                 "smart_anc",
                 "eq",
                 "custom_eq",
+                # Local Pro 2 evidence trial, 2026-11-18: phone level
+                # change/read/restore confirmed range -5..5 and level mapping.
+                "bass_engine",
             }
         ),
         compatibility="verified",
+        # Local Pro 2 evidence trial, 2026-11-18: separate phone off/on
+        # round-trips changed only features 0x04 and 0x11 respectively, and
+        # both were restored before enabling these writes.
+        writable_features=frozenset({"wear_detection", "multipoint"}),
+        # Local Pro 2 evidence trial, 2026-11-18: phone change/read/restore
+        # confirmed only Double tap -> Previous/Next (wire functions 5/6).
+        touch_functions={2: (5, 6)},
+        # Read-only evidence collection; writes stay blocked until a phone-app
+        # mapping round-trip confirms the Pro 2 mask semantics.
+        hold_cycle_supported=True,
+        hold_cycle_write_verified=True,
     ),
     "065414": DeviceProfile(
         product_id="065414",
@@ -312,6 +328,7 @@ PROFILES = {
             6: (0, 11, 12),
         },
         hold_cycle_supported=True,
+        hold_cycle_write_verified=True,
         case_battery_cached=True,
         # Each operation has separate owner hardware evidence with fresh
         # read-back; one permission never enables another.

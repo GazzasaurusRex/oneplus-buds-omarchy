@@ -76,7 +76,8 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
             bool(profile and profile.can_write("touch") and snapshot.session_connected)),
         "hold_cycle": serialize_hold_cycle(
             snapshot.hold_cycle_mask if profile and profile.hold_cycle_supported else None,
-            bool(profile and profile.can_write("hold_cycle") and snapshot.session_connected)),
+            bool(profile and profile.can_write("hold_cycle")
+                 and profile.hold_cycle_write_verified and snapshot.session_connected)),
     }
 
 

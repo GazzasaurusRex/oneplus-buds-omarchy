@@ -649,15 +649,21 @@ class OpoSession:
         frame = self._transport.request(QUERY_ANC, HOLD_CYCLE_QUERY, RESPONSE_ANC,
                                         on_frames=self._defer_frames)
         try:
-            return parse_hold_cycle(frame)
+            return parse_hold_cycle(
+                frame, allow_trailing_zero=self.profile.product_id == "062014"
+            )
         except ValueError as error:
-            raise RuntimeError(str(error)) from error
+            raise RuntimeError(
+                f"{error}; response=0x{frame.command:04x}:{frame.payload.hex()}"
+            ) from error
 
     def set_hold_cycle(self, modes: tuple[str, ...]) -> tuple[int | None, int]:
         self._require_connected()
         if not self._authenticated:
             raise RuntimeError("session authentication has not completed")
-        if not self.profile.can_write("hold_cycle") or not self.profile.hold_cycle_supported:
+        if (not self.profile.can_write("hold_cycle")
+                or not self.profile.hold_cycle_supported
+                or not self.profile.hold_cycle_write_verified):
             raise ValueError("hold cycle writes are not verified for this device profile")
         mask = hold_cycle_mask(modes)
         self.read_hold_cycle()  # require valid current state before writing
@@ -770,9 +776,15 @@ class OpoSession:
         self._require_connected()
         if not self.profile.can_write("bass_level") or "bass_engine" not in self.profile.capabilities:
             raise ValueError("bass level writes are not supported by this device profile")
-        if not BASS_LEVEL_MIN <= level <= BASS_LEVEL_MAX:
-            raise ValueError(f"bass level must be between {BASS_LEVEL_MIN} and {BASS_LEVEL_MAX}")
-        payload = BASS_LEVEL_RANGE + bytes((level & 0xFF,))
+        if self.profile.product_id == "062014":
+            minimum, maximum = -5, 5
+            level_range = bytes((minimum & 0xFF, maximum & 0xFF))
+        else:
+            minimum, maximum = BASS_LEVEL_MIN, BASS_LEVEL_MAX
+            level_range = BASS_LEVEL_RANGE
+        if not minimum <= level <= maximum:
+            raise ValueError(f"bass level must be between {minimum} and {maximum}")
+        payload = level_range + bytes((level & 0xFF,))
         try:
             ack = self._transport.request(SET_BASS_ENGINE, payload, RESPONSE_SET_BASS_ENGINE,
                                           on_frames=self._defer_frames)
