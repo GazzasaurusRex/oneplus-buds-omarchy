@@ -680,15 +680,21 @@ class OpoSession:
         frame = self._transport.request(QUERY_ANC, HOLD_CYCLE_QUERY, RESPONSE_ANC,
                                         on_frames=self._defer_frames)
         try:
-            return parse_hold_cycle(frame)
+            return parse_hold_cycle(
+                frame, allow_trailing_zero=self.profile.product_id == "062014"
+            )
         except ValueError as error:
-            raise RuntimeError(str(error)) from error
+            raise RuntimeError(
+                f"{error}; response=0x{frame.command:04x}:{frame.payload.hex()}"
+            ) from error
 
     def set_hold_cycle(self, modes: tuple[str, ...]) -> tuple[int | None, int]:
         self._require_connected()
         if not self._authenticated:
             raise RuntimeError("session authentication has not completed")
-        if not self.profile.can_write("hold_cycle") or not self.profile.hold_cycle_supported:
+        if (not self.profile.can_write("hold_cycle")
+                or not self.profile.hold_cycle_supported
+                or not self.profile.hold_cycle_write_verified):
             raise ValueError("hold cycle writes are not verified for this device profile")
         mask = hold_cycle_mask(modes)
         self.read_hold_cycle()  # require valid current state before writing
