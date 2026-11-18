@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import traceback
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -66,7 +67,12 @@ class BudsServiceRunner:
                     try:
                         mark("service_discovery_attempt")
                         snapshot = self.controller.start()
-                    except (OSError, RuntimeError) as error:
+                    except Exception as error:
+                        # A malformed frame, a vanished D-Bus object or a driver
+                        # hiccup must never kill the helper. Only expected failures
+                        # are connection errors; anything else is logged.
+                        if not isinstance(error, (OSError, RuntimeError)):
+                            traceback.print_exc()
                         attempt, retry_delay = self._back_off(
                             cancelled, error, attempt, retry_delay
                         )
@@ -80,7 +86,9 @@ class BudsServiceRunner:
                     self._publish_snapshot(snapshot)
                 try:
                     snapshot = self.controller.poll(0.0)
-                except (OSError, RuntimeError) as error:
+                except Exception as error:
+                    if not isinstance(error, (OSError, RuntimeError)):
+                        traceback.print_exc()
                     connected = False
                     attempt, retry_delay = self._back_off(
                         cancelled, error, attempt, retry_delay

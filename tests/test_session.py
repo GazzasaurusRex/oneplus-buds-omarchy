@@ -17,6 +17,21 @@ DEVICE = Device(
 
 
 class SessionTests(unittest.TestCase):
+    def test_poll_refreshes_case_battery_without_reconnecting(self):
+        transport = FakeTransport({0x0106: [Frame(0x8106, 2,
+            bytes.fromhex("00 03 01 64 02 64 03 32"))]})
+        def no_blocking_query(*args, **kwargs):
+            self.fail("background battery reads must not block foreground controls")
+        transport.query = no_blocking_query
+        with patch("oneplus_buds.session.monotonic", return_value=0):
+            session = OpoSession(DEVICE, PROFILES["064414"], transport=transport)
+        with session, patch("oneplus_buds.session.monotonic", return_value=11):
+            batch = session.poll(0)
+            self.assertEqual([event.data["case"]["percentage"]
+                for event in batch.events if event.kind == "battery"], [50])
+            session.poll(0)
+        self.assertEqual(transport.queries, [(0x0106, b"")])
+
     def test_session_subscribes_and_redacts_notification_payloads(self):
         peer_payload = b"\x06private peer device name and address"
         transport = FakeTransport(
@@ -94,6 +109,11 @@ class FakeTransport:
 
     def exchange_raw(self, *_args, **_kwargs):
         return []
+
+    def send_query(self, command):
+        self.queries.append((command, b""))
+        self.received.extend(self.responses.get(command, []))
+        return 1
 
     def receive(self, _wait):
         return self.received

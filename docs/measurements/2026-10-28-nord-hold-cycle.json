@@ -1,0 +1,189 @@
+{
+  "date": "2026-10-28",
+  "product_id": "064414",
+  "original_modes": [
+    "anc",
+    "transparency"
+  ],
+  "original_bindings": [
+    [
+      1,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      2,
+      5
+    ],
+    [
+      1,
+      1,
+      3,
+      5
+    ],
+    [
+      1,
+      1,
+      4,
+      8
+    ],
+    [
+      1,
+      1,
+      6,
+      12
+    ],
+    [
+      2,
+      1,
+      1,
+      1
+    ],
+    [
+      2,
+      1,
+      2,
+      6
+    ],
+    [
+      2,
+      1,
+      3,
+      5
+    ],
+    [
+      2,
+      1,
+      4,
+      8
+    ],
+    [
+      2,
+      1,
+      6,
+      11
+    ]
+  ],
+  "trials": [
+    {
+      "requested": [
+        "anc",
+        "off"
+      ],
+      "readback": [
+        "anc",
+        "off"
+      ],
+      "set_status": 0,
+      "verified": true
+    },
+    {
+      "requested": [
+        "off",
+        "transparency"
+      ],
+      "readback": [
+        "off",
+        "transparency"
+      ],
+      "set_status": 0,
+      "verified": true
+    },
+    {
+      "requested": [
+        "anc",
+        "transparency"
+      ],
+      "readback": [
+        "anc",
+        "transparency"
+      ],
+      "set_status": 0,
+      "verified": true
+    },
+    {
+      "requested": [
+        "anc",
+        "off",
+        "transparency"
+      ],
+      "readback": [
+        "anc",
+        "off",
+        "transparency"
+      ],
+      "set_status": 0,
+      "verified": true
+    }
+  ],
+  "restored": true,
+  "final_modes": [
+    "anc",
+    "transparency"
+  ],
+  "final_bindings": [
+    [
+      1,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      2,
+      5
+    ],
+    [
+      1,
+      1,
+      3,
+      5
+    ],
+    [
+      1,
+      1,
+      4,
+      8
+    ],
+    [
+      1,
+      1,
+      6,
+      12
+    ],
+    [
+      2,
+      1,
+      1,
+      1
+    ],
+    [
+      2,
+      1,
+      2,
+      6
+    ],
+    [
+      2,
+      1,
+      3,
+      5
+    ],
+    [
+      2,
+      1,
+      4,
+      8
+    ],
+    [
+      2,
+      1,
+      6,
+      11
+    ]
+  ]
+}

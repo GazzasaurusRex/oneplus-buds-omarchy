@@ -1,0 +1,15 @@
+{
+  "product_id": "064414",
+  "date": "2026-10-31",
+  "operation": "read-only battery query through the running bridge",
+  "query": {"command": "0x0106", "payload": ""},
+  "response": {"command": "0x8106", "payload": "00 03 01 64 02 64 03 32"},
+  "decoded_percentages": {"left": 100, "right": 100, "case": 50},
+  "owner_observation": "Phone shows case level with buds inside the open case and connected over Bluetooth.",
+  "verification": {
+    "live_plugin_label": "L 100%  R 100%  C 50%",
+    "persistent_cache_written": true,
+    "open_closed_transition_captured": false,
+    "device_writes_performed": false
+  }
+}

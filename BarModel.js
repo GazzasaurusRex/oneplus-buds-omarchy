@@ -23,7 +23,8 @@ function batteryParts(snapshot) {
       short: name.short,
       long: name.long,
       percentage: Math.round(value.percentage),
-      charging: value.charging === true
+      charging: value.charging === true,
+      lastKnown: value.last_known === true
     })
   }
   return parts
@@ -109,6 +110,68 @@ function customEqEntries(snapshot) {
   return eq && Array.isArray(eq.custom_entries) ? eq.custom_entries : []
 }
 
+// Model-specific app labels also act as an allowlist after a profile audit.
+// Raw switch replies remain available for diagnostics.
+var FEATURE_LABELS = {
+  personal_noise: "Personalised noise cancellation",
+  bass_engine: "BassWave",
+  low_latency: "Low latency game mode",
+  wear_detection: "Wear detection",
+  click_to_take_photo: "Tap to take photo",
+  multipoint: "Dual connection",
+  high_quality_audio: "High quality audio",
+  spatial_sound: "Spatial audio",
+  vocal_enhance: "Vocal enhancement",
+  hearing_enhancement: "Hearing enhancement",
+  game_equalizer: "Game equalizer",
+  collect_logs: "Diagnostic logs",
+  zen_mode: "Zen mode",
+  game_mode_main: "Game mode"
+}
+
+var FEATURE_ORDER = [
+  "personal_noise",
+  "bass_engine",
+  "low_latency",
+  "wear_detection",
+  "click_to_take_photo",
+  "multipoint",
+  "high_quality_audio",
+  "spatial_sound",
+  "vocal_enhance",
+  "hearing_enhancement",
+  "game_equalizer",
+  "zen_mode",
+  "game_mode_main",
+  "collect_logs"
+]
+
+var FEATURE_TOOLTIPS = {
+  wear_detection: "Remove either earbud to pause playback; put it back in to resume.",
+  click_to_take_photo: "Double-tap either earbud to take a photo in a compatible phone camera app.",
+  multipoint: "Connect to two devices at the same time and switch between them. Turning this off may disconnect one device.",
+  high_quality_audio: "Enable high-resolution audio with a compatible audio host. Changing this mode may briefly disconnect and reconnect the earbuds."
+}
+
+function featureList(snapshot) {
+  var switches = snapshot && snapshot.feature_switches
+  if (!switches || typeof switches !== "object") return []
+  var writable = snapshot && Array.isArray(snapshot.writable_features)
+    ? snapshot.writable_features : []
+  var labels = snapshot && snapshot.feature_labels
+  var result = []
+  for (var i = 0; i < FEATURE_ORDER.length; i++) {
+    var name = FEATURE_ORDER[i]
+    if (labels && typeof labels[name] !== "string") continue
+    if (typeof switches[name] === "boolean")
+      result.push({ name: name, label: (labels && labels[name]) || FEATURE_LABELS[name] || titleCase(name),
+        tooltip: FEATURE_TOOLTIPS[name] || "",
+        enabled: switches[name],
+        writable: writable.indexOf(name) !== -1 })
+  }
+  return result
+}
+
 function compatibility(snapshot) {
   var value = snapshot ? String(snapshot.compatibility || "") : ""
   if (value === "verified" || value === "community_tested") return value
@@ -192,9 +255,11 @@ function presentation(connection, snapshot) {
   var details = []
   for (var i = 0; i < parts.length; i++) {
     var suffix = parts[i].charging ? "⚡" : ""
+    if (parts[i].lastKnown) suffix = "*"
     labels.push(parts[i].short + " " + parts[i].percentage + "%" + suffix)
     details.push(parts[i].long + ": " + parts[i].percentage + "%"
-      + (parts[i].charging ? " (charging)" : ""))
+      + (parts[i].lastKnown ? " (last known)"
+         : parts[i].charging ? " (charging)" : ""))
   }
 
   var status = snapshot && snapshot.status
@@ -218,6 +283,7 @@ if (typeof module !== "undefined") {
     currentAncMode: currentAncMode,
     eqPresets: eqPresets,
     customEqEntries: customEqEntries,
+    featureList: featureList,
     compatibility: compatibility,
     compatibilityLabel: compatibilityLabel,
     reportActionLabel: reportActionLabel,

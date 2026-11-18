@@ -11,11 +11,23 @@ Item {
   property int nextRequestId: 1
   property bool stopping: false
   property var lifecycleObservations: []
+  // The helper is a child process that can die (driver error, vanished D-Bus
+  // object, killed process). Restart it with a backoff instead of staying dead.
+  property int restartAttempt: 0
+  property int restartDelayMs: 1000
 
   function observeLifecycle(phase, productId) {
     lifecycleObservations = lifecycleObservations.concat([{
       phase: phase, unix_ms: Date.now(), product_id: productId || null
     }]).slice(-32)
+  }
+
+  function scheduleHelperRestart() {
+    if (stopping) return
+    restartAttempt += 1
+    restartDelayMs = Math.min(restartDelayMs * 2, 30000)
+    restartTimer.interval = restartDelayMs
+    restartTimer.restart()
   }
 
   readonly property string helperPath: localPath(Qt.resolvedUrl("oneplus-buds-bridge"))
@@ -52,6 +64,11 @@ Item {
     state = BridgeModel.applyMessage(state, parsed.message)
     if (state.connection !== previous.connection)
       observeLifecycle("frontend_" + state.connection, null)
+    // A working connection resets the restart backoff.
+    if (state.connection === "connected" && previous.connection !== "connected") {
+      restartAttempt = 0
+      restartDelayMs = 1000
+    }
     var status = state.snapshot && state.snapshot.status
     var oldStatus = previous.snapshot && previous.snapshot.status
     if (status && state.snapshot.session_connected
@@ -87,12 +104,59 @@ Item {
     return request("set_eq", { preset: String(preset || "") })
   }
 
-  function setCustomEq(entryId, gains) {
-    return request("set_custom_eq", { entry_id: Number(entryId), gains_db: gains })
+  function setCustomEq(entryId, gains, deviceId) {
+    var params = { entry_id: Number(entryId), gains_db: gains }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("set_custom_eq", params)
+  }
+
+  function createCustomEq(name, deviceId) {
+    var params = { name: String(name || "") }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("create_custom_eq", params)
+  }
+
+  function renameCustomEq(entryId, name, deviceId) {
+    var params = { entry_id: Number(entryId), name: String(name || "") }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("rename_custom_eq", params)
+  }
+
+  function deleteCustomEq(entryId, deviceId) {
+    var params = { entry_id: Number(entryId) }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("delete_custom_eq", params)
   }
 
   function saveDiagnosticReport(path) {
     return request("save_diagnostic_report", { path: String(path || "") })
+  }
+
+  function setTouchControl(side, action, value) {
+    return request("set_touch_control", {
+      side: Number(side), action: Number(action), function: Number(value)
+    })
+  }
+
+  function setHoldCycle(modes) {
+    return request("set_hold_cycle", { modes: modes })
+  }
+
+  function setFeatureSwitch(feature, enabled) {
+    return request("set_feature_switch", {
+      feature: String(feature || ""), enabled: enabled === true
+    })
+  }
+
+  function setBassLevel(level) {
+    return request("set_bass_level", { level: Number(level) })
+  }
+
+  function findEarbuds(ringing, deviceId) {
+    var parameters = { ringing: ringing !== false }
+    var target = deviceId || (snapshot && snapshot.find_device_id)
+    if (target) parameters.device_id = String(target)
+    return request("find_earbuds", parameters)
   }
 
   onHelperPathChanged: startHelper()
@@ -101,9 +165,22 @@ Item {
 
   Component.onDestruction: {
     stopping = true
+    restartTimer.stop()
     helper.running = false
   }
 
+
+  Timer {
+    id: restartTimer
+    interval: 2000
+    repeat: false
+    onTriggered: {
+      if (!root.stopping) {
+        root.observeLifecycle("frontend_helper_restart", null)
+        root.startHelper()
+      }
+    }
+  }
   Process {
     id: helper
     stdinEnabled: true
@@ -132,6 +209,7 @@ Item {
           lastResponse: root.state.lastResponse,
           lastError: root.state.lastError || "Backend process stopped"
         }
+        root.scheduleHelperRestart()
       }
     }
   }

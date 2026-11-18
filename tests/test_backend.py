@@ -1,5 +1,6 @@
 import unittest
-from unittest.mock import patch
+from dataclasses import replace
+from unittest.mock import MagicMock, patch
 
 from oneplus_buds.backend import diagnostics_report, query_capabilities, query_feature_switches, read_status, set_anc
 from oneplus_buds.bluez import Device
@@ -277,6 +278,33 @@ class BackendTests(unittest.TestCase):
         with patch("oneplus_buds.backend.RfcommTransport", return_value=transport):
             result = query_feature_switches()
         self.assertEqual(result, {"wear_detection": True})
+
+    @patch("oneplus_buds.backend.query_feature_switches",
+           return_value={"wear_detection": True, "personal_noise": True, "low_latency": False})
+    @patch("oneplus_buds.backend.read_status",
+           return_value=replace(STATUS_RESULT, product_id="064414", model="OnePlus Nord Buds 3 Pro"))
+    def test_nord_capabilities_filter_to_audited_switches(self, _status, _switches):
+        result = query_capabilities()
+        self.assertIn("personal_noise", result["capabilities"])
+        self.assertIn("wear_detection", result["capabilities"])
+        self.assertNotIn("low_latency", result["capabilities"])
+
+    @patch("oneplus_buds.backend.OpoSession.bootstrap")
+    @patch("oneplus_buds.backend.select_device", return_value=DEVICE)
+    def test_custom_eq_management_wrappers_gate_and_close_session(self, _device, bootstrap):
+        from oneplus_buds.backend import (write_create_custom_eq, write_rename_custom_eq,
+                                          write_delete_custom_eq)
+        from oneplus_buds.session import OpoSession
+        for call in (lambda: write_create_custom_eq("Rock"),
+                     lambda: write_rename_custom_eq(7, "Rock"),
+                     lambda: write_delete_custom_eq(7)):
+            session = OpoSession(DEVICE, PROFILES["065414"])
+            session._connected = session._authenticated = True
+            session._transport = MagicMock()
+            bootstrap.return_value = (session, STATUS_RESULT, MagicMock())
+            with self.assertRaises(ValueError):
+                call()
+            self.assertEqual(session._transport.request.call_count, 0)
 
 
 class FakeTransport:

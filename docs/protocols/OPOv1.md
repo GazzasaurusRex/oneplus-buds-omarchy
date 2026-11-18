@@ -31,7 +31,12 @@ Multi-byte fields are little-endian:
 | Current native EQ | `0x010f` | `0x810f` / `0x0504` | response: status, EQ ID |
 | Native EQ catalogue | `0x0122` | `0x8122` | request `01 05` |
 | Select native EQ | `0x0406` | `0x8406` | one-byte EQ ID |
-| Update custom EQ | `0x0418` | `0x8418` | structured custom entry |
+| Custom EQ entry | `0x0418` | `0x8418` | action (1 create / 2 update / 3 delete) + entry definition |
+| Touch assignments | `0x0108` | `0x8108` | response: status, count, `(type, button, action, function)` |
+| Set touch | `0x0401` | `0x8401` | `01 type 01 action function` |
+| Feature switch set | `0x0403` | `0x8403` | `[feature_id, 0/1]` |
+| Find my earbuds | `0x0400` | `0x8400` | `[01]` ring / `[00]` stop |
+| Bass engine level | `0x0124` / `0x041b` | `0x8124` / `0x841b` | `[status, min, max, current]` / `[min, max, value]` |
 | Batch status / wake | `0x010d` | `0x810d` | fixed sequence `00`; parameter list |
 
 Battery component IDs are 1=left, 2=right, 3=case. `raw & 0x7f` is percentage and bit 7 indicates charging.

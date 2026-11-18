@@ -1,6 +1,7 @@
 import QtQuick
 Item {
  property string text
+ property string tooltipText: ""
  property bool selected
  property bool bordered
  property bool leftAlign

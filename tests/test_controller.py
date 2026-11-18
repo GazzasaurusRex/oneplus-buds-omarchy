@@ -1,4 +1,6 @@
 import unittest
+from dataclasses import replace
+from unittest.mock import MagicMock, patch
 
 from oneplus_buds.bluez import Device
 from oneplus_buds.controller import BudsController
@@ -24,8 +26,23 @@ STATUS = StatusResult(
     anc_level=None,
 )
 
-
 class ControllerTests(unittest.TestCase):
+    def test_refresh_reads_feature_and_bass_state_on_interval(self):
+        controller = BudsController(FakeBackend([]))
+        controller._status = replace(STATUS, product_id="064414")
+        controller._session = MagicMock()
+        controller._session.feature_switches.return_value = {0x04: True, 0x1D: False}
+        controller._session.bass_engine_status.return_value = (-10, 10, -1)
+        with patch("oneplus_buds.controller.monotonic", return_value=10):
+            controller._refresh_phone_app_state()
+        self.assertTrue(controller._feature_switches["wear_detection"])
+        self.assertEqual(controller._bass_level, -1)
+        self.assertEqual(controller._last_state_refresh, 10)
+        controller._session.feature_switches.reset_mock()
+        with patch("oneplus_buds.controller.monotonic", return_value=12):
+            controller._refresh_phone_app_state()
+        controller._session.feature_switches.assert_not_called()
+
     def test_start_poll_updates_cache_and_shutdown_closes(self):
         session = FakeSession(
             initial=EventBatch((SafeEvent("notification", {"event_code": 2}),), 3),

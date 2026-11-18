@@ -1,0 +1,136 @@
+{
+  "original_id": 7,
+  "original_gains": [
+    4,
+    6,
+    1,
+    0,
+    4,
+    6
+  ],
+  "drags": [
+    {
+      "held_device_gains": [
+        4,
+        6,
+        2,
+        0,
+        4,
+        6
+      ],
+      "response": {
+        "command": "set_custom_eq",
+        "error": null,
+        "ok": true,
+        "request_id": 22,
+        "result": {
+          "current_id": 7,
+          "current_name": "Test eq",
+          "name": "OnePlus Nord Buds 3 Pro",
+          "previous_id": 7,
+          "previous_name": "Test eq",
+          "product_id": "064414",
+          "set_status": 0,
+          "timings_ms": {
+            "command_sent_elapsed": 65.327,
+            "preserve_read": 65.253,
+            "session_total": 405.191,
+            "set_response": 257.081,
+            "verified_elapsed": 405.174,
+            "verify_query": 53.347
+          },
+          "verification_queries": 1,
+          "verified": true
+        },
+        "schema_version": 1,
+        "type": "command_response"
+      },
+      "after_gains": [
+        5,
+        6,
+        2,
+        0,
+        4,
+        6
+      ]
+    },
+    {
+      "held_device_gains": [
+        5,
+        6,
+        2,
+        0,
+        4,
+        6
+      ],
+      "response": {
+        "command": "set_custom_eq",
+        "error": null,
+        "ok": true,
+        "request_id": 25,
+        "result": {
+          "current_id": 7,
+          "current_name": "Test eq",
+          "name": "OnePlus Nord Buds 3 Pro",
+          "previous_id": 7,
+          "previous_name": "Test eq",
+          "product_id": "064414",
+          "set_status": 0,
+          "timings_ms": {
+            "command_sent_elapsed": 58.419,
+            "preserve_read": 58.342,
+            "session_total": 386.309,
+            "set_response": 275.844,
+            "verified_elapsed": 386.291,
+            "verify_query": 24.079
+          },
+          "verification_queries": 1,
+          "verified": true
+        },
+        "schema_version": 1,
+        "type": "command_response"
+      },
+      "after_gains": [
+        4,
+        6,
+        2,
+        0,
+        4,
+        6
+      ]
+    }
+  ],
+  "restore": {
+    "current_id": 7,
+    "current_name": "Test eq",
+    "name": "OnePlus Nord Buds 3 Pro",
+    "previous_id": 7,
+    "previous_name": "Test eq",
+    "product_id": "064414",
+    "set_status": 0,
+    "timings_ms": {
+      "command_sent_elapsed": 70.217,
+      "preserve_read": 70.07,
+      "session_total": 413.03,
+      "set_response": 296.848,
+      "verified_elapsed": 413.013,
+      "verify_query": 15.152
+    },
+    "verification_queries": 1,
+    "verified": true
+  },
+  "final_gains": [
+    4,
+    6,
+    1,
+    0,
+    4,
+    6
+  ],
+  "final_id": 7,
+  "limitations": [
+    "Native drag/release and independent device queries verified; no acoustic recording.",
+    "The full original curve and selected entry were restored after both drags.",
+    "Themes are bound to live shell accent; mutable-theme Qt tests verify handle and stroke updates."
+  ]
+}

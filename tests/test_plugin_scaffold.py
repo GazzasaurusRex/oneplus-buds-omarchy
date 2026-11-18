@@ -77,10 +77,12 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("root.bar.barForeground", widget)
         self.assertIn("root.bar.fontFamily", widget)
         self.assertIn("root.bar.showTooltip", widget)
-        self.assertIn("PopupCard {", widget)
+        self.assertIn("KeyboardPanel {", widget)
         self.assertIn("delegate: Button {", widget)
         self.assertIn("budsService.setAnc(mode)", widget)
         self.assertIn("response.result.verified === true", widget)
+        self.assertIn("customEqManageVerified", widget)
+        self.assertIn("Bass level was not confirmed by earbuds", widget)
         self.assertIn('objectName: "reportAction"', widget)
         self.assertIn('objectName: "saveDiagnosticReportAction"', widget)
         self.assertIn("FileDialog.SaveFile", widget)
@@ -108,6 +110,9 @@ const shown = model.presentation("connected", snapshot);
 if (shown.label !== "L 83%  R 42%⚡") process.exit(1);
 if (!shown.tooltip.includes("OnePlus Buds Pro 2") || !shown.tooltip.includes("Right: 42% (charging)")) process.exit(2);
 if (shown.tooltip.includes("Case:") || shown.label.includes("99")) process.exit(3);
+const cached = model.presentation("connected", {status:{battery:{
+  case:{percentage:50, charging:false, last_known:true}}}});
+if (cached.label !== "C 50%*" || !cached.tooltip.includes("last known")) process.exit(29);
 const disconnected = model.presentation("reconnecting", snapshot);
 if (disconnected.connected || disconnected.label !== "" || !disconnected.tooltip.includes("Reconnecting")) process.exit(4);
 if (model.validPercentage(-1) || model.validPercentage(101) || model.validPercentage("80")) process.exit(5);
@@ -179,6 +184,12 @@ if (model.parseLine('{"schema_version":2}').ok) process.exit(4);
             capture_output=True,
             text=True,
         )
+
+    def test_service_restarts_exited_helper_with_backoff(self):
+        service = (ROOT / "Service.qml").read_text()
+        self.assertIn("scheduleHelperRestart", service)
+        self.assertIn("restartTimer", service)
+        self.assertIn("restartAttempt", service)
 
 
 if __name__ == "__main__":

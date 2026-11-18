@@ -17,6 +17,15 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(stream.feed(first[:4]), [])
         self.assertEqual(stream.feed(first[4:] + second), [decode_frame(first), decode_frame(second)])
 
+    def test_stream_drops_malformed_frame_without_losing_valid_ones(self):
+        stream = FrameStream()
+        good = encode_frame(0x8103, 1, b"\x00\x14\x0c\x06")
+        bad = bytearray(good)
+        bad[7] = 0xFF  # inner payload length lies; outer length stays authoritative
+        self.assertEqual(stream.feed(bytes(bad)), [])
+        self.assertEqual(stream.malformed_frames, 1)
+        self.assertEqual(stream.feed(good), [decode_frame(good)])
+
     def test_parsers(self):
         self.assertEqual(parse_product_id(Frame(0x8103, 1, b"\x00\x14\x0c\x06")), "060C14")
         self.assertEqual(
@@ -141,6 +150,38 @@ class ProtocolTests(unittest.TestCase):
             state = parse_anc_state(Frame(0x810C, 1, b"\x00\x01\x01" + bitmap), anc)
             self.assertEqual((state.mode, state.level), ("on", level))
 
+
+class FeatureWireConstantsTests(unittest.TestCase):
+    def test_command_and_response_ids_match_the_app_audit(self):
+        from oneplus_buds import protocol as p
+        self.assertEqual((p.QUERY_TOUCH, p.SET_TOUCH, p.RESPONSE_TOUCH, p.RESPONSE_SET_TOUCH),
+                         (0x0108, 0x0401, 0x8108, 0x8401))
+        self.assertEqual((p.SET_FEATURE_SWITCH, p.RESPONSE_SET_FEATURE_SWITCH), (0x0403, 0x8403))
+        self.assertEqual((p.SET_FIND_MODE, p.RESPONSE_SET_FIND_MODE), (0x0400, 0x8400))
+        self.assertEqual((p.QUERY_BASS_ENGINE, p.SET_BASS_ENGINE,
+                          p.RESPONSE_BASS_ENGINE, p.RESPONSE_SET_BASS_ENGINE),
+                         (0x0124, 0x041B, 0x8124, 0x841B))
+        self.assertEqual((p.NOTIFY_FEATURE_SWITCHES, p.NOTIFY_BASS_ENGINE), (0x0503, 0x0508))
+        self.assertEqual(p.FEATURE_SWITCH_QUERY_PREFIX, b"\x01")
+        self.assertEqual(p.FEATURE_SWITCH_WRITE, b"\x01")
+
+    def test_bass_level_framing_is_signed_range(self):
+        from oneplus_buds import protocol as p
+        self.assertEqual((p.BASS_LEVEL_MIN, p.BASS_LEVEL_MAX), (-10, 10))
+        self.assertEqual(p.BASS_LEVEL_RANGE, bytes.fromhex("f6 0a"))
+        self.assertEqual(p.BASS_LEVEL_NOTICE, bytes.fromhex("f6 0a"))
+
+    def test_audited_feature_switch_names(self):
+        from oneplus_buds.protocol import FEATURE_SWITCH_NAMES
+        for feature_id, name in {0x09: "vocal_enhance", 0x0C: "personal_noise",
+                                 0x0D: "click_to_take_photo", 0x15: "zen_mode",
+                                 0x1B: "spatial_sound", 0x1D: "bass_engine",
+                                 0x21: "game_equalizer", 0x28: "game_mode_main"}.items():
+            self.assertEqual(FEATURE_SWITCH_NAMES[feature_id], name)
+
+    def test_eq_action_bytes(self):
+        from oneplus_buds import protocol as p
+        self.assertEqual((p.EQ_ACTION_CREATE, p.EQ_ACTION_UPDATE, p.EQ_ACTION_DELETE), (1, 2, 3))
 
 if __name__ == "__main__":
     unittest.main()

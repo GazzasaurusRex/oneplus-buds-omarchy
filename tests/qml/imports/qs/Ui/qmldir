@@ -1,6 +1,11 @@
 module qs.Ui
 BarWidget 1.0 BarWidget.qml
 PopupCard 1.0 PopupCard.qml
+KeyboardPanel 1.0 KeyboardPanel.qml
+ConfirmDialog 1.0 ConfirmDialog.qml
 ButtonGroup 1.0 ButtonGroup.qml
 
 Button 1.0 Button.qml
+PanelSlider 1.0 PanelSlider.qml
+ToggleSwitch 1.0 ToggleSwitch.qml
+Dropdown 1.0 Dropdown.qml

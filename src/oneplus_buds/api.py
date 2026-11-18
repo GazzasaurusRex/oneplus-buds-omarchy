@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from .backend import read_capabilities, read_eq, read_status, write_anc, write_custom_eq, write_eq
+from .backend import (read_capabilities, read_eq, read_status, write_anc, write_create_custom_eq,
+                      write_custom_eq, write_delete_custom_eq, write_eq, write_rename_custom_eq)
 from .bluez import Device, connected_devices, select_device
 from .models import CapabilityResult, ControlResult, EqControlResult, EqStatusResult, EventBatch, StatusResult
 from .profiles import profile_for_product
@@ -35,6 +36,16 @@ class BudsBackend:
     def set_custom_eq(self, entry_id: int, gains_db: tuple[int, ...],
                       address: str | None = None) -> EqControlResult:
         return write_custom_eq(entry_id, gains_db, address)
+
+    def create_custom_eq(self, name: str, address: str | None = None) -> EqControlResult:
+        return write_create_custom_eq(name, address)
+
+    def rename_custom_eq(self, entry_id: int, name: str,
+                         address: str | None = None) -> EqControlResult:
+        return write_rename_custom_eq(entry_id, name, address)
+
+    def delete_custom_eq(self, entry_id: int, address: str | None = None) -> EqControlResult:
+        return write_delete_custom_eq(entry_id, address)
 
     def open_session(
         self,
