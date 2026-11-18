@@ -19,7 +19,7 @@ class FindTransport:
         self.reply = reply
         self.requests = []
 
-    def request(self, command, payload, response_command):
+    def request(self, command, payload, response_command, **kwargs):
         self.requests.append((command, payload, response_command))
         if isinstance(self.reply, Exception):
             raise self.reply

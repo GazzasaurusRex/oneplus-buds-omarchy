@@ -153,6 +153,8 @@ BarWidget {
     && snapshot.custom_eq_write_verified === true
     && snapshot.session_connected === true
     && connection === "connected" && pendingRequestId < 0)
+  readonly property bool customEqManageVerified: !!(snapshot
+    && snapshot.custom_eq_manage_verified === true)
   // Local fork: the earbuds hold a fixed number of custom profiles. The plus
   // button is greyed out when every slot is taken.
   readonly property int customEqMax: snapshot && snapshot.custom_eq_max
@@ -431,7 +433,7 @@ BarWidget {
 
   // Local fork: create a new custom profile in the next free device slot.
   function startProfileCreate() {
-    if (!customEqWritable || customEqSlotsFull) return
+    if (!customEqWritable || !customEqManageVerified || customEqSlotsFull) return
     profileNameMode = "create"
     profileNameDraft = ""
     profileRenameEntryId = -1
@@ -442,7 +444,7 @@ BarWidget {
 
   // Local fork: rename the profile that is selected in the dropdown.
   function startProfileRename() {
-    if (!customEqWritable || !selectedCustom) return
+    if (!customEqWritable || !customEqManageVerified || !selectedCustom) return
     profileNameMode = "rename"
     profileRenameEntryId = selectedCustom.eq_id
     profileNameDraft = String(selectedCustom.name || "")
@@ -502,7 +504,7 @@ BarWidget {
   // Local fork: deleting a custom profile frees a slot for a new one, so the
   // panel asks before it removes a profile from the earbuds.
   function askDeleteCustomProfile(entry) {
-    if (!customEqWritable || !entry) return
+    if (!customEqWritable || !customEqManageVerified || !entry) return
     pendingDeleteEntryId = entry.eq_id
     pendingDeleteName = String(entry.name || "")
     deleteConfirmOpen = true
@@ -645,10 +647,10 @@ BarWidget {
         outcome = "Touch assignment was not confirmed by earbuds"
       } else if (completedKind === "feature" && (!response.result || response.result.verified !== true)) {
         outcome = "Switch change was not confirmed by earbuds"
+      } else if (completedKind === "bass" && (!response.result || response.result.verified !== true)) {
+        outcome = "Bass level was not confirmed by earbuds"
       } else if (response.result && response.result.verified === true) {
         outcome = "Verified on earbuds"
-      } else if (completedKind === "bass") {
-        outcome = "Bass level sent"
       } else if (completedKind === "find") {
         if (response.result && response.result.acknowledged === true) {
           outcome = response.result.state === "ringing" ? "Earbuds are ringing" : "Ringing stopped"
@@ -1053,7 +1055,7 @@ BarWidget {
                   text: root.profileNameMode === "" ? "\uF040" : "✕"
                   bordered: false
                   enabled: root.profileNameMode === ""
-                    ? root.customEqWritable && !!root.selectedCustom
+                    ? root.customEqWritable && root.customEqManageVerified && !!root.selectedCustom
                     : root.pendingRequestId < 0
                   opacity: enabled ? 1.0 : 0.5
                   foreground: root.bar.foreground
@@ -1088,7 +1090,7 @@ BarWidget {
                   text: root.profileNameMode === "" ? "+" : "✓"
                   bordered: false
                   enabled: root.profileNameMode === ""
-                    ? root.customEqWritable && !root.customEqSlotsFull
+                    ? root.customEqWritable && root.customEqManageVerified && !root.customEqSlotsFull
                     : root.pendingRequestId < 0
                     && String(root.profileNameDraft || "").trim().length > 0
                   opacity: enabled ? 1.0 : 0.5
@@ -1126,7 +1128,7 @@ BarWidget {
                   text: "\uF1F8"
                   bordered: false
                   enabled: root.profileNameMode === ""
-                    && root.customEqWritable && !!root.selectedCustom
+                    && root.customEqWritable && root.customEqManageVerified && !!root.selectedCustom
                   opacity: enabled ? 1.0 : 0.5
                   foreground: root.bar.foreground
                   background: root.bar.background

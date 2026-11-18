@@ -9,7 +9,7 @@ from urllib.parse import unquote, urlparse
 
 from . import __version__
 from .models import ControllerSnapshot, StatusResult
-from .profiles import compatibility_for_product, profile_for_product
+from .profiles import compatibility_for_product, feature_capabilities, profile_for_product
 
 
 _MAC_ADDRESS = re.compile(r"(?i)(?:[0-9a-f]{2}:){5}[0-9a-f]{2}")
@@ -100,7 +100,7 @@ def build_snapshot_report(
     report = build_status_report(status)
     profile = profile_for_product(status.product_id)
     capabilities = set(profile.capabilities) if profile else set()
-    capabilities.update(snapshot.feature_switches)
+    capabilities.update(feature_capabilities(profile, snapshot.feature_switches))
     report["capabilities"] = sorted(capabilities)
     report["feature_support"] = _capability_summary(capabilities)
     report["connection"] = {

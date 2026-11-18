@@ -554,7 +554,7 @@ TestCase {
   service.snapshot = ({
    status:{model:"Test buds",battery:{left:{percentage:80},right:{percentage:60}}},
    anc_modes:[], capabilities:["eq"], session_connected:true,
-   eq_write_verified:true, custom_eq_write_verified:true,
+   eq_write_verified:true, custom_eq_write_verified:true, custom_eq_manage_verified:true,
    eq:{current_id:4,current_name:"Custom",gain_step_db:1,
     presets:[{id:0,key:"balanced",name:"Balanced"}],
     custom_entries:[{eq_id:4,name:"Custom",min_gain_db:-6,max_gain_db:6,
@@ -754,7 +754,7 @@ TestCase {
  }
  function test_custom_eq_profile_can_be_created_and_renamed() {
   var state = {status:{model:"Nord",battery:{}}, anc_modes:[], capabilities:["eq"],
-   session_connected:true, eq_write_verified:true, custom_eq_write_verified:true,
+   session_connected:true, eq_write_verified:true, custom_eq_write_verified:true, custom_eq_manage_verified:true,
    eq:{current_id:7,current_name:"Test eq",gain_step_db:1,presets:[],
     custom_entries:[{eq_id:7,name:"Test eq",min_gain_db:-6,max_gain_db:6,
      bands:[{frequency_hz:62,gain_db:3},{frequency_hz:250,gain_db:1}]}]}}
@@ -848,7 +848,7 @@ TestCase {
 
  function test_custom_eq_dropdown_keeps_the_selection_and_delete_asks_first() {
   var state = {status:{model:"Nord",battery:{}}, anc_modes:[], capabilities:["eq"],
-   session_connected:true, eq_write_verified:true, custom_eq_write_verified:true,
+   session_connected:true, eq_write_verified:true, custom_eq_write_verified:true, custom_eq_manage_verified:true,
    custom_eq_max:3, custom_eq_slots:2,
    eq:{current_id:7,current_name:"Test eq",gain_step_db:1,presets:[],
     custom_entries:[{eq_id:7,name:"Test eq",min_gain_db:-6,max_gain_db:6,
@@ -922,5 +922,30 @@ TestCase {
   wait(0)
   verify(!plus.enabled)
   verify(hint.visible)
+ }
+ function test_custom_eq_management_requires_separate_permission() {
+  var state = {status:{model:"Nord",battery:{}}, anc_modes:[], capabilities:["eq"],
+   session_connected:true, eq_write_verified:true, custom_eq_write_verified:true,
+   custom_eq_manage_verified:false, custom_eq_max:3, custom_eq_slots:1,
+   eq:{current_id:7,current_name:"Test eq",gain_step_db:1,presets:[],
+    custom_entries:[{eq_id:7,name:"Test eq",min_gain_db:-6,max_gain_db:6,
+     bands:[{frequency_hz:62,gain_db:3}]}]}}
+  service.snapshot = state
+  widget.popupOpen = true
+  widget.customEqExpanded = true
+  while (widget.pendingRequestId >= 0)
+   service.lastResponse = {request_id:widget.pendingRequestId,ok:true,result:{}}
+  wait(0)
+  var plus = findChild(widget, "customEqSecondAction")
+  var rename = findChild(widget, "customEqFirstAction")
+  var del = findChild(widget, "customEqDeleteAction")
+  verify(plus !== null && rename !== null && del !== null)
+  verify(!plus.enabled && !rename.enabled && !del.enabled)
+  state.custom_eq_manage_verified = true
+  service.snapshot = JSON.parse(JSON.stringify(state))
+  wait(0)
+  verify(plus.enabled)
+  verify(rename.enabled)
+  verify(del.enabled)
  }
 }

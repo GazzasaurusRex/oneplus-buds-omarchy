@@ -98,6 +98,7 @@ class OpoSession:
         self._connected = False
         self._authenticated = False
         self._last_battery_refresh = monotonic()
+        self._deferred_frames: list[Frame] = []
         self.advertised_event_codes: tuple[int, ...] = ()
 
     @classmethod
@@ -459,7 +460,7 @@ class OpoSession:
         gains = tuple(0 for _ in template.bands)
 
         def expect(entries: tuple[EqEntry, ...]) -> bool:
-            return any(item.eq_id not in used or item.name == label for item in entries)
+            return any(item.eq_id not in used for item in entries)
 
         acknowledgement, entries, _current_id, query_count, events, ignored = (
             self._write_eq_entry(entry, gains, action=EQ_ACTION_CREATE, expect=expect)
@@ -469,9 +470,6 @@ class OpoSession:
             fresh = [item for item in entries if item.eq_id not in used]
             if len(fresh) == 1:
                 created = fresh[0]
-            else:
-                named = [item for item in entries if item.name == label]
-                created = named[0] if len(named) == 1 else None
         if created is None:
             raise RuntimeError(
                 "custom EQ verification failed: the earbuds did not store the new profile")
@@ -537,7 +535,7 @@ class OpoSession:
         acknowledgement, entries, _current_id, query_count, events, ignored = (
             self._write_eq_entry(entry, gains, action=EQ_ACTION_DELETE, expect=expect)
         )
-        if entries is not None and any(item.eq_id == entry_id for item in entries):
+        if entries is None or any(item.eq_id == entry_id for item in entries):
             raise RuntimeError(
                 "custom EQ verification failed: the earbuds still list the profile")
         events = list(initial.events) + list(events)
@@ -618,22 +616,38 @@ class OpoSession:
             raise RuntimeError("custom EQ session request failed: " + str(error)) from error
 
     def _restore_eq_selection(self, before: EqStatusResult) -> None:
-        """Re-select the profile that was active before an entry write."""
-        current, _batch = self.eq_status()
-        if current.current_id == before.current_id:
-            return
-        custom = next((item for item in before.custom_entries
-                       if item.eq_id == before.current_id), None)
-        if custom is not None:
-            self.set_custom_eq(custom.eq_id, tuple(band.gain_db for band in custom.bands))
-            return
-        self.set_eq(str(before.current_id))
+        """Re-select the profile that was active before an entry write.
+
+        The entry write already succeeded and verified; restoring the previous
+        selection is best-effort and must never turn a stored create/rename into
+        an error. An id that is neither a preset nor a custom entry (the Nord
+        accepts other factory ids) is selected with a plain preset command.
+        """
+        try:
+            current, _batch = self.eq_status()
+            if current.current_id == before.current_id:
+                return
+            custom = next((item for item in before.custom_entries
+                           if item.eq_id == before.current_id), None)
+            if custom is not None:
+                self.set_custom_eq(custom.eq_id, tuple(band.gain_db for band in custom.bands))
+            else:
+                self._transport.request(SET_EQ, bytes((before.current_id,)), RESPONSE_SET_EQ,
+                                        on_frames=self._defer_frames)
+        except (OSError, RuntimeError, ValueError):
+            pass
+
+    def _defer_frames(self, frames: list[Frame]) -> None:
+        """Keep unrelated frames arriving during a read for the next poll."""
+        self._deferred_frames.extend(frames)
+        del self._deferred_frames[:-256]
 
     def read_hold_cycle(self) -> int:
         self._require_connected()
         if not self.profile.hold_cycle_supported:
             raise ValueError("hold cycle is not supported by this device profile")
-        frame = self._transport.request(QUERY_ANC, HOLD_CYCLE_QUERY, RESPONSE_ANC)
+        frame = self._transport.request(QUERY_ANC, HOLD_CYCLE_QUERY, RESPONSE_ANC,
+                                        on_frames=self._defer_frames)
         try:
             return parse_hold_cycle(frame)
         except ValueError as error:
@@ -648,7 +662,8 @@ class OpoSession:
         mask = hold_cycle_mask(modes)
         self.read_hold_cycle()  # require valid current state before writing
         try:
-            ack = self._transport.request(SET_ANC, HOLD_CYCLE_QUERY + bytes((mask,)), RESPONSE_SET_ANC)
+            ack = self._transport.request(SET_ANC, HOLD_CYCLE_QUERY + bytes((mask,)), RESPONSE_SET_ANC,
+                                          on_frames=self._defer_frames)
             if len(ack.payload) != 1:
                 raise RuntimeError("device returned malformed hold cycle acknowledgement")
             status = ack.payload[0]
@@ -660,7 +675,8 @@ class OpoSession:
         self._require_connected()
         if not self.profile.touch_functions:
             raise ValueError("touch controls are not supported by this device profile")
-        frame = self._transport.request(QUERY_TOUCH, b"", RESPONSE_TOUCH)
+        frame = self._transport.request(QUERY_TOUCH, b"", RESPONSE_TOUCH,
+                                        on_frames=self._defer_frames)
         try:
             return parse_touch_bindings(frame)
         except ValueError as error:
@@ -677,7 +693,8 @@ class OpoSession:
         if not any(item.key == binding.key for item in self.touch_bindings()):
             raise ValueError("touch gesture was not reported by this device")
         try:
-            ack = self._transport.request(SET_TOUCH, binding.write_payload(), RESPONSE_SET_TOUCH)
+            ack = self._transport.request(SET_TOUCH, binding.write_payload(), RESPONSE_SET_TOUCH,
+                                          on_frames=self._defer_frames)
             if len(ack.payload) != 1:
                 raise RuntimeError("device returned malformed touch acknowledgement")
             status = ack.payload[0]
@@ -689,7 +706,8 @@ class OpoSession:
         """Read the device's feature switches in the phone app's request shape."""
         self._require_connected()
         payload = bytes((len(feature_ids),)) + bytes(feature_ids)
-        frame = self._transport.request(QUERY_STATUS, payload, RESPONSE_STATUS)
+        frame = self._transport.request(QUERY_STATUS, payload, RESPONSE_STATUS,
+                                        on_frames=self._defer_frames)
         switches = parse_feature_switches(frame)
         if switches is None:
             raise RuntimeError("device returned malformed feature switch state")
@@ -707,7 +725,8 @@ class OpoSession:
             raise ValueError("feature id must fit in one byte")
         payload = bytes((feature_id, 1 if enabled else 0))
         try:
-            ack = self._transport.request(SET_FEATURE_SWITCH, payload, RESPONSE_SET_FEATURE_SWITCH)
+            ack = self._transport.request(SET_FEATURE_SWITCH, payload, RESPONSE_SET_FEATURE_SWITCH,
+                                          on_frames=self._defer_frames)
             status = (ack.payload[0]
                       if ack.command == RESPONSE_SET_FEATURE_SWITCH and ack.payload else None)
         except TimeoutError:
@@ -726,7 +745,8 @@ class OpoSession:
             raise ValueError("earbud search is not supported by this device profile")
         payload = bytes((1 if ringing else 0,))
         try:
-            ack = self._transport.request(SET_FIND_MODE, payload, RESPONSE_SET_FIND_MODE)
+            ack = self._transport.request(SET_FIND_MODE, payload, RESPONSE_SET_FIND_MODE,
+                                          on_frames=self._defer_frames)
             status = (ack.payload[0]
                       if ack.command == RESPONSE_SET_FIND_MODE and ack.payload else None)
         except TimeoutError:
@@ -736,7 +756,8 @@ class OpoSession:
     def bass_engine_status(self) -> tuple[int, int, int]:
         """Read the bass engine range and current level ([status, min, max, current])."""
         self._require_connected()
-        frame = self._transport.request(QUERY_BASS_ENGINE, b"", RESPONSE_BASS_ENGINE)
+        frame = self._transport.request(QUERY_BASS_ENGINE, b"", RESPONSE_BASS_ENGINE,
+                                        on_frames=self._defer_frames)
         if len(frame.payload) < 4 or frame.payload[0] != 0:
             raise RuntimeError("device returned malformed bass engine state")
         minimum = frame.payload[1] - 256 if frame.payload[1] > 127 else frame.payload[1]
@@ -753,7 +774,8 @@ class OpoSession:
             raise ValueError(f"bass level must be between {BASS_LEVEL_MIN} and {BASS_LEVEL_MAX}")
         payload = BASS_LEVEL_RANGE + bytes((level & 0xFF,))
         try:
-            ack = self._transport.request(SET_BASS_ENGINE, payload, RESPONSE_SET_BASS_ENGINE)
+            ack = self._transport.request(SET_BASS_ENGINE, payload, RESPONSE_SET_BASS_ENGINE,
+                                          on_frames=self._defer_frames)
             status = (ack.payload[0]
                       if ack.command == RESPONSE_SET_BASS_ENGINE and ack.payload else None)
         except TimeoutError:
@@ -819,12 +841,13 @@ class OpoSession:
             self._version_sequence = self._transport.send_query(QUERY_REMOTE_VERSION)
             mark("optional_firmware_sent")
         now = monotonic()
-        if "case_battery" in self.profile.capabilities and now - self._last_battery_refresh >= 10:
+        if self.profile.case_battery_cached and now - self._last_battery_refresh >= 10:
             self._last_battery_refresh = now
             # Read through normal polling without a blocking query while
             # foreground commands wait for the controller.
             self._transport.send_query(QUERY_BATTERY)
-        received = self._redact(self._transport.receive(wait))
+        received = self._redact(self._deferred_frames + self._transport.receive(wait))
+        self._deferred_frames = []
         return EventBatch(
             setup.events + received.events,
             setup.ignored_frames + received.ignored_frames,

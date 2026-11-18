@@ -359,9 +359,11 @@ class BudsController:
             if self._session is None:
                 self.refresh()
             switches = cast(OpoSession, self._session).feature_switches(tuple(FEATURE_SWITCH_NAMES))
+            profile = profile_for_product(self._status.product_id) if self._status else None
+            unconfirmed = profile.unconfirmed_feature_switches if profile else frozenset()
             named = {name: switches[feature_id]
                      for feature_id, name in FEATURE_SWITCH_NAMES.items()
-                     if feature_id in switches}
+                     if feature_id in switches and feature_id not in unconfirmed}
             self._feature_switches.update(named)
             self._generation += 1
             return named
@@ -486,9 +488,16 @@ class BudsController:
             if self._session is None:
                 self.refresh()
             status, sent = cast(OpoSession, self._session).set_bass_level(level)
-            self._bass_level = level
+            try:
+                _minimum, _maximum, current = cast(OpoSession, self._session).bass_engine_status()
+            except (OSError, RuntimeError):
+                current = None
+            verified = status in (None, 0) and current == level
+            if current is not None:
+                self._bass_level = current
             self._generation += 1
-            return {"level": level, "sent": sent, "set_status": status}
+            return {"level": self._bass_level, "sent": sent, "set_status": status,
+                    "verified": verified}
 
     def bass_engine_status(self) -> dict[str, object]:
         with self._lock:
@@ -545,6 +554,7 @@ class BudsController:
                     name: switches[feature_id]
                     for feature_id, name in FEATURE_SWITCH_NAMES.items()
                     if feature_id in switches
+                    and feature_id not in profile.unconfirmed_feature_switches
                 })
             if "bass_engine" in profile.capabilities:
                 _minimum, _maximum, current = cast(OpoSession, self._session).bass_engine_status()
@@ -676,9 +686,9 @@ class BudsController:
         if self._status is None:
             return
         profile = profile_for_product(self._status.product_id)
-        if profile and "case_battery" in profile.capabilities:
+        if profile and profile.case_battery_cached:
             battery = self._case_battery_cache.merge(self._status, battery)
-        elif battery is not None:
+        elif battery is not None and profile and "case_battery" not in profile.capabilities:
             battery = {name: value for name, value in battery.items() if name != "case"}
         self._status = replace(self._status, battery=battery)
 

@@ -178,15 +178,18 @@ at least two distinct modes (Off `01`, ANC `02`, Transparency `04`); masks
 
 A generic `0x010d` reply does not establish support. The audit (Wireless
 Earphones 17.6.6 whitelist `064414`, app gates/labels and a read-only
-`0x0100` capability query) confirms six writable switches, each tested both
-ways with ACK `00` and a fresh read: Personalised noise cancellation (`0c`),
-BassWave (`1d`), Auto play/pause (`04`), Camera control (`0d`), Dual
-connection (`11`) and Hi-Res mode (`18`). Connection-changing `11`/`18`
-recover to the same address/product and read back without replaying the
-write. BassWave adds a level (`0x0124` read / `0x041b` write, `[min, max,
-value]`, signed −10..+10 on this unit). Hidden/unconfirmed: `06` game mode,
-`09` vocal enhancement, `21` Enhanced PEL audio, `0b` Golden Sound, `1b`
-headset spatial audio. See
+`0x0100` capability query) confirms six writable switches: Personalised
+noise cancellation (`0c`), BassWave (`1d`), Auto play/pause (`04`), Camera
+control (`0d`), Dual connection (`11`) and Hi-Res mode (`18`). The carried
+measurements record both-way ACK `00` + fresh-read trials for `04`, `0d`,
+`11` and `18`; connection-changing `11`/`18` recover to the same
+address/product and read back without replaying the write. The `0c` and
+`1d` writes and the BassWave level write (`0x0124` read / `0x041b` write,
+`[min, max, value]`, signed −10..+10 on this unit) were owner-verified with
+ACK `00` and a fresh read on the same unit; their individual trial logs stay
+in the contributor's fork and are not carried here. Hidden/unconfirmed:
+`06` game mode, `09` vocal enhancement, `21` Enhanced PEL audio, `0b` Golden
+Sound, `1b` headset spatial audio. See
 [feature audit](../measurements/2026-10-31-nord-feature-audit.json),
 [Auto play/pause](../measurements/2026-10-31-nord-auto-play-pause.json) and
 [remaining features](../measurements/2026-10-31-nord-remaining-features.json).

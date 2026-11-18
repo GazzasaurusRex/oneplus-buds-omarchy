@@ -81,6 +81,8 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn("delegate: Button {", widget)
         self.assertIn("budsService.setAnc(mode)", widget)
         self.assertIn("response.result.verified === true", widget)
+        self.assertIn("customEqManageVerified", widget)
+        self.assertIn("Bass level was not confirmed by earbuds", widget)
         self.assertIn('objectName: "reportAction"', widget)
         self.assertIn('objectName: "saveDiagnosticReportAction"', widget)
         self.assertIn("FileDialog.SaveFile", widget)
@@ -182,6 +184,12 @@ if (model.parseLine('{"schema_version":2}').ok) process.exit(4);
             capture_output=True,
             text=True,
         )
+
+    def test_service_restarts_exited_helper_with_backoff(self):
+        service = (ROOT / "Service.qml").read_text()
+        self.assertIn("scheduleHelperRestart", service)
+        self.assertIn("restartTimer", service)
+        self.assertIn("restartAttempt", service)
 
 
 if __name__ == "__main__":

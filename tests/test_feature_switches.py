@@ -23,7 +23,7 @@ class FeatureTransport:
     def __exit__(self, *_args):
         pass
 
-    def request(self, command, payload, response_command):
+    def request(self, command, payload, response_command, **kwargs):
         self.requests.append((command, payload, response_command))
         result = self.reply if command == 0x0403 else self.readback
         if isinstance(result, Exception):
@@ -159,4 +159,3 @@ class FeatureBackend:
         session = OpoSession(status.device, PROFILES["064414"], transport=wire)
         session.__enter__()
         return session,status,EventBatch((),0)
-

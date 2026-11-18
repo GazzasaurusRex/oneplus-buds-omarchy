@@ -124,6 +124,9 @@ class DeviceProfile:
     # None preserves generic discovery for unaudited models. An audited map
     # lists only audited model switches and their app labels.
     feature_labels: dict[str, str] | None = None
+    # Remember the last usable case level and poll it in the background. Only
+    # the Nord has this evidence; other case-capable models show live values.
+    case_battery_cached: bool = False
 
     @property
     def verified(self) -> bool:
@@ -309,6 +312,7 @@ PROFILES = {
             6: (0, 11, 12),
         },
         hold_cycle_supported=True,
+        case_battery_cached=True,
         # Each operation has separate owner hardware evidence with fresh
         # read-back; one permission never enables another.
         community_write_permissions=frozenset({
