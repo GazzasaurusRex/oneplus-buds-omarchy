@@ -97,6 +97,7 @@ class OpoSession:
         self._subscription_pending = False
         self._connected = False
         self._authenticated = False
+        self._last_battery_refresh = monotonic()
         self.advertised_event_codes: tuple[int, ...] = ()
 
     @classmethod
@@ -817,6 +818,12 @@ class OpoSession:
             self._version_pending = False
             self._version_sequence = self._transport.send_query(QUERY_REMOTE_VERSION)
             mark("optional_firmware_sent")
+        now = monotonic()
+        if "case_battery" in self.profile.capabilities and now - self._last_battery_refresh >= 10:
+            self._last_battery_refresh = now
+            # Read through normal polling without a blocking query while
+            # foreground commands wait for the controller.
+            self._transport.send_query(QUERY_BATTERY)
         received = self._redact(self._transport.receive(wait))
         return EventBatch(
             setup.events + received.events,

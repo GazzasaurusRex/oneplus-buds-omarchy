@@ -49,6 +49,7 @@ class BudsController:
         self._touch_bindings: tuple[TouchBinding, ...] = ()
         self._hold_cycle_mask: int | None = None
         self._find_states: dict[tuple[str, str | None], _FindState] = {}
+        self._last_state_refresh: float = 0.0
 
     def start(self) -> ControllerSnapshot:
         with self._lock:
@@ -516,7 +517,43 @@ class BudsController:
             else:
                 self._apply_batch(batch)
                 self._expire_find()
+                self._refresh_phone_app_state()
             return self.snapshot()
+
+
+    def _refresh_phone_app_state(self) -> None:
+        """Re-read the state the phone app owns (feature switches, bass level).
+
+        The device pushes most changes, but a change made while the earbuds
+        sleep may only reach the device later. A slow refresh keeps the panel
+        in sync without waiting for the next push.
+        """
+        if self._session is None:
+            return
+        now = monotonic()
+        if now - self._last_state_refresh < 5.0:
+            return
+        self._last_state_refresh = now
+        profile = profile_for_product(self._status.product_id) if self._status else None
+        if profile is None:
+            return
+        try:
+            if "feature_switches" in profile.capabilities:
+                switches = cast(OpoSession, self._session).feature_switches(
+                    tuple(FEATURE_SWITCH_NAMES))
+                self._feature_switches.update({
+                    name: switches[feature_id]
+                    for feature_id, name in FEATURE_SWITCH_NAMES.items()
+                    if feature_id in switches
+                })
+            if "bass_engine" in profile.capabilities:
+                _minimum, _maximum, current = cast(OpoSession, self._session).bass_engine_status()
+                self._bass_level = current
+        except (OSError, RuntimeError):
+            # The next poll or reconnect recovers; a failed refresh must not
+            # break the session.
+            return
+        self._generation += 1
 
     def shutdown(self) -> ControllerSnapshot:
         with self._lock:
