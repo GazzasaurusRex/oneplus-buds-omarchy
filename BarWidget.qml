@@ -132,9 +132,6 @@ BarWidget {
   onFindStateChanged: {
     if (findState === "stopped" && outcomeKind === "find") outcome = ""
   }
-  // Local fork: diagnostic channel for read-only protocol discovery.
-  property int diagnosticRequestId: -1
-  property string diagnosticResult: ""
   property string pendingMode: ""
   property string outcome: ""
   property string outcomeKind: ""
@@ -586,37 +583,8 @@ BarWidget {
     Qt.openUrlExternally(reportIssueUrl)
   }
 
-  // Local fork: send a bridge command from the shell for read-only protocol
-  // discovery, e.g. diagnostic_query. The answer is exposed through status().
-  function diagPing(): string {
-    return "pong:" + String(diagnosticRequestId)
-  }
-
-  function diagnostic(payload): string {
-    if (!budsService || connection !== "connected") return ""
-    diagnosticResult = ""
-    try {
-      var request = JSON.parse(payload || "{}")
-      diagnosticRequestId = budsService.request(
-        String(request.command || ""), request.parameters || {})
-    } catch (error) {
-      diagnosticResult = JSON.stringify({error: String(error)})
-      diagnosticRequestId = -1
-    }
-    return String(diagnosticRequestId)
-  }
-
   onLastResponseChanged: {
     var response = lastResponse
-    // Local fork: capture the answer of a diagnostic request before the
-    // regular pending-request bookkeeping runs.
-    if (response && diagnosticRequestId >= 0
-        && Number(response.request_id) === diagnosticRequestId) {
-      diagnosticRequestId = -1
-      diagnosticResult = JSON.stringify(response.ok === true
-        ? (response.result || {})
-        : {error: response.error || {}})
-    }
     if (!response || Number(response.request_id) !== pendingRequestId) return
     pendingRequestId = -1
     pendingMode = ""
@@ -1851,17 +1819,9 @@ BarWidget {
   IpcHandler {
     target: "oneplus-buds.control"
 
-    function diagPing(): string {
-      return root.diagPing()
-    }
-
     function open(): string {
       root.popupOpen = true
       return "ok"
-    }
-
-    function diagnostic(payload: string): string {
-      return root.diagnostic(payload)
     }
 
     function status(): string {
@@ -1896,8 +1856,6 @@ BarWidget {
         compatibility_notice: root.compatibilityNoticeShown,
         report_available: root.reportAvailable,
         report_action: reportAction.visible,
-        diagnostic_result: root.diagnosticResult,
-        diag_api: 2,
         panel_geometry: JSON.stringify({
           popup_x: root.popupX,
           popup_width: root.popupWidth,
