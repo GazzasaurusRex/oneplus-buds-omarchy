@@ -1,0 +1,384 @@
+{
+  "date": "2026-10-28",
+  "product_id": "064414",
+  "verification": "fresh 0x0108 query after every 0x0401 single-entry write",
+  "original": [
+    {
+      "side": 2,
+      "button": 1,
+      "action": 1,
+      "function": 0
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 2,
+      "function": 6
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 3,
+      "function": 5
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 4,
+      "function": 8
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 6,
+      "function": 0
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 1,
+      "function": 0
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 2,
+      "function": 6
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 3,
+      "function": 5
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 4,
+      "function": 8
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 6,
+      "function": 0
+    }
+  ],
+  "trials": [
+    {
+      "action": 1,
+      "function": 0,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 1,
+      "function": 1,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 0,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 1,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 2,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 3,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 5,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 6,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 17,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 0,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 2,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 3,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 5,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 6,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 17,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 6,
+      "function": 0,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 6,
+      "function": 11,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 6,
+      "function": 12,
+      "set_status": 0,
+      "side": 2,
+      "verified": true
+    },
+    {
+      "action": 1,
+      "function": 0,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 1,
+      "function": 1,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 0,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 1,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 2,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 3,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 5,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 6,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 2,
+      "function": 17,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 0,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 2,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 3,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 5,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 6,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 3,
+      "function": 17,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 6,
+      "function": 0,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 6,
+      "function": 11,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    },
+    {
+      "action": 6,
+      "function": 12,
+      "set_status": 0,
+      "side": 1,
+      "verified": true
+    }
+  ],
+  "restored": true,
+  "final": [
+    {
+      "side": 2,
+      "button": 1,
+      "action": 1,
+      "function": 0
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 2,
+      "function": 6
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 3,
+      "function": 5
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 4,
+      "function": 8
+    },
+    {
+      "side": 2,
+      "button": 1,
+      "action": 6,
+      "function": 0
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 1,
+      "function": 0
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 2,
+      "function": 6
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 3,
+      "function": 5
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 4,
+      "function": 8
+    },
+    {
+      "side": 1,
+      "button": 1,
+      "action": 6,
+      "function": 0
+    }
+  ]
+}

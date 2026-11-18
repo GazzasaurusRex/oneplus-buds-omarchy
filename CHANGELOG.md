@@ -5,9 +5,7 @@
 - Add a Community Tested OnePlus Nord Buds 3 Pro profile (064414) from one
   owner unit on recorded firmware 155.155.101: ANC Off/On/Transparency and the
   Low/Moderate/High/Auto strengths with the English app display labels, and
-  the three measured factory EQ presets Balanced (Default), Serenade and Bass
-  over the existing preset path. Only ANC and factory EQ writes are authorized;
-  custom EQ and every other operation stay read-only.
+  the three measured factory EQ presets Balanced (Default), Serenade and Bass.
 - Confirm Auto through the device's latest selected-mode notification when the state
   query reports the concrete adaptive intensity. Active-intensity pushes and
   foreign-sequence responses never replace the selection, and an
@@ -16,6 +14,20 @@
 - Reuse the authenticated controller session for all ANC modes, not only the
   parent modes; measured Nord strength transitions dropped from ~15.5 s to
   ~0.3 s frontend-confirmed. One-shot calls keep the legacy path.
+- Extend the Nord profile with its remaining measured features, each gated by
+  its own operation permission: custom-EQ curve editing and profile management
+  (create/rename/delete, Nord-only), touch assignments and the shared hold
+  cycle, six audited feature switches, BassWave level, find-my-earbuds and
+  case-battery caching. Other models keep their current permissions; untested
+  writes stay disabled.
+- Add the panel controls for those features (custom-EQ curve editor, touch and
+  hold-cycle editors, feature switches with model labels, BassWave slider,
+  find play/stop, cached case battery). Device rename and the raw diagnostic
+  query are deliberately excluded.
+- Tolerate malformed protocol frames and unexpected helper errors, and restart
+  an exited helper with backoff instead of staying dead until a shell reload.
+- Sync phone-app feature switch and bass state on the warm session and read
+  case battery through a non-blocking background query.
 - Add a Community Tested OnePlus Buds 4 profile: ANC mode and strengths
   matching HeyMelody's commands, the new Adaptive parent mode, and Buds 4
   factory EQ IDs (Serenade and Bass are swapped relative to the Pro 2).

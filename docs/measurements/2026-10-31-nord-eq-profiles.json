@@ -1,0 +1,137 @@
+{
+  "product_id": "064414",
+  "device": "OnePlus Nord Buds 3 Pro",
+  "date": "2026-10-31",
+  "purpose": "create, rename and delete a custom EQ profile through the plugin bridge",
+  "starting_state": {
+    "current_id": 8,
+    "current_name": "Benutzerdefiniert1",
+    "custom_entries": [
+      {
+        "eq_id": 7,
+        "name": "Test eq",
+        "gains_db": [4, 6, 2, 0, 4, 6]
+      },
+      {
+        "eq_id": 8,
+        "name": "Benutzerdefiniert1",
+        "gains_db": [-5, 0, -6, 0, 0, 0]
+      }
+    ],
+    "anc": "deep",
+    "bass_level": -1,
+    "find_state": "stopped"
+  },
+  "protocol": {
+    "command": "0x0418",
+    "payload": "[action, min, max, eq_id, name_length, name, band_count, (frequency_u16le, gain_i8)...]",
+    "actions": {
+      "1": "create",
+      "2": "update (curve or name)",
+      "3": "delete"
+    },
+    "app_source": "HeadsetCoreService.M0 (com.oplus.melody 17.6.6)"
+  },
+  "create": {
+    "requested_name": "Plugin Test",
+    "requested_slot_id": 9,
+    "result": {
+      "current_id": 9,
+      "current_name": "Plugin Test",
+      "previous_id": 8,
+      "previous_name": "Benutzerdefiniert1",
+      "set_status": 0,
+      "verified": true,
+      "verification_queries": 1,
+      "timings_ms": {
+        "preserve_read": 56.279,
+        "session_total": 606.235
+      }
+    },
+    "readback": {
+      "current_id": 8,
+      "entries": [
+        {"eq_id": 7, "name": "Test eq", "selected": false},
+        {"eq_id": 8, "name": "Benutzerdefiniert1", "selected": true},
+        {"eq_id": 9, "name": "Plugin Test", "selected": false, "gains_db": [0, 0, 0, 0, 0, 0]}
+      ]
+    }
+  },
+  "rename": {
+    "entry_id": 9,
+    "requested_name": "Plugin Test 2",
+    "result": {
+      "current_id": 9,
+      "current_name": "Plugin Test 2",
+      "previous_id": 8,
+      "previous_name": "Benutzerdefiniert1",
+      "set_status": 0,
+      "verified": true,
+      "verification_queries": 1,
+      "timings_ms": {
+        "preserve_read": 86.969,
+        "session_total": 908.224
+      }
+    },
+    "readback": {
+      "current_id": 8,
+      "entries": [
+        {"eq_id": 7, "name": "Test eq", "selected": false},
+        {"eq_id": 8, "name": "Benutzerdefiniert1", "selected": true},
+        {"eq_id": 9, "name": "Plugin Test 2", "selected": false}
+      ]
+    }
+  },
+  "delete": {
+    "entry_id": 9,
+    "result": {
+      "current_id": 9,
+      "current_name": "Plugin Test 2",
+      "previous_id": 8,
+      "previous_name": "Benutzerdefiniert1",
+      "set_status": 0,
+      "verified": true,
+      "verification_queries": 1,
+      "timings_ms": {
+        "preserve_read": 50.008,
+        "session_total": 183.042
+      }
+    },
+    "readback": {
+      "current_id": 8,
+      "entries": [
+        {"eq_id": 7, "name": "Test eq", "selected": false, "gains_db": [4, 6, 2, 0, 4, 6]},
+        {"eq_id": 8, "name": "Benutzerdefiniert1", "selected": true, "gains_db": [-5, 0, -6, 0, 0, 0]}
+      ]
+    }
+  },
+  "restore": {
+    "note": "after the delete the device reported profile 7 as active; the plugin re-selected profile 8 with one verified write of the unchanged curve",
+    "result": {
+      "current_id": 8,
+      "current_name": "Benutzerdefiniert1",
+      "previous_id": 7,
+      "previous_name": "Test eq",
+      "set_status": 0,
+      "verified": true,
+      "verification_queries": 1
+    },
+    "final_state": {
+      "current_id": 8,
+      "current_name": "Benutzerdefiniert1",
+      "custom_entries": [
+        {"eq_id": 7, "name": "Test eq", "gains_db": [4, 6, 2, 0, 4, 6]},
+        {"eq_id": 8, "name": "Benutzerdefiniert1", "gains_db": [-5, 0, -6, 0, 0, 0]}
+      ],
+      "anc": "deep",
+      "bass_level": -1,
+      "find_state": "stopped"
+    }
+  },
+  "limitations": [
+    "The stored slot id was read back from the device catalogue; the plugin does not assume that the device keeps the requested id.",
+    "The profile that was active before a create or rename is re-selected afterwards, because writing a custom entry selects it on this firmware.",
+    "No acoustic measurement; the readback proves the stored profile and name, not a perceived sound change.",
+    "The phone app sends eq id 0 for a create; the plugin sends the next free slot id and verifies the stored id instead."
+  ]
+}

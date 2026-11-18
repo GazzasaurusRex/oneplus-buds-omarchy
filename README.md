@@ -28,7 +28,9 @@ yet. This is an independent project, unaffiliated with OnePlus or OPPO.
 | OnePlus Nord Buds 3 Pro | Community tested on contributor hardware | 155.155.101 | Low, Moderate, High, Auto |
 | Other compatible OnePlus/OPO devices | Experimental if recognised; no verified controls | Unknown | Not exposed |
 
-See [compatibility and limitations](docs/devices/compatibility.md). Gestures,
+See [compatibility and limitations](docs/devices/compatibility.md). The Nord
+Buds 3 Pro additionally exposes its measured touch assignments, hold cycle,
+audited feature switches, BassWave, find-my-earbuds and custom-EQ management;
 spatial audio and other HeyMelody features are not implemented controls.
 
 ## Compatibility and reports
@@ -149,6 +151,10 @@ installed or configured.
 The tested Pro 2 firmware labels its presets Balanced, Bass, Serenade, Bold, and
 Hans Zimmer Soundscape Tuning; the original Buds Pro retains its own four names.
 The Nord Buds 3 Pro exposes Balanced (Default), Serenade and Bass.
+The Nord Buds 3 Pro also edits custom curves and manages profiles (create/
+rename/delete in its three device slots), and exposes touch, hold-cycle,
+feature-switch, BassWave and find controls backed by its own operation
+permissions.
 Connection startup uses BlueZ availability notifications while retaining bounded
 retry fallback; both models' phase-by-phase results are in the
 [connection lifecycle measurements](docs/measurements/connection-lifecycle.md).

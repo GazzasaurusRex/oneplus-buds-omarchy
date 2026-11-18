@@ -19,8 +19,10 @@ upgrades a model to maintainer-verified status.
 Community Tested is an evidence label, never maintainer verification. Such profiles
 are read-only by default. A specific write class can be enabled only when its own
 operation-level permission records contributor hardware testing and fresh read-back;
-ANC, factory EQ and custom EQ permissions are independent. Buds 4 authorizes those
-three tested classes; Nord Buds 3 Pro authorizes ANC and factory EQ only.
+ANC, factory EQ, custom EQ, touch, hold cycle, feature switch, bass level and
+find permissions are independent. Buds 4 authorizes ANC, factory EQ and custom
+EQ updates; Nord Buds 3 Pro authorizes those plus custom-EQ management, touch,
+hold cycle, feature switches, bass level and find from its own evidence.
 Experimental and unknown products cannot write.
 
 Current discovery requires a connected BlueZ device whose name contains
@@ -59,10 +61,12 @@ EQ and custom EQ writes separately; details are in its device record.
 
 Nord Buds 3 Pro is Community Tested from one owner unit on recorded firmware
 `155.155.101`. The contributor measured every ANC mode and strength including
-Auto (confirmed by the selected-mode notification), and the three factory
-presets Balanced (Default)/Serenade/Bass with fresh read-back. Its profile
-authorizes ANC and factory EQ writes only; the device returns an empty EQ
-catalogue and custom EQ stays unavailable. Details and limits are in its
+Auto, the three factory presets, custom-EQ curve editing and profile
+management (create/rename/delete in slots 7–9), 36 touch round-trips and the
+shared hold cycle, six audited feature switches, BassWave level,
+find-my-earbuds and case-battery caching. Its profile authorizes each of those
+write classes separately; custom-EQ management is Nord-only. Device rename and
+the raw diagnostic query are not included. Details and limits are in its
 [device record](oneplus-nord-buds-3-pro.md).
 
 Pro 2 capability discovery can report recognised boolean feature switches, but

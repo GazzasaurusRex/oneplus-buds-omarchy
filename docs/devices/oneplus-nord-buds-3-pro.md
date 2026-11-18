@@ -6,10 +6,13 @@ Verified. One owner unit was measured locally between 2026-10-27 and
 another model's profile. No new hardware tests were run for this contribution,
 and no other model or firmware was tested.
 
-Scope of this record: ANC modes/strengths (including Auto) and the three
-factory EQ presets. The contributor's fork also explored custom EQ, touch
-controls, feature switches, find-my-earbuds and case-battery caching; those are
-deliberately **not** part of this contribution and are not claimed here.
+Scope of this record: ANC modes/strengths (including Auto), the three factory
+EQ presets, custom-EQ curve editing and profile management, touch assignments
+and the shared hold cycle, the audited feature switches, BassWave level,
+find-my-earbuds and case-battery caching. Each write class has its own
+operation permission backed by the owner measurements below; one permission
+never enables another. Device rename (a BlueZ alias write) and the raw
+diagnostic query are deliberately **not** part of this contribution.
 
 ## Device identity (measured 2026-10-27)
 
@@ -24,7 +27,8 @@ deliberately **not** part of this contribution and are not claimed here.
   the authenticated SET flow behave as documented for the other OPOv1 models.
 - Component battery query returned left/right percentages plus a case entry
   (`00 03 01 64 02 64 03 32` on 2026-10-31). The panel shows the case value
-  when the device reports it; there is no case-battery cache in this profile.
+  when the device reports it and remembers the last usable level per device
+  (see [Case battery](#case-battery-cache)).
 
 The Bluetooth address is deliberately not recorded.
 
@@ -131,10 +135,82 @@ The same mapping appears in the app's decrypted model table for `064414`
 (`equalizerMode`: protocolIndex 3/4/5 for modeType 11/14/12). The German CLI
 alias `ausgewogen` resolves to ID 3.
 
-The native EQ catalogue query (`0x0122`) answers `00 00`: the device publishes
-no preset names, band definitions or custom entries of its own. This profile
-therefore offers preset selection only. Custom EQ writes are **not**
-authorized: `community_write_permissions` is exactly `{"anc", "eq_preset"}`.
+The native EQ catalogue query (`0x0122`) answers `00 00` on a fresh unit: the
+device publishes no preset names or band definitions of its own. Custom
+entries are created through `0x0418` (see below); the device holds exactly
+three custom slots (IDs 7, 8, 9) and refused ID 10. Factory preset selection
+and custom-EQ writes are authorized (`eq_preset`, `custom_eq`); management
+(create/rename/delete) is gated separately by `custom_manage_verified`, which
+only this model has.
+
+
+## Custom EQ management (measured 2026-10-31)
+
+`0x0418` carries an action byte: **1 create, 2 update (curve or name),
+3 delete**. The app builds `[action, min, max, eq_id, name_length, name,
+band_count, (frequency, gain)…]` (`HeadsetCoreService.M0`). On the owner's
+unit, create stored a new profile in the next free slot (7–9), rename stored
+the new name with the unchanged curve, and delete removed it again; each was
+confirmed by a fresh `0x0122` catalogue read. The band layout and gain limits
+always come from the device. A custom write also selects that profile on this
+firmware, so create/rename restore the previously active profile afterwards.
+Selecting an existing custom entry writes its unchanged curve back (the plain
+`0x0406` is ignored for custom IDs on this model). Names are bounded to
+non-empty, control-character-free, ≤255 UTF-8 bytes.
+See [EQ profile measurement](../measurements/2026-10-31-nord-eq-profiles.json)
+and [EQ curve measurement](../measurements/2026-10-31-nord-eq-curve.json).
+
+## Touch controls and hold cycle (measured 2026-10-28)
+
+The authenticated query `0x0108` returns `[status, count, (device_type,
+button, action, function)…]`; the unit reports ten entries (five per side).
+A single assignment is written with `0x0401 [01, device_type, 01, action,
+function]` and verified with a fresh `0x0108`, never the ACK alone. 36
+gesture/function round-trips were confirmed. Wire actions 1/2/3/6 are
+configurable; action 4 is the fixed noise-control hold. The shared hold cycle
+is read/written through `0x010c`/`0x0404` with the `02 01` selector and needs
+at least two distinct modes (Off `01`, ANC `02`, Transparency `04`); masks
+`03/05/06/07` were confirmed. See
+[touch measurement](../measurements/2026-10-28-nord-touch.json) and
+[hold-cycle measurement](../measurements/2026-10-28-nord-hold-cycle.json).
+
+## Feature switches and BassWave (audited 2026-10-31)
+
+A generic `0x010d` reply does not establish support. The audit (Wireless
+Earphones 17.6.6 whitelist `064414`, app gates/labels and a read-only
+`0x0100` capability query) confirms six writable switches, each tested both
+ways with ACK `00` and a fresh read: Personalised noise cancellation (`0c`),
+BassWave (`1d`), Auto play/pause (`04`), Camera control (`0d`), Dual
+connection (`11`) and Hi-Res mode (`18`). Connection-changing `11`/`18`
+recover to the same address/product and read back without replaying the
+write. BassWave adds a level (`0x0124` read / `0x041b` write, `[min, max,
+value]`, signed −10..+10 on this unit). Hidden/unconfirmed: `06` game mode,
+`09` vocal enhancement, `21` Enhanced PEL audio, `0b` Golden Sound, `1b`
+headset spatial audio. See
+[feature audit](../measurements/2026-10-31-nord-feature-audit.json),
+[Auto play/pause](../measurements/2026-10-31-nord-auto-play-pause.json) and
+[remaining features](../measurements/2026-10-31-nord-remaining-features.json).
+
+## Find my earbuds (measured 2026-10-31)
+
+`0x0400 [01]` rings, `[00]` stops; `0x8400` status `00` acknowledges. Start
+and stop were confirmed live (buds in the open case, outside the ears); no
+acoustic recording was made. The backend tracks stopped/ringing/unknown per
+physical pair, attempts one automatic stop after 50 s, and never replays an
+uncertain start. Queued commands carry a device token so recovery cannot
+redirect them to another pair. See
+[find measurement](../measurements/2026-10-31-nord-find-earbuds.json).
+
+## Case battery cache
+
+The device reports the case level when the buds sit in the open case. The
+plugin remembers the last usable level (1..100) per product and physical
+device under `$XDG_CACHE_HOME/oneplus-buds/case-battery/` (hashed filenames,
+atomic replacement, no Bluetooth addresses). Missing/zero/invalid samples
+keep the last known level, shown as `C 50%*` with a "last known" tooltip and
+no stale charging flag. A fresh reading replaces the cache and restores the
+live charging bit. See
+[case-battery measurement](../measurements/2026-10-31-nord-case-battery.json).
 
 ## Limitations
 
@@ -142,12 +218,12 @@ authorized: `community_write_permissions` is exactly `{"anc", "eq_preset"}`.
   behave differently; nothing here verifies another model or the family.
 - No acoustic measurements: audible switching latency, sound effect of the
   presets and Auto's acoustic behaviour were not recorded.
-- The historical measurements predate this PR; the contribution re-uses them
-  and adds offline regression tests only. No hardware write tests or audio
+- The historical measurements predate this integration; it re-uses them and
+  adds offline regression tests only. No new hardware write tests or audio
   playback were performed for it.
-- Feature switches, touch controls, find-my-earbuds, custom EQ and
-  case-battery caching are out of scope and remain unavailable on this
-  profile. Switch IDs `0x06` and `0x0b` stay unnamed: the capability audit
+- Switch IDs `0x06` and `0x0b` stay unnamed: the capability audit
   (`0x8100: 00 ff 27 52 ee c7 14`) and the app model table show no model
   support for the separate game-mode switch, and `0x0b` is Golden Sound on
   this model, not the shared hearing-enhancement name.
+- Device rename (BlueZ alias write) and the raw diagnostic query are not
+  included; they remain available in the contributor's fork on request.

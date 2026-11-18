@@ -38,7 +38,7 @@ Connection values are `connecting`, `connected`, `disconnected`, `reconnecting`,
 
 ## Snapshot contract
 
-`serialize_snapshot()` includes device/status data, compatibility, static and device-observed capabilities, supported ANC modes, model-specific ANC display labels (`anc_labels`, empty unless the profile defines them), named feature-switch state, session state, safe numeric event-code history, reconnect/ignored-frame counters, and generation. Tuples are converted to JSON arrays and mappings are copied.
+`serialize_snapshot()` includes device/status data, compatibility, static and device-observed capabilities, supported ANC modes, model-specific ANC display labels (`anc_labels`, empty unless the profile defines them), named feature-switch state, the audited `feature_labels`/`writable_features` allowlists, `touch_controls`, `hold_cycle`, `bass_level`, `find_state`/`find_device_id`, `custom_eq_max`/`custom_eq_slots`, session state, safe numeric event-code history, reconnect/ignored-frame counters, and generation. Tuples are converted to JSON arrays and mappings are copied.
 
 Bluetooth addresses, raw OPO frames, pairing data, and raw notification payloads are never included. Unknown products are marked `experimental` and receive no inferred write modes or static capabilities.
 
@@ -56,6 +56,17 @@ Bluetooth addresses, raw OPO frames, pairing data, and raw notification payloads
 - `set_custom_eq` with exactly `{"entry_id": number, "gains_db": [integers...]}`:
   delegates strict band-count/range validation to the device capability layer,
   sends once, and emits only freshly verified state.
+- `create_custom_eq` / `rename_custom_eq` / `delete_custom_eq`: manage custom
+  profiles on models whose management is hardware-tested; each accepts an
+  optional `device_id` token so a queued command cannot target another pair.
+- `touch_controls` / `set_touch_control` / `set_hold_cycle`: read and write the
+  model's audited touch assignments and shared hold cycle.
+- `feature_switches` / `set_feature_switch`: read and write the audited feature
+  switches; connection-changing switches recover to the same pair without
+  replaying the write.
+- `bass_status` / `set_bass_level`: read and write the BassWave level.
+- `find_earbuds` with `{"ringing": bool}` and an optional `device_id`: start or
+  stop the search tone, tracking confirmed/uncertain state per physical pair.
 - `save_diagnostic_report` with exactly `{"path": local-file-url}`: builds a
   privacy-safe report from the cached snapshot and bounded recent errors, then
   writes it to the user-selected local path. It performs no device query or write

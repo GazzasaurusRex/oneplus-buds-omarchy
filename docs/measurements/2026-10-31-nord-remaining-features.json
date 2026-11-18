@@ -1,0 +1,199 @@
+{
+  "product_id": "064414",
+  "tests": [
+    {
+      "name": "click_to_take_photo",
+      "original": true,
+      "attempts": [
+        {
+          "target": false,
+          "response": {
+            "command": "set_feature_switch",
+            "error": null,
+            "ok": true,
+            "request_id": 2,
+            "result": {
+              "enabled": false,
+              "feature": "click_to_take_photo",
+              "feature_id": 13,
+              "set_status": 0,
+              "verified": true
+            },
+            "schema_version": 1,
+            "type": "command_response"
+          },
+          "independent_read": false,
+          "duration_ms": 660.0
+        },
+        {
+          "target": true,
+          "response": {
+            "command": "set_feature_switch",
+            "error": null,
+            "ok": true,
+            "request_id": 4,
+            "result": {
+              "enabled": true,
+              "feature": "click_to_take_photo",
+              "feature_id": 13,
+              "set_status": 0,
+              "verified": true
+            },
+            "schema_version": 1,
+            "type": "command_response"
+          },
+          "independent_read": true,
+          "duration_ms": 666.6
+        }
+      ],
+      "final": true
+    },
+    {
+      "name": "multipoint",
+      "original": true,
+      "attempts": [
+        {
+          "target": false,
+          "response": {
+            "command": "set_feature_switch",
+            "error": null,
+            "ok": true,
+            "request_id": 8,
+            "result": {
+              "enabled": false,
+              "feature": "multipoint",
+              "feature_id": 17,
+              "set_status": 0,
+              "verified": true
+            },
+            "schema_version": 1,
+            "type": "command_response"
+          },
+          "independent_read": false,
+          "duration_ms": 662.4
+        },
+        {
+          "target": true,
+          "response": {
+            "command": "set_feature_switch",
+            "error": null,
+            "ok": true,
+            "request_id": 10,
+            "result": {
+              "enabled": true,
+              "feature": "multipoint",
+              "feature_id": 17,
+              "set_status": 0,
+              "verified": true
+            },
+            "schema_version": 1,
+            "type": "command_response"
+          },
+          "independent_read": true,
+          "duration_ms": 660.2
+        }
+      ],
+      "final": true
+    },
+    {
+      "name": "high_quality_audio",
+      "original": false,
+      "attempts": [
+        {
+          "target": true,
+          "response": {
+            "command": "set_feature_switch",
+            "error": null,
+            "ok": true,
+            "request_id": 15,
+            "result": {
+              "enabled": true,
+              "feature": "high_quality_audio",
+              "feature_id": 24,
+              "set_status": 0,
+              "verified": true
+            },
+            "schema_version": 1,
+            "type": "command_response"
+          },
+          "independent_read": true,
+          "duration_ms": 448.6
+        },
+        {
+          "target": false,
+          "response": {
+            "command": "set_feature_switch",
+            "error": null,
+            "ok": true,
+            "request_id": 17,
+            "result": {
+              "enabled": false,
+              "feature": "high_quality_audio",
+              "feature_id": 24,
+              "set_status": 0,
+              "verified": true
+            },
+            "schema_version": 1,
+            "type": "command_response"
+          },
+          "independent_read": false,
+          "duration_ms": 454.7
+        }
+      ],
+      "restore_error": "{'code': 'command_failed', 'message': '[Errno 104] Connection reset by peer'}"
+    }
+  ],
+  "settled_checks": [
+    {
+      "ok": true,
+      "features": {
+        "bass_engine": true,
+        "click_to_take_photo": true,
+        "game_equalizer": true,
+        "hearing_enhancement": false,
+        "high_quality_audio": false,
+        "low_latency": false,
+        "multipoint": true,
+        "personal_noise": true,
+        "spatial_sound": false,
+        "vocal_enhance": false,
+        "wear_detection": true
+      },
+      "session_connected": true,
+      "error": ""
+    },
+    {
+      "ok": true,
+      "features": {
+        "bass_engine": true,
+        "click_to_take_photo": true,
+        "game_equalizer": true,
+        "hearing_enhancement": false,
+        "high_quality_audio": false,
+        "low_latency": false,
+        "multipoint": true,
+        "personal_noise": true,
+        "spatial_sound": false,
+        "vocal_enhance": false,
+        "wear_detection": true
+      },
+      "session_connected": true,
+      "error": ""
+    }
+  ],
+  "final_verified": {
+    "click_to_take_photo": true,
+    "multipoint": true,
+    "high_quality_audio": false
+  },
+  "limitations": [
+    "Write ACK and stored setting confirmed in both directions, then original values restored.",
+    "A delayed link reset followed Hi-Res off; a follow-up read failed transiently, then two stable full reads confirmed all original settings.",
+    "Camera integration, actual audio codec/bit depth and physical simultaneous audio playback were not tested."
+  ],
+  "native_tooltips_verified": [
+    "click_to_take_photo",
+    "multipoint",
+    "high_quality_audio"
+  ]
+}

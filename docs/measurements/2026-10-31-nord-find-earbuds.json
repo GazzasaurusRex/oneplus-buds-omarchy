@@ -1,0 +1,83 @@
+{
+  "product_id": "064414",
+  "readiness": "Owner confirmed buds in open case, outside ears",
+  "initial_state": "stopped",
+  "start": {
+    "requested_ringing": true,
+    "wall_ms": 144.9,
+    "response": {
+      "command": "find_earbuds",
+      "error": null,
+      "ok": true,
+      "request_id": 1,
+      "result": {
+        "acknowledged": true,
+        "ringing": true,
+        "sent": true,
+        "set_status": 0,
+        "state": "ringing"
+      },
+      "schema_version": 1,
+      "type": "command_response"
+    },
+    "find_state": "ringing"
+  },
+  "stop": {
+    "requested_ringing": false,
+    "wall_ms": 142.7,
+    "response": {
+      "command": "find_earbuds",
+      "error": null,
+      "ok": true,
+      "request_id": 2,
+      "result": {
+        "acknowledged": true,
+        "ringing": false,
+        "sent": true,
+        "set_status": 0,
+        "state": "stopped"
+      },
+      "schema_version": 1,
+      "type": "command_response"
+    },
+    "find_state": "stopped"
+  },
+  "final_state": "stopped",
+  "acoustic_recording": false,
+  "note": "Short live start/stop in open case, outside ears; ACK acceptance and frontend state verified. Auto-stop expiry is covered with controlled-clock tests, not a 50-second live tone.",
+  "native_ui_final_verification": {
+    "readiness": "Buds in open case, outside ears",
+    "stop_fallback": false,
+    "start": {
+      "command": "find_earbuds",
+      "error": null,
+      "ok": true,
+      "request_id": 10,
+      "result": {
+        "acknowledged": true,
+        "ringing": true,
+        "sent": true,
+        "set_status": 0,
+        "state": "ringing"
+      },
+      "schema_version": 1,
+      "type": "command_response"
+    },
+    "stop": {
+      "command": "find_earbuds",
+      "error": null,
+      "ok": true,
+      "request_id": 11,
+      "result": {
+        "acknowledged": true,
+        "ringing": false,
+        "sent": true,
+        "set_status": 0,
+        "state": "stopped"
+      },
+      "schema_version": 1,
+      "type": "command_response"
+    },
+    "final_state": "stopped"
+  }
+}

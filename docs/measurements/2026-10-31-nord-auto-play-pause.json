@@ -1,0 +1,67 @@
+{
+  "product_id": "064414",
+  "feature_id": "0x04",
+  "write_command": "0x0403",
+  "read_command": "0x010d",
+  "attempts": [
+    {
+      "target": false,
+      "result": {
+        "enabled": false,
+        "feature": "wear_detection",
+        "feature_id": 4,
+        "set_status": 0,
+        "verified": true
+      },
+      "independent_read": false,
+      "duration_ms": 298.8
+    },
+    {
+      "target": true,
+      "result": {
+        "enabled": true,
+        "feature": "wear_detection",
+        "feature_id": 4,
+        "set_status": 0,
+        "verified": true
+      },
+      "independent_read": true,
+      "duration_ms": 296.4
+    }
+  ],
+  "original": true,
+  "final": true,
+  "limitations": [
+    "Setting write and readback verified; actual removal/reinsertion media behavior not tested."
+  ],
+  "app_evidence": "ev_0fc6cf8afc5e43ed6018bf3ef91d329e853bf1f08035c8515b317cdefabdb43d",
+  "native_ui": {
+    "tooltip_hover_verified": true,
+    "original": true,
+    "final": true,
+    "clicks": [
+      {
+        "target": false,
+        "observed": false,
+        "result": {
+          "enabled": false,
+          "feature": "wear_detection",
+          "feature_id": 4,
+          "set_status": 0,
+          "verified": true
+        }
+      },
+      {
+        "target": true,
+        "observed": true,
+        "result": {
+          "enabled": true,
+          "feature": "wear_detection",
+          "feature_id": 4,
+          "set_status": 0,
+          "verified": true
+        }
+      }
+    ]
+  }
+}
