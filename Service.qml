@@ -87,12 +87,59 @@ Item {
     return request("set_eq", { preset: String(preset || "") })
   }
 
-  function setCustomEq(entryId, gains) {
-    return request("set_custom_eq", { entry_id: Number(entryId), gains_db: gains })
+  function setCustomEq(entryId, gains, deviceId) {
+    var params = { entry_id: Number(entryId), gains_db: gains }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("set_custom_eq", params)
+  }
+
+  function createCustomEq(name, deviceId) {
+    var params = { name: String(name || "") }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("create_custom_eq", params)
+  }
+
+  function renameCustomEq(entryId, name, deviceId) {
+    var params = { entry_id: Number(entryId), name: String(name || "") }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("rename_custom_eq", params)
+  }
+
+  function deleteCustomEq(entryId, deviceId) {
+    var params = { entry_id: Number(entryId) }
+    if (deviceId) params.device_id = String(deviceId)
+    return request("delete_custom_eq", params)
   }
 
   function saveDiagnosticReport(path) {
     return request("save_diagnostic_report", { path: String(path || "") })
+  }
+
+  function setTouchControl(side, action, value) {
+    return request("set_touch_control", {
+      side: Number(side), action: Number(action), function: Number(value)
+    })
+  }
+
+  function setHoldCycle(modes) {
+    return request("set_hold_cycle", { modes: modes })
+  }
+
+  function setFeatureSwitch(feature, enabled) {
+    return request("set_feature_switch", {
+      feature: String(feature || ""), enabled: enabled === true
+    })
+  }
+
+  function setBassLevel(level) {
+    return request("set_bass_level", { level: Number(level) })
+  }
+
+  function findEarbuds(ringing, deviceId) {
+    var parameters = { ringing: ringing !== false }
+    var target = deviceId || (snapshot && snapshot.find_device_id)
+    if (target) parameters.device_id = String(target)
+    return request("find_earbuds", parameters)
   }
 
   onHelperPathChanged: startHelper()

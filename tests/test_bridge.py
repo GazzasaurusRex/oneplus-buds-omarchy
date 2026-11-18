@@ -138,6 +138,26 @@ class BridgeTests(unittest.TestCase):
         payload = serialize_snapshot(SNAPSHOT)
         self.assertEqual(payload["anc_labels"], {})
 
+    def test_feature_snapshot_fields_reflect_operation_permissions(self):
+        from oneplus_buds.touch import TouchBinding
+        nord_status = replace(STATUS, product_id="064414", model="OnePlus Nord Buds 3 Pro")
+        nord = serialize_snapshot(replace(
+            SNAPSHOT, status=nord_status, session_connected=True,
+            touch_bindings=(TouchBinding(1, 1, 2, 6),), hold_cycle_mask=6))
+        self.assertTrue(nord["touch_controls"][0]["writable"])
+        self.assertTrue(nord["hold_cycle"]["writable"])
+        self.assertEqual(nord["custom_eq_max"], 3)
+        self.assertIn("wear_detection", nord["writable_features"])
+        self.assertEqual(nord["feature_labels"]["bass_engine"], "BassWave")
+        buds4_status = replace(STATUS, product_id="065414", model="OnePlus Buds 4")
+        buds4 = serialize_snapshot(replace(
+            SNAPSHOT, status=buds4_status, session_connected=True,
+            touch_bindings=(TouchBinding(1, 1, 2, 6),)))
+        self.assertFalse(buds4["touch_controls"][0]["writable"])
+        self.assertIsNone(buds4["hold_cycle"])
+        self.assertIsNone(buds4["feature_labels"])
+
+
     def test_community_write_permissions_do_not_authorize_other_classes(self):
         anc_only = replace(
             PROFILES["065414"],
