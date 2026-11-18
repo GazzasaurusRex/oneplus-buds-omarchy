@@ -48,6 +48,16 @@ class ServiceRunnerTests(unittest.TestCase):
         self.assertEqual([state.attempt for state in disconnected], [1, 2, 3, 4])
         self.assertEqual([state.error for state in disconnected], ["one", "two", "three", "four"])
 
+    def test_unexpected_error_backs_off_instead_of_killing_helper(self):
+        cancelled = RecordingEvent(cancel_after_waits=2)
+        controller = FakeController(starts=[ValueError("driver hiccup"), EMPTY_SNAPSHOT],
+                                    polls=[EMPTY_SNAPSHOT])
+        states = []
+        BudsServiceRunner(controller, initial_retry_delay=0.25, maximum_retry_delay=1.0,
+                          on_state=states.append).run(cancelled)
+        self.assertEqual(cancelled.waits, [0.25, 0.5])
+        self.assertIn("connected", [state.connection for state in states])
+
     def test_success_resets_backoff_after_poll_failure(self):
         cancelled = RecordingEvent(cancel_after_waits=2)
         controller = FakeController(

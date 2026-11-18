@@ -17,6 +17,15 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(stream.feed(first[:4]), [])
         self.assertEqual(stream.feed(first[4:] + second), [decode_frame(first), decode_frame(second)])
 
+    def test_stream_drops_malformed_frame_without_losing_valid_ones(self):
+        stream = FrameStream()
+        good = encode_frame(0x8103, 1, b"\x00\x14\x0c\x06")
+        bad = bytearray(good)
+        bad[7] = 0xFF  # inner payload length lies; outer length stays authoritative
+        self.assertEqual(stream.feed(bytes(bad)), [])
+        self.assertEqual(stream.malformed_frames, 1)
+        self.assertEqual(stream.feed(good), [decode_frame(good)])
+
     def test_parsers(self):
         self.assertEqual(parse_product_id(Frame(0x8103, 1, b"\x00\x14\x0c\x06")), "060C14")
         self.assertEqual(

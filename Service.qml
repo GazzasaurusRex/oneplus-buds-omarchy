@@ -11,11 +11,23 @@ Item {
   property int nextRequestId: 1
   property bool stopping: false
   property var lifecycleObservations: []
+  // The helper is a child process that can die (driver error, vanished D-Bus
+  // object, killed process). Restart it with a backoff instead of staying dead.
+  property int restartAttempt: 0
+  property int restartDelayMs: 1000
 
   function observeLifecycle(phase, productId) {
     lifecycleObservations = lifecycleObservations.concat([{
       phase: phase, unix_ms: Date.now(), product_id: productId || null
     }]).slice(-32)
+  }
+
+  function scheduleHelperRestart() {
+    if (stopping) return
+    restartAttempt += 1
+    restartDelayMs = Math.min(restartDelayMs * 2, 30000)
+    restartTimer.interval = restartDelayMs
+    restartTimer.restart()
   }
 
   readonly property string helperPath: localPath(Qt.resolvedUrl("oneplus-buds-bridge"))
@@ -52,6 +64,11 @@ Item {
     state = BridgeModel.applyMessage(state, parsed.message)
     if (state.connection !== previous.connection)
       observeLifecycle("frontend_" + state.connection, null)
+    // A working connection resets the restart backoff.
+    if (state.connection === "connected" && previous.connection !== "connected") {
+      restartAttempt = 0
+      restartDelayMs = 1000
+    }
     var status = state.snapshot && state.snapshot.status
     var oldStatus = previous.snapshot && previous.snapshot.status
     if (status && state.snapshot.session_connected
@@ -148,9 +165,22 @@ Item {
 
   Component.onDestruction: {
     stopping = true
+    restartTimer.stop()
     helper.running = false
   }
 
+
+  Timer {
+    id: restartTimer
+    interval: 2000
+    repeat: false
+    onTriggered: {
+      if (!root.stopping) {
+        root.observeLifecycle("frontend_helper_restart", null)
+        root.startHelper()
+      }
+    }
+  }
   Process {
     id: helper
     stdinEnabled: true
@@ -179,6 +209,7 @@ Item {
           lastResponse: root.state.lastResponse,
           lastError: root.state.lastError || "Backend process stopped"
         }
+        root.scheduleHelperRestart()
       }
     }
   }

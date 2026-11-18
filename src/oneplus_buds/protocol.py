@@ -174,6 +174,7 @@ def decode_frame(data: bytes) -> Frame:
 class FrameStream:
     def __init__(self) -> None:
         self._buffer = bytearray()
+        self.malformed_frames = 0
 
     def feed(self, data: bytes) -> list[Frame]:
         self._buffer.extend(data)
@@ -195,7 +196,12 @@ class FrameStream:
                 break
             raw = bytes(self._buffer[:frame_length])
             del self._buffer[:frame_length]
-            frames.append(decode_frame(raw))
+            try:
+                frames.append(decode_frame(raw))
+            except ValueError:
+                # A frame that does not follow the documented layout (e.g. during
+                # codec renegotiation) must not tear down the control session.
+                self.malformed_frames += 1
         return frames
 
 
