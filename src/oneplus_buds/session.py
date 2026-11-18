@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict
 from time import monotonic
 
@@ -53,6 +54,17 @@ from .protocol import (
     parse_set_eq_status,
 )
 from .transport import RfcommTransport
+from .protocol import (
+    QUERY_TOUCH, RESPONSE_TOUCH, SET_TOUCH, RESPONSE_SET_TOUCH,
+    QUERY_STATUS, SET_FEATURE_SWITCH, RESPONSE_SET_FEATURE_SWITCH,
+    SET_FIND_MODE, RESPONSE_SET_FIND_MODE,
+    QUERY_BASS_ENGINE, RESPONSE_BASS_ENGINE, SET_BASS_ENGINE, RESPONSE_SET_BASS_ENGINE,
+    BASS_LEVEL_MIN, BASS_LEVEL_MAX, BASS_LEVEL_RANGE,
+    EQ_ACTION_CREATE, EQ_ACTION_UPDATE, EQ_ACTION_DELETE,
+)
+from .touch import (
+    TouchBinding, parse_touch_bindings, HOLD_CYCLE_QUERY, hold_cycle_mask, parse_hold_cycle,
+)
 
 
 class UnsupportedProductError(RuntimeError):
@@ -60,6 +72,18 @@ class UnsupportedProductError(RuntimeError):
         super().__init__(f"product {product_id or 'unknown'} has no tested device profile")
         self.device = device
         self.product_id = product_id
+
+
+def validate_eq_profile_name(name: str) -> str:
+    """Return a trimmed profile name that the protocol can carry."""
+    label = str(name or "").strip()
+    if not label:
+        raise ValueError("the EQ profile name must not be empty")
+    if any(ord(character) < 0x20 or ord(character) == 0x7F for character in label):
+        raise ValueError("the EQ profile name must not contain control characters")
+    if len(label.encode("utf-8")) > 0xFF:
+        raise ValueError("the EQ profile name is too long")
+    return label
 
 
 class OpoSession:
@@ -296,6 +320,14 @@ class OpoSession:
         timer.mark("preserve_read")
         target_id, target_name, write_operation = self._resolve_eq_target(preset, before)
         self._require_eq_session(write=write_operation)
+        # Some device families select a custom curve by writing it, not with
+        # the plain preset command: writing the unchanged curve back selects
+        # the custom entry without altering the sound.
+        custom = next((item for item in before.custom_entries
+                       if item.eq_id == target_id), None)
+        if custom is not None and eq is not None and eq.custom_select_via_write:
+            return self.set_custom_eq(
+                custom.eq_id, tuple(band.gain_db for band in custom.bands))
         events = list(initial.events)
         ignored = initial.ignored_frames
 
@@ -406,6 +438,326 @@ class OpoSession:
             ), EventBatch(tuple(events), ignored)
         except (OSError, RuntimeError) as error:
             raise RuntimeError("custom EQ session request failed: " + str(error)) from error
+
+    def create_custom_eq(self, name: str) -> tuple[EqControlResult, EventBatch]:
+        """Create one new custom curve in the next free slot of the earbuds."""
+        self._require_eq_session(write="custom_eq")
+        if self.profile.eq is None or not self.profile.eq.custom_manage_verified:
+            raise ValueError("custom EQ management is not tested for this device profile")
+        label = validate_eq_profile_name(name)
+        timer = PhaseTimer()
+        before, initial = self.eq_status()
+        timer.mark("preserve_read")
+        template = before.custom_entries[0] if before.custom_entries else None
+        if template is None:
+            raise RuntimeError("the earbuds did not declare a custom EQ layout")
+        used = {item.eq_id for item in before.custom_entries}
+        slot = self._next_custom_slot(used)
+        entry = EqEntry(slot, label, False, template.min_gain_db, template.max_gain_db,
+                        template.bands)
+        gains = tuple(0 for _ in template.bands)
+
+        def expect(entries: tuple[EqEntry, ...]) -> bool:
+            return any(item.eq_id not in used or item.name == label for item in entries)
+
+        acknowledgement, entries, _current_id, query_count, events, ignored = (
+            self._write_eq_entry(entry, gains, action=EQ_ACTION_CREATE, expect=expect)
+        )
+        created = None
+        if entries is not None:
+            fresh = [item for item in entries if item.eq_id not in used]
+            if len(fresh) == 1:
+                created = fresh[0]
+            else:
+                named = [item for item in entries if item.name == label]
+                created = named[0] if len(named) == 1 else None
+        if created is None:
+            raise RuntimeError(
+                "custom EQ verification failed: the earbuds did not store the new profile")
+        events = list(initial.events) + list(events)
+        ignored += initial.ignored_frames
+        self._restore_eq_selection(before)
+        return EqControlResult(
+            self.device.name, self.profile.product_id, created.eq_id, created.name,
+            before.current_id, before.current_name,
+            acknowledgement, True, timer.finish("session_total"), query_count,
+        ), EventBatch(tuple(events), ignored)
+
+    def rename_custom_eq(self, entry_id: int, name: str) -> tuple[EqControlResult, EventBatch]:
+        """Rename one existing device-declared custom curve; the curve stays unchanged."""
+        self._require_eq_session(write="custom_eq")
+        if self.profile.eq is None or not self.profile.eq.custom_manage_verified:
+            raise ValueError("custom EQ management is not tested for this device profile")
+        label = validate_eq_profile_name(name)
+        timer = PhaseTimer()
+        before, initial = self.eq_status()
+        timer.mark("preserve_read")
+        entry = next((item for item in before.custom_entries if item.eq_id == entry_id), None)
+        if entry is None:
+            raise ValueError("custom EQ id was not declared by the connected earbuds")
+        gains = tuple(band.gain_db for band in entry.bands)
+
+        def expect(entries: tuple[EqEntry, ...]) -> bool:
+            item = next((value for value in entries if value.eq_id == entry_id), None)
+            return item is not None and item.name == label
+
+        acknowledgement, entries, _current_id, query_count, events, ignored = (
+            self._write_eq_entry(entry, gains, action=EQ_ACTION_UPDATE, name=label, expect=expect)
+        )
+        renamed = next((item for item in entries or () if item.eq_id == entry_id), None)
+        if renamed is None or renamed.name != label:
+            raise RuntimeError(
+                "custom EQ verification failed: the earbuds did not store the new name")
+        events = list(initial.events) + list(events)
+        ignored += initial.ignored_frames
+        self._restore_eq_selection(before)
+        return EqControlResult(
+            self.device.name, self.profile.product_id, entry_id, renamed.name,
+            before.current_id, before.current_name,
+            acknowledgement, True, timer.finish("session_total"), query_count,
+        ), EventBatch(tuple(events), ignored)
+
+    def delete_custom_eq(self, entry_id: int) -> tuple[EqControlResult, EventBatch]:
+        """Delete one existing device-declared custom curve."""
+        self._require_eq_session(write="custom_eq")
+        if self.profile.eq is None or not self.profile.eq.custom_manage_verified:
+            raise ValueError("custom EQ management is not tested for this device profile")
+        timer = PhaseTimer()
+        before, initial = self.eq_status()
+        timer.mark("preserve_read")
+        entry = next((item for item in before.custom_entries if item.eq_id == entry_id), None)
+        if entry is None:
+            raise ValueError("custom EQ id was not declared by the connected earbuds")
+        gains = tuple(band.gain_db for band in entry.bands)
+
+        def expect(entries: tuple[EqEntry, ...]) -> bool:
+            return all(item.eq_id != entry_id for item in entries)
+
+        acknowledgement, entries, _current_id, query_count, events, ignored = (
+            self._write_eq_entry(entry, gains, action=EQ_ACTION_DELETE, expect=expect)
+        )
+        if entries is not None and any(item.eq_id == entry_id for item in entries):
+            raise RuntimeError(
+                "custom EQ verification failed: the earbuds still list the profile")
+        events = list(initial.events) + list(events)
+        ignored += initial.ignored_frames
+        return EqControlResult(
+            self.device.name, self.profile.product_id, entry_id, entry.name,
+            before.current_id, before.current_name,
+            acknowledgement, True, timer.finish("session_total"), query_count,
+        ), EventBatch(tuple(events), ignored)
+
+    def _next_custom_slot(self, used: set[int]) -> int:
+        """Return the next free custom profile id of the connected earbuds."""
+        eq = self.profile.eq
+        base = eq.custom_base if eq is not None else None
+        maximum = eq.custom_max if eq is not None else None
+        if base is not None and maximum:
+            free = [base + offset for offset in range(maximum)
+                    if base + offset not in used]
+            if not free:
+                raise RuntimeError(
+                    f"the earbuds already hold {maximum} custom profiles; "
+                    "delete one before adding another")
+            return free[0]
+        if used:
+            candidate = max(used) + 1
+            if candidate <= 0xFF:
+                return candidate
+        raise RuntimeError("no free custom EQ slot is left")
+
+    def _write_eq_entry(self, entry: EqEntry, gains_db: tuple[int, ...], *,
+                        action: int, name: str | None = None,
+                        expect: Callable[[tuple[EqEntry, ...]], bool] | None = None
+                        ) -> tuple[int | None, tuple[EqEntry, ...] | None, int | None,
+                                   int, list[SafeEvent], int]:
+        """Send one custom EQ entry operation once and read the catalogue back."""
+        timer = PhaseTimer()
+        payload = encode_eq_detail_payload(entry, gains_db, action=action, name=name)
+        events: list[SafeEvent] = []
+        ignored = 0
+
+        def collect(frames: list[Frame]) -> None:
+            nonlocal ignored
+            batch = self._redact(frames)
+            events.extend(batch.events)
+            del events[:-64]
+            ignored += batch.ignored_frames
+
+        try:
+            try:
+                acknowledgement = self._transport.request(
+                    SET_EQ_DETAIL, payload, RESPONSE_SET_EQ_DETAIL,
+                    on_sent=lambda: timer.elapsed("command_sent_elapsed"), on_frames=collect,
+                )
+            except TimeoutError:
+                acknowledgement = None
+            timer.mark("set_response")
+            entries: tuple[EqEntry, ...] | None = None
+            deadline = monotonic() + 2.0
+            query_count = 0
+            for query_count in range(1, 33):
+                remaining = deadline - monotonic()
+                if remaining <= 0:
+                    break
+                frame = self._transport.request(
+                    QUERY_EQ_ALL, EQ_ALL_QUERY_PAYLOAD, RESPONSE_EQ_ALL,
+                    on_frames=collect, timeout=remaining,
+                )
+                entries = parse_eq_entries(frame)
+                if entries is not None and (expect is None or expect(entries)):
+                    break
+            timer.mark("verify_query")
+            current = self._transport.request(QUERY_EQ, b"", RESPONSE_EQ, on_frames=collect)
+            current_id = parse_eq_id(current)
+            timer.elapsed("verified_elapsed")
+            return (parse_set_eq_status(acknowledgement) if acknowledgement else None,
+                    entries, current_id, query_count, events, ignored)
+        except (OSError, RuntimeError) as error:
+            raise RuntimeError("custom EQ session request failed: " + str(error)) from error
+
+    def _restore_eq_selection(self, before: EqStatusResult) -> None:
+        """Re-select the profile that was active before an entry write."""
+        current, _batch = self.eq_status()
+        if current.current_id == before.current_id:
+            return
+        custom = next((item for item in before.custom_entries
+                       if item.eq_id == before.current_id), None)
+        if custom is not None:
+            self.set_custom_eq(custom.eq_id, tuple(band.gain_db for band in custom.bands))
+            return
+        self.set_eq(str(before.current_id))
+
+    def read_hold_cycle(self) -> int:
+        self._require_connected()
+        if not self.profile.hold_cycle_supported:
+            raise ValueError("hold cycle is not supported by this device profile")
+        frame = self._transport.request(QUERY_ANC, HOLD_CYCLE_QUERY, RESPONSE_ANC)
+        try:
+            return parse_hold_cycle(frame)
+        except ValueError as error:
+            raise RuntimeError(str(error)) from error
+
+    def set_hold_cycle(self, modes: tuple[str, ...]) -> tuple[int | None, int]:
+        self._require_connected()
+        if not self._authenticated:
+            raise RuntimeError("session authentication has not completed")
+        if not self.profile.can_write("hold_cycle") or not self.profile.hold_cycle_supported:
+            raise ValueError("hold cycle writes are not verified for this device profile")
+        mask = hold_cycle_mask(modes)
+        self.read_hold_cycle()  # require valid current state before writing
+        try:
+            ack = self._transport.request(SET_ANC, HOLD_CYCLE_QUERY + bytes((mask,)), RESPONSE_SET_ANC)
+            if len(ack.payload) != 1:
+                raise RuntimeError("device returned malformed hold cycle acknowledgement")
+            status = ack.payload[0]
+        except TimeoutError:
+            status = None
+        return status, self.read_hold_cycle()
+
+    def touch_bindings(self) -> tuple[TouchBinding, ...]:
+        self._require_connected()
+        if not self.profile.touch_functions:
+            raise ValueError("touch controls are not supported by this device profile")
+        frame = self._transport.request(QUERY_TOUCH, b"", RESPONSE_TOUCH)
+        try:
+            return parse_touch_bindings(frame)
+        except ValueError as error:
+            raise RuntimeError(str(error)) from error
+
+    def set_touch_binding(self, binding: TouchBinding) -> tuple[int | None, tuple[TouchBinding, ...]]:
+        self._require_connected()
+        if not self._authenticated:
+            raise RuntimeError("session authentication has not completed")
+        if (not self.profile.can_write("touch") or binding.device_type not in (1, 2)
+                or binding.button != 1
+                or binding.function not in self.profile.touch_functions.get(binding.action, ())):
+            raise ValueError("touch assignment is not allowed for this device profile")
+        if not any(item.key == binding.key for item in self.touch_bindings()):
+            raise ValueError("touch gesture was not reported by this device")
+        try:
+            ack = self._transport.request(SET_TOUCH, binding.write_payload(), RESPONSE_SET_TOUCH)
+            if len(ack.payload) != 1:
+                raise RuntimeError("device returned malformed touch acknowledgement")
+            status = ack.payload[0]
+        except TimeoutError:
+            status = None
+        return status, self.touch_bindings()
+
+    def feature_switches(self, feature_ids: tuple[int, ...]) -> dict[int, bool]:
+        """Read the device's feature switches in the phone app's request shape."""
+        self._require_connected()
+        payload = bytes((len(feature_ids),)) + bytes(feature_ids)
+        frame = self._transport.request(QUERY_STATUS, payload, RESPONSE_STATUS)
+        switches = parse_feature_switches(frame)
+        if switches is None:
+            raise RuntimeError("device returned malformed feature switch state")
+        return switches
+
+    def set_feature_switch(self, feature_id: int, enabled: bool) -> tuple[int | None, bool]:
+        """Set one feature switch and verify it with a fresh read."""
+        self._require_connected()
+        if not self.profile.can_write("feature_switch"):
+            raise ValueError("feature switch writes are not authorized for this device profile")
+        name = FEATURE_SWITCH_NAMES.get(feature_id)
+        if name not in self.profile.writable_features:
+            raise ValueError(f"the {name or feature_id} switch is read-only for this device model")
+        if not 0 <= feature_id <= 0xFF:
+            raise ValueError("feature id must fit in one byte")
+        payload = bytes((feature_id, 1 if enabled else 0))
+        try:
+            ack = self._transport.request(SET_FEATURE_SWITCH, payload, RESPONSE_SET_FEATURE_SWITCH)
+            status = (ack.payload[0]
+                      if ack.command == RESPONSE_SET_FEATURE_SWITCH and ack.payload else None)
+        except TimeoutError:
+            status = None
+        if status is not None and status != 0:
+            return status, False
+        verified = self.feature_switches((feature_id,)).get(feature_id)
+        return status, status == 0 and verified is enabled
+
+    def find_earbuds(self, ringing: bool = True) -> tuple[int | None, bool]:
+        """Start or stop the find-my-earbuds tone."""
+        self._require_connected()
+        if not self._authenticated:
+            raise RuntimeError("session authentication has not completed")
+        if not self.profile.can_write("find") or "find_earbuds" not in self.profile.capabilities:
+            raise ValueError("earbud search is not supported by this device profile")
+        payload = bytes((1 if ringing else 0,))
+        try:
+            ack = self._transport.request(SET_FIND_MODE, payload, RESPONSE_SET_FIND_MODE)
+            status = (ack.payload[0]
+                      if ack.command == RESPONSE_SET_FIND_MODE and ack.payload else None)
+        except TimeoutError:
+            status = None
+        return status, True
+
+    def bass_engine_status(self) -> tuple[int, int, int]:
+        """Read the bass engine range and current level ([status, min, max, current])."""
+        self._require_connected()
+        frame = self._transport.request(QUERY_BASS_ENGINE, b"", RESPONSE_BASS_ENGINE)
+        if len(frame.payload) < 4 or frame.payload[0] != 0:
+            raise RuntimeError("device returned malformed bass engine state")
+        minimum = frame.payload[1] - 256 if frame.payload[1] > 127 else frame.payload[1]
+        maximum = frame.payload[2] - 256 if frame.payload[2] > 127 else frame.payload[2]
+        current = frame.payload[3] - 256 if frame.payload[3] > 127 else frame.payload[3]
+        return minimum, maximum, current
+
+    def set_bass_level(self, level: int) -> tuple[int | None, bool]:
+        """Set the bass engine level ("BassWave"); the device echoes [min, max, value]."""
+        self._require_connected()
+        if not self.profile.can_write("bass_level") or "bass_engine" not in self.profile.capabilities:
+            raise ValueError("bass level writes are not supported by this device profile")
+        if not BASS_LEVEL_MIN <= level <= BASS_LEVEL_MAX:
+            raise ValueError(f"bass level must be between {BASS_LEVEL_MIN} and {BASS_LEVEL_MAX}")
+        payload = BASS_LEVEL_RANGE + bytes((level & 0xFF,))
+        try:
+            ack = self._transport.request(SET_BASS_ENGINE, payload, RESPONSE_SET_BASS_ENGINE)
+            status = (ack.payload[0]
+                      if ack.command == RESPONSE_SET_BASS_ENGINE and ack.payload else None)
+        except TimeoutError:
+            status = None
+        return status, True
 
     def _require_eq_session(self, *, write: WriteOperation | None = None) -> None:
         self._require_connected()

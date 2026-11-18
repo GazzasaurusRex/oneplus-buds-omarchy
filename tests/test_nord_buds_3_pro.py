@@ -163,6 +163,8 @@ class NordBuds3ProProfileTests(unittest.TestCase):
             self.assertFalse(profile.hold_cycle_supported, product_id)
             self.assertIsNone(profile.feature_labels, product_id)
             self.assertFalse(profile.eq.custom_manage_verified, product_id)
+            self.assertNotIn("bass_engine", profile.capabilities, product_id)
+            self.assertNotIn("find_earbuds", profile.capabilities, product_id)
 
 
 if __name__ == "__main__":

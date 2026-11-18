@@ -98,6 +98,14 @@ class EqProtocolTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             encode_eq_detail_payload(entry, (0,), action=4)
 
+    def test_custom_encoder_rejects_empty_or_non_string_name_and_non_int_action(self):
+        entry = EqEntry(7, "Old", False, -6, 6, (EqBand(62, 0),))
+        for bad in ("", "   ", 5):
+            with self.assertRaises(ValueError):
+                encode_eq_detail_payload(entry, (0,), name=bad)
+        with self.assertRaises(ValueError):
+            encode_eq_detail_payload(entry, (0,), action=True)
+
 
 class EqProfileTests(unittest.TestCase):
     def test_factory_presets_are_model_specific(self):
@@ -290,6 +298,27 @@ class EqSessionTests(unittest.TestCase):
         self.assertEqual(eq.preset_for("bass").eq_id, 5)
         self.assertEqual(eq.preset_for("3").eq_id, 3)
         self.assertIsNone(eq.preset_for("bold"))
+
+    def test_nord_custom_selection_writes_the_curve_back(self):
+        session = self.session("064414")
+        # Nord ignores the plain preset command for custom entries; selecting
+        # one writes its unchanged curve back (0x0418), never 0x0406.
+        catalogue = b"\x00\x01" + entry_payload(1, 7, "Custom")
+        session._transport.request.side_effect = [
+            Frame(RESPONSE_EQ, 1, b"\x00\x03"),
+            Frame(RESPONSE_EQ_ALL, 2, catalogue),
+            Frame(RESPONSE_EQ, 3, b"\x00\x03"),
+            Frame(RESPONSE_EQ_ALL, 4, catalogue),
+            Frame(RESPONSE_SET_EQ_DETAIL, 5, b"\x00"),
+            Frame(RESPONSE_EQ_ALL, 6, catalogue),
+            Frame(RESPONSE_EQ, 7, b"\x00\x07"),
+        ]
+        result, _ = session.set_eq("custom:7")
+        self.assertTrue(result.verified)
+        self.assertEqual(result.current_id, 7)
+        commands = [call.args[0] for call in session._transport.request.call_args_list]
+        self.assertNotIn(SET_EQ, commands)
+        self.assertIn(SET_EQ_DETAIL, commands)
 
     def test_nord_custom_eq_writes_are_authorized(self):
         session = self.session("064414")

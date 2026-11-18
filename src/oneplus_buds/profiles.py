@@ -57,6 +57,9 @@ class EqProfile:
     # Custom profiles live in their own id range above the factory presets.
     custom_base: int | None = None
     custom_max: int | None = None
+    # Some devices ignore the plain preset command for custom entries and
+    # select them only by writing the unchanged curve back (Nord Buds 3 Pro).
+    custom_select_via_write: bool = False
 
     def preset_for(self, value: str) -> EqPresetProfile | None:
         normalized = value.strip().lower()
@@ -261,7 +264,8 @@ PROFILES = {
         ),
         eq=EqProfile(NORD_BUDS_3_PRO_EQ_PRESETS, supports_custom=True,
                      write_verified=True, custom_write_verified=True,
-                     custom_manage_verified=True, custom_base=7, custom_max=3),
+                     custom_manage_verified=True, custom_base=7, custom_max=3,
+                     custom_select_via_write=True),
         capabilities=frozenset(
             {
                 "battery",

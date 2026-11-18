@@ -386,7 +386,7 @@ def encode_eq_detail_payload(entry: EqEntry, gains_db: tuple[int, ...], *,
     ``name`` overrides the stored name for a rename; it defaults to the name
     the earbuds reported for the entry.
     """
-    if action not in (EQ_ACTION_CREATE, EQ_ACTION_UPDATE, EQ_ACTION_DELETE):
+    if type(action) is not int or action not in (EQ_ACTION_CREATE, EQ_ACTION_UPDATE, EQ_ACTION_DELETE):
         raise ValueError("unsupported custom EQ action")
     if not 0 <= entry.eq_id <= 0xFF:
         raise ValueError("EQ id must fit in one byte")
@@ -398,6 +398,8 @@ def encode_eq_detail_payload(entry: EqEntry, gains_db: tuple[int, ...], *,
             f"custom EQ gains must be whole dB values from {entry.min_gain_db} to {entry.max_gain_db}"
         )
     label = entry.name if name is None else name
+    if not isinstance(label, str) or not label.strip():
+        raise ValueError("custom EQ name must be a non-empty string")
     encoded_name = label.encode("utf-8")
     if len(encoded_name) > 0xFF or len(entry.bands) > 0xFF:
         raise ValueError("custom EQ definition is too large")
