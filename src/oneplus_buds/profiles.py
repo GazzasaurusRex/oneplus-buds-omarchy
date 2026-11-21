@@ -201,6 +201,15 @@ PROFILES = {
                 "smart_anc",
                 "eq",
                 "custom_eq",
+                # Local Pro 2 evidence trial, 2026-11-18: only the separately
+                # authorised wear/multipoint switches are writable.
+                "feature_switches",
+                # Local Pro 2 evidence trial, 2026-11-18: only double-tap
+                # Previous/Next is writable on either side.
+                "touch_controls",
+                # Local Pro 2 evidence trial, 2026-11-18: the shared hold
+                # cycle accepts the model-specific trailing-zero readback.
+                "hold_cycle",
                 # Local Pro 2 evidence trial, 2026-11-18: phone level
                 # change/read/restore confirmed range -5..5 and level mapping.
                 "bass_engine",

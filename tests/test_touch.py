@@ -102,7 +102,7 @@ class TouchTests(unittest.TestCase):
     def test_unsupported_targets_never_write(self):
         from oneplus_buds.touch import TouchBinding
         for product, binding in (
-            ("062014", TouchBinding(1, 1, 2, 5)),
+            ("060C14", TouchBinding(1, 1, 2, 5)),
             ("064414", TouchBinding(4, 1, 2, 5)),
             ("064414", TouchBinding(1, 6, 2, 5)),
             ("064414", TouchBinding(1, 1, 1, 6)),
@@ -115,6 +115,17 @@ class TouchTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     session_for(peer, product).set_touch_binding(binding)
                 self.assertFalse(any(c == 0x0401 for c, _, _ in peer.requests))
+
+    def test_pro2_exposes_only_confirmed_follow_up_controls(self):
+        profile = PROFILES["062014"]
+        self.assertTrue({"feature_switches", "touch_controls", "hold_cycle",
+                         "bass_engine"}.issubset(profile.capabilities))
+        self.assertEqual(profile.writable_features,
+                         frozenset({"wear_detection", "multipoint"}))
+        self.assertEqual(profile.touch_functions, {2: (5, 6)})
+        self.assertTrue(profile.hold_cycle_write_verified)
+        self.assertNotIn("find_earbuds", profile.capabilities)
+        self.assertNotIn("high_quality_audio", profile.writable_features)
 
     def test_missing_binding_cannot_be_created_by_accident(self):
         from oneplus_buds.touch import TouchBinding

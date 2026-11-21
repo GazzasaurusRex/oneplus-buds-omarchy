@@ -156,7 +156,7 @@ class NordBuds3ProProfileTests(unittest.TestCase):
             self.assertFalse(buds_4.can_write(operation), operation)
         self.assertEqual(buds_4.community_write_permissions,
                          frozenset({"anc", "eq_preset", "custom_eq"}))
-        for product_id in ("060C14", "062014", "065414"):
+        for product_id in ("060C14", "065414"):
             profile = PROFILES[product_id]
             self.assertEqual(profile.touch_functions, {}, product_id)
             self.assertEqual(profile.writable_features, frozenset(), product_id)
