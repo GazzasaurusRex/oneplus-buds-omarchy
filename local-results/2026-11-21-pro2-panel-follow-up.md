@@ -18,9 +18,9 @@ the local worktree. No Hi-Res or Find My Earbuds permission was added.
 
 ## Checks
 
-- Focused backend: 40 passed.
-- Full backend regression suite: 274 passed.
-- Qt offscreen interactions: 34 passed, 0 failed.
+- Focused backend after the touch-control follow-up: 67 passed.
+- Full backend regression suite: 281 passed.
+- Qt offscreen interactions: 36 passed, 0 failed.
 - `omarchy plugin validate .`: passed.
 - `git diff --check`: passed.
 - The tested export was loaded from a unique plugin path because the long-lived
@@ -52,5 +52,26 @@ After a deliberate PC disconnect/reconnect, the panel reported:
 - Hi-Res protocol value: off/read-only; no write permission
 - Find My Earbuds: no Pro 2 capability or write permission
 
-The normal user plugin was restored after the test. Results and code/test
-corrections are committed only on the local follow-up branch and were not pushed.
+The normal user plugin was restored after the earlier test. Its rollback copy is
+still retained while this exact follow-up worktree is loaded temporarily. The
+saved work remains local and has not been pushed.
+
+## Touch-control follow-up
+
+The Pro 2 phone app offered Single tap as None or Play/Pause. Triple tap offered
+None, Previous, Next Track, Voice Assistant, or Game mode. Voice Assistant and
+Game mode were intentionally left unaudited and are not enabled in the panel.
+Double-tap Previous/Next remained covered by the earlier verified trial.
+
+| Control | Original | Trial | Physical observation | Fresh readback | Restored |
+|---|---|---|---|---|---|
+| Left single-tap | Play/Pause | None | Did not pause or resume playback | None, function `0` | Play/Pause, function `1`; behaviour confirmed |
+| Right single-tap | Play/Pause | None | Did not pause or resume playback | None, function `0` | Play/Pause, function `1`; behaviour confirmed |
+| Left triple-tap | Previous | None | Did not change playback or track | None, function `0` | Previous, function `5`; behaviour confirmed |
+| Right triple-tap | Previous | Next | Advanced to the next track | Next, function `6` | Previous, function `5`; behaviour confirmed |
+
+The final fresh readback showed both sides restored to Single Play/Pause,
+Double Next, and Triple Previous. Pro 2 per-earbud Long hold is hidden because
+its reported function `18` is not a phone-app editable row; the separately
+verified shared Touch & hold ANC cycle remains available. Nord Long hold
+permissions and controls are unchanged.

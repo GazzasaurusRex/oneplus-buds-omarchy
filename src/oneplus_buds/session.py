@@ -60,7 +60,6 @@ from .protocol import (
     QUERY_STATUS, SET_FEATURE_SWITCH, RESPONSE_SET_FEATURE_SWITCH,
     SET_FIND_MODE, RESPONSE_SET_FIND_MODE,
     QUERY_BASS_ENGINE, RESPONSE_BASS_ENGINE, SET_BASS_ENGINE, RESPONSE_SET_BASS_ENGINE,
-    BASS_LEVEL_MIN, BASS_LEVEL_MAX,
     EQ_ACTION_CREATE, EQ_ACTION_UPDATE, EQ_ACTION_DELETE,
 )
 from .touch import (
@@ -806,12 +805,14 @@ class OpoSession:
     def set_bass_level(self, level: int) -> tuple[int | None, bool]:
         """Set the bass engine level ("BassWave"); the device echoes [min, max, value]."""
         self._require_connected()
-        if not self.profile.can_write("bass_level") or "bass_engine" not in self.profile.capabilities:
+        if (not self.profile.can_write("bass_level")
+                or "bass_engine" not in self.profile.capabilities
+                or self.profile.bass_level_range is None):
             raise ValueError("bass level writes are not supported by this device profile")
-        minimum, maximum = self.profile.bass_level_range or (BASS_LEVEL_MIN, BASS_LEVEL_MAX)
+        minimum, maximum = self.profile.bass_level_range
         if not minimum <= level <= maximum:
             raise ValueError(f"bass level must be between {minimum} and {maximum}")
-        if self.profile.bass_level_range is not None and self.bass_engine_status()[:2] != (minimum, maximum):
+        if self.bass_engine_status()[:2] != (minimum, maximum):
             raise ValueError("earbuds reported a different BassWave range")
         payload = bytes(value & 0xFF for value in (minimum, maximum, level))
         try:

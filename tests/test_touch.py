@@ -109,6 +109,9 @@ class TouchTests(unittest.TestCase):
             ("064414", TouchBinding(1, 1, 3, 1)),
             ("064414", TouchBinding(1, 1, 4, 8)),
             ("064414", TouchBinding(1, 1, 2, 255)),
+            ("062014", TouchBinding(1, 1, 1, 6)),
+            ("062014", TouchBinding(1, 1, 3, 3)),
+            ("062014", TouchBinding(2, 1, 3, 17)),
         ):
             peer = WireTransport()
             with self.subTest(product=product, binding=binding):
@@ -122,10 +125,25 @@ class TouchTests(unittest.TestCase):
                          "bass_engine"}.issubset(profile.capabilities))
         self.assertEqual(profile.writable_features,
                          frozenset({"wear_detection", "multipoint"}))
-        self.assertEqual(profile.touch_functions, {2: (5, 6)})
+        self.assertEqual(profile.touch_functions,
+                         {1: (0, 1), 2: (5, 6), 3: (0, 5, 6)})
+        self.assertTrue(profile.hide_long_hold_controls)
         self.assertTrue(profile.hold_cycle_write_verified)
+        self.assertEqual(profile.bass_level_range, (-5, 5))
         self.assertNotIn("find_earbuds", profile.capabilities)
         self.assertNotIn("high_quality_audio", profile.writable_features)
+
+    def test_pro2_serializes_audited_touch_choices_on_both_sides(self):
+        controller = controller_for(WireTransport(), product="062014")
+        controller.touch_controls()
+        controls = serialize_snapshot(controller.snapshot())["touch_controls"]
+        for side in (1, 2):
+            choices = {control["action"]: [option["value"] for option in control["options"]]
+                       for control in controls
+                       if control["side"] == side and control["button"] == 1}
+            self.assertEqual(choices, {
+                1: [0, 1], 2: [5, 6], 3: [0, 5, 6], 4: [], 6: [],
+            })
 
     def test_missing_binding_cannot_be_created_by_accident(self):
         from oneplus_buds.touch import TouchBinding

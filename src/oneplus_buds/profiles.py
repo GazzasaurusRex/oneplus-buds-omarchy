@@ -141,9 +141,14 @@ class DeviceProfile:
     # Wire action -> allowed function IDs. Empty means no touch writes.
     touch_functions: dict[int, tuple[int, ...]] = field(default_factory=dict)
     touch_binding_functions: dict[tuple[int, int, int], tuple[int, ...]] = field(default_factory=dict)
+    # Some models report an app-private long-hold binding that is not exposed
+    # as an independently configurable gesture in their phone UI.
+    hide_long_hold_controls: bool = False
     hold_cycle_supported: bool = False
     # Reading support and hardware-verified write support are independent.
     hold_cycle_write_verified: bool = False
+    # Hardware-verified BassWave level payload bounds. None blocks level writes.
+    bass_level_range: tuple[int, int] | None = None
     # None preserves generic discovery for unaudited models. An audited map
     # lists only audited model switches and their app labels.
     feature_labels: dict[str, str] | None = None
@@ -151,7 +156,6 @@ class DeviceProfile:
     # the Nord has this evidence; other case-capable models show live values.
     case_battery_cached: bool = False
     anc_write_verified: bool = False
-    bass_level_range: tuple[int, int] | None = None
 
     @property
     def verified(self) -> bool:
@@ -285,8 +289,8 @@ PROFILES = {
                 # Local Pro 2 evidence trial, 2026-11-18: only the separately
                 # authorised wear/multipoint switches are writable.
                 "feature_switches",
-                # Local Pro 2 evidence trial, 2026-11-18: only double-tap
-                # Previous/Next is writable on either side.
+                # Local Pro 2 evidence trials, 2026-11-18 and 2026-11-21:
+                # audited Single/Double/Triple mappings are writable per side.
                 "touch_controls",
                 # Local Pro 2 evidence trial, 2026-11-18: the shared hold
                 # cycle accepts the model-specific trailing-zero readback.
@@ -301,14 +305,17 @@ PROFILES = {
         # round-trips changed only features 0x04 and 0x11 respectively, and
         # both were restored before enabling these writes.
         writable_features=frozenset({"wear_detection", "multipoint"}),
-        bass_level_range=(-5, 5),
-        # Local Pro 2 evidence trial, 2026-11-18: phone change/read/restore
-        # confirmed only Double tap -> Previous/Next (wire functions 5/6).
-        touch_functions={2: (5, 6)},
+        # Local Pro 2 phone-app change/read/behaviour/restore trials:
+        # Single None/Play-pause = 0/1; Double Previous/Next = 5/6;
+        # Triple None/Previous/Next = 0/5/6. Voice assistant and Game mode
+        # were intentionally left unaudited and therefore remain blocked.
+        touch_functions={1: (0, 1), 2: (5, 6), 3: (0, 5, 6)},
+        hide_long_hold_controls=True,
         # Read-only evidence collection; writes stay blocked until a phone-app
         # mapping round-trip confirms the Pro 2 mask semantics.
         hold_cycle_supported=True,
         hold_cycle_write_verified=True,
+        bass_level_range=(-5, 5),
     ),
     "065414": DeviceProfile(
         product_id="065414",
@@ -420,6 +427,7 @@ PROFILES = {
         },
         hold_cycle_supported=True,
         hold_cycle_write_verified=True,
+        bass_level_range=(-10, 10),
         case_battery_cached=True,
         # Each operation has separate owner hardware evidence with fresh
         # read-back; one permission never enables another.

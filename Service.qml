@@ -15,6 +15,10 @@ Item {
   // object, killed process). Restart it with a backoff instead of staying dead.
   property int restartAttempt: 0
   property int restartDelayMs: 1000
+  property var pluginUpdate: ({
+    eligible: false, available: false, view_url: "",
+    manual_command: "omarchy plugin update oneplus-buds.control", commits_behind: 0
+  })
 
   function observeLifecycle(phase, productId) {
     lifecycleObservations = lifecycleObservations.concat([{
@@ -31,6 +35,9 @@ Item {
   }
 
   readonly property string helperPath: localPath(Qt.resolvedUrl("oneplus-buds-bridge"))
+  readonly property string pluginRoot: localPath(Qt.resolvedUrl(".")).replace(/\/$/, "")
+  readonly property string updateHelperPath: localPath(
+    Qt.resolvedUrl("scripts/check_plugin_update.py"))
   readonly property string connection: String(state.connection || "stopped")
   readonly property var snapshot: state.snapshot || null
   readonly property var lastResponse: state.lastResponse || null
@@ -46,6 +53,37 @@ Item {
     if (!stopping && helperPath && !helper.running) {
       helper.command = [helperPath]
       helper.running = true
+    }
+  }
+
+  function startPluginUpdateCheck() {
+    if (!stopping && !updateCheck.running && updateHelperPath && pluginRoot) {
+      updateCheck.command = [updateHelperPath, pluginRoot]
+      updateCheck.running = true
+    }
+  }
+
+  function handlePluginUpdate(line) {
+    try {
+      var value = JSON.parse(String(line || ""))
+      var url = String(value.view_url || "")
+      var command = String(value.manual_command || "")
+      var safe = value.available === true
+        && url.indexOf("https://github.com/") === 0
+        && url.length <= 500
+        && command === "omarchy plugin update oneplus-buds.control"
+      pluginUpdate = {
+        eligible: value.eligible === true,
+        available: safe,
+        view_url: safe ? url : "",
+        manual_command: "omarchy plugin update oneplus-buds.control",
+        commits_behind: safe ? Math.max(1, Math.min(9999, Number(value.commits_behind) || 1)) : 0
+      }
+    } catch (_error) {
+      pluginUpdate = {
+        eligible: false, available: false, view_url: "",
+        manual_command: "omarchy plugin update oneplus-buds.control", commits_behind: 0
+      }
     }
   }
 
@@ -161,11 +199,16 @@ Item {
 
   onHelperPathChanged: startHelper()
 
-  Component.onCompleted: startHelper()
+  Component.onCompleted: {
+    startHelper()
+    updateCheckDelay.start()
+  }
 
   Component.onDestruction: {
     stopping = true
     restartTimer.stop()
+    updateCheckDelay.stop()
+    updateCheck.running = false
     helper.running = false
   }
 
@@ -179,6 +222,19 @@ Item {
         root.observeLifecycle("frontend_helper_restart", null)
         root.startHelper()
       }
+    }
+  }
+  Timer {
+    id: updateCheckDelay
+    interval: 2500
+    repeat: false
+    onTriggered: root.startPluginUpdateCheck()
+  }
+  Process {
+    id: updateCheck
+    command: []
+    stdout: SplitParser {
+      onRead: function(line) { root.handlePluginUpdate(line) }
     }
   }
   Process {

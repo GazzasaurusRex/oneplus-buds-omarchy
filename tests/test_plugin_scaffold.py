@@ -58,12 +58,16 @@ class PluginScaffoldTests(unittest.TestCase):
         self.assertIn('parent / "src"', contents)
         self.assertIn("oneplus_buds.bridge_host import main", contents)
 
-    def test_service_owns_one_bidirectional_helper(self):
+    def test_service_owns_one_bidirectional_helper_and_one_shot_update_check(self):
         service = (ROOT / "Service.qml").read_text()
-        self.assertEqual(service.count("Process {"), 1)
+        self.assertEqual(service.count("Process {"), 2)
         self.assertIn("stdinEnabled: true", service)
         self.assertIn('Qt.resolvedUrl("oneplus-buds-bridge")', service)
-        self.assertIn("Component.onCompleted: startHelper()", service)
+        self.assertIn('Qt.resolvedUrl("scripts/check_plugin_update.py")', service)
+        self.assertIn("startPluginUpdateCheck()", service)
+        self.assertIn("Component.onCompleted: {", service)
+        self.assertIn("startHelper()", service)
+        self.assertIn("updateCheckDelay.start()", service)
         self.assertNotIn("__sourceDir", service)
         self.assertIn('helper.write(JSON.stringify({', service)
         self.assertIn("helper.running = false", service)

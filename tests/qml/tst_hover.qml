@@ -23,10 +23,14 @@ TestCase {
   property var findDeviceIds: []
   property var queuedRequests: []
   property var featureRequests: []
+  property var bassRequests: []
+  property var pluginUpdate: ({available:false,view_url:"",
+   manual_command:"omarchy plugin update oneplus-buds.control"})
   function setFeatureSwitch(feature, enabled) {
    featureRequests = featureRequests.concat([{feature:feature, enabled:enabled}])
    return nextId++
   }
+  function setBassLevel(level) { bassRequests = bassRequests.concat([level]); return nextId++ }
   function request(command, params) {
    queuedRequests = queuedRequests.concat([{command:command, parameters:params}])
    if (command === "eq_status") return eqStatus()
@@ -90,12 +94,14 @@ TestCase {
     spatial_sound:false},
    feature_labels:{multipoint:"Dual connection", wear_detection:"Auto play/pause",
     high_quality_audio:"Hi-Res mode"}, writable_features:[]})
-  compare(features.length, 3)
+  compare(features.length, 2)
   compare(features[0].label, "Auto play/pause")
   compare(features[1].label, "Dual connection")
-  compare(features[2].label, "Hi-Res mode")
   verify(!features[0].writable)
-  compare(BarModel.featureList({feature_switches:{low_latency:false}}).length, 1)
+  compare(BarModel.featureList({feature_switches:{low_latency:false}}).length, 0)
+  compare(BarModel.featureList({feature_switches:{personal_noise:true,
+   click_to_take_photo:true, hearing_enhancement:true, high_quality_audio:true,
+   bass_engine:true}}).length, 0)
  }
  function init() {
   service.connection = "connected"
@@ -115,6 +121,9 @@ TestCase {
   service.findDeviceIds = []
   service.queuedRequests = []
   service.featureRequests = []
+  service.bassRequests = []
+  service.pluginUpdate = ({available:false,view_url:"",
+   manual_command:"omarchy plugin update oneplus-buds.control"})
   widget.panelQueue = []
   host.panelAvailableWidth = 600
   widget.popupOpen = false
@@ -137,6 +146,28 @@ TestCase {
   return {status:{model:"Nord",battery:{}},anc_modes:[],
    capabilities:["find_earbuds"],session_connected:true,compatibility:"verified",
    find_state:state,find_device_id:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+ }
+ function test_plugin_update_notice_states() {
+  service.snapshot = ({status:{model:"Test buds",battery:{}},anc_modes:[],capabilities:[],
+   compatibility:"verified",session_connected:true})
+  widget.popupOpen = true
+  var notice = findChild(widget, "pluginUpdateNotice")
+  verify(notice !== null)
+  verify(!notice.visible) // current install
+
+  service.pluginUpdate = ({available:true,
+   view_url:"https://github.com/GazzasaurusRex/oneplus-buds-omarchy/compare/aaa...bbb",
+   manual_command:"omarchy plugin update oneplus-buds.control"})
+  wait(0)
+  verify(notice.visible)
+  compare(findChild(widget, "pluginUpdateLabel").text, "Plugin update available")
+  compare(findChild(widget, "viewPluginChanges").text, "View changes")
+  verify(findChild(widget, "pluginUpdateCommand").text.indexOf(
+   "omarchy plugin update oneplus-buds.control") !== -1)
+
+  service.pluginUpdate = ({available:false,eligible:false,view_url:""}) // local test build
+  wait(0)
+  verify(!notice.visible)
  }
  function test_auto_play_pause_waits_for_readback_and_explains_function_on_hover() {
   var state = findSnapshot("stopped")
@@ -169,14 +200,12 @@ TestCase {
   wait(0)
   verify(toggle.checked)
   verify(widget.outcome.indexOf("not confirmed") !== -1)
-  verify(!findChild(widget, "featureToggle_high_quality_audio").enabled)
+  verify(findChild(widget, "featureToggle_high_quality_audio") === null)
   service.connection = "disconnected"
   verify(!toggle.enabled)
  }
  function test_remaining_feature_controls_data() {
-  return [{tag:"camera",name:"click_to_take_photo",label:"Camera control",keyword:"camera"},
-   {tag:"dual",name:"multipoint",label:"Dual connection",keyword:"two devices"},
-   {tag:"hires",name:"high_quality_audio",label:"Hi-Res mode",keyword:"disconnect"}]
+  return [{tag:"dual",name:"multipoint",label:"Dual connection",keyword:"two devices"}]
  }
  function test_remaining_feature_controls(data) {
   var state = findSnapshot("stopped")
@@ -209,6 +238,60 @@ TestCase {
    verify(toggle.enabled)
    compare(toggle.checked,target)
   }
+ }
+ function test_pro2_basswave_is_status_only_and_uses_verified_range() {
+  var state = {status:{model:"OnePlus Buds Pro 2",product_id:"062014",battery:{}},
+   anc_modes:[],capabilities:["eq","bass_engine"],session_connected:true,compatibility:"verified",
+   feature_switches:{bass_engine:true},bass_level:2,bass_level_min:-5,bass_level_max:5,
+   bass_level_writable:true,bass_toggle_writable:false}
+  service.snapshot = state
+  widget.popupOpen = true
+  while (widget.pendingRequestId >= 0)
+   service.lastResponse = {request_id:widget.pendingRequestId,ok:true,result:{min:-5,max:5,level:2}}
+  wait(0)
+  var toggle = findChild(widget,"bassWaveToggle")
+  var status = findChild(widget,"bassWaveStatus")
+  var slider = findChild(widget,"bassLevelSlider")
+  verify(toggle !== null && !toggle.visible && !toggle.enabled)
+  verify(status.visible)
+  compare(status.text,"On")
+  compare(slider.minimum,-5)
+  compare(slider.maximum,5)
+  verify(slider.enabled)
+  verify(findChild(widget,"featureRow_bass_engine") === null)
+  slider.released(-5)
+  compare(service.bassRequests,[-5])
+  service.lastResponse = {request_id:widget.pendingRequestId,ok:true,
+   result:{level:-5,verified:true,set_status:0}}
+  wait(0)
+  slider.released(-6)
+  slider.released(6)
+  compare(service.bassRequests,[-5])
+  var disabled = JSON.parse(JSON.stringify(state))
+  disabled.feature_switches.bass_engine = false
+  service.snapshot = disabled
+  wait(0)
+  compare(status.text,"Off")
+ }
+ function test_nord_basswave_preserves_toggle_and_ten_step_range() {
+  service.snapshot = {status:{model:"Nord",product_id:"064414",battery:{}},anc_modes:[],
+   capabilities:["eq","bass_engine"],session_connected:true,compatibility:"community_tested",
+   feature_switches:{bass_engine:true},bass_level:1,bass_level_min:-10,bass_level_max:10,
+   bass_level_writable:true,bass_toggle_writable:true}
+  widget.popupOpen = true
+  while (widget.pendingRequestId >= 0)
+   service.lastResponse = {request_id:widget.pendingRequestId,ok:true,result:{min:-10,max:10,level:1}}
+  wait(0)
+  var toggle = findChild(widget,"bassWaveToggle")
+  var status = findChild(widget,"bassWaveStatus")
+  var slider = findChild(widget,"bassLevelSlider")
+  verify(toggle.visible && toggle.enabled && toggle.interactive && toggle.checked)
+  verify(!status.visible)
+  compare(slider.minimum,-10)
+  compare(slider.maximum,10)
+  verify(slider.enabled)
+  toggle.toggled()
+  compare(service.featureRequests,[{feature:"bass_engine",enabled:false}])
  }
  function test_find_play_stop_follow_confirmed_state_and_handle_rejection() {
   service.snapshot = findSnapshot("stopped")
@@ -339,6 +422,38 @@ TestCase {
   service.connection = "disconnected"
   wait(0)
   verify(!findChild(widget, "touchSelector_1_2").enabled)
+ }
+ function test_pro2_hides_per_earbud_long_hold_only() {
+  var state = touchSnapshot()
+  state.hide_long_hold_controls = true
+  for (var side = 1; side <= 2; ++side) {
+   state.touch_controls.push(
+    {side:side,button:1,action:1,action_label:"Single tap",function:1,function_label:"Play / pause",
+     writable:true,options:[{value:0,label:"None"},{value:1,label:"Play / pause"}]},
+    {side:side,button:1,action:3,action_label:"Triple tap",function:5,function_label:"Previous track",
+     writable:true,options:[{value:0,label:"None"},{value:5,label:"Previous track"},{value:6,label:"Next track"}]},
+    {side:side,button:1,action:6,action_label:"Long hold",function:18,function_label:"Unknown (18)",
+     writable:false,options:[]})
+  }
+  service.snapshot = state
+  widget.popupOpen = true
+  service.lastResponse = {request_id:widget.pendingRequestId,ok:true,result:{}}
+  wait(0)
+  findChild(widget, "touchControlsDisclosure").clicked()
+  wait(0)
+  var hiddenLongHold = findChild(widget, "touchSelector_1_6")
+  verify(hiddenLongHold === null || !hiddenLongHold.visible)
+  for (var side = 1; side <= 2; ++side) {
+   verify(findChild(widget, "touchSelector_" + side + "_1").visible)
+   verify(findChild(widget, "touchSelector_" + side + "_2").visible)
+   verify(findChild(widget, "touchSelector_" + side + "_3").visible)
+  }
+
+  var nordState = JSON.parse(JSON.stringify(state))
+  nordState.hide_long_hold_controls = false
+  service.snapshot = nordState
+  wait(0)
+  verify(findChild(widget, "touchSelector_1_6") !== null)
  }
  function test_touch_controls_refresh_and_narrow_layout() {
   service.snapshot = touchSnapshot()

@@ -117,6 +117,14 @@ your existing Omarchy graphical session. Do not start another Quickshell instanc
 See [publication notes](docs/publication.md) for release and marketplace status.
 Installation has no dependency hook, so run the dependency check before enabling.
 
+For a Git-managed install at the standard plugin path, the service performs one
+quiet `git fetch origin HEAD` shortly after it starts. A notice is shown only
+when the checkout is clean, behind that fetched commit, and can fast-forward.
+The plugin never merges or installs an update; **View changes** opens a GitHub
+comparison and the displayed manual command is
+`omarchy plugin update oneplus-buds.control`. Copied exports, symlinked sources,
+Git worktrees and development checkouts do not fetch or show the notice.
+
 To stop the helper and hide the widget:
 
 ```bash

@@ -40,6 +40,12 @@ BarWidget {
   readonly property bool reportAvailable: connection === "connected"
     && snapshot !== null && snapshot.status !== null
   readonly property bool reportActionShown: reportAvailable && !reportDetailsOpen
+  readonly property var pluginUpdate: budsService && budsService.pluginUpdate
+    ? budsService.pluginUpdate : ({available:false, view_url:""})
+  readonly property bool pluginUpdateAvailable: pluginUpdate.available === true
+    && String(pluginUpdate.view_url || "").indexOf("https://github.com/") === 0
+  readonly property string pluginUpdateUrl: pluginUpdateAvailable
+    ? String(pluginUpdate.view_url) : ""
   readonly property var selectedCustom: customEqEntries.length > 0
     ? customEqEntries[Math.max(0, Math.min(customSlotIndex, customEqEntries.length - 1))] : null
   readonly property bool eqAvailable: !!(snapshot && snapshot.capabilities
@@ -94,8 +100,17 @@ BarWidget {
     && snapshot.capabilities.indexOf("bass_engine") !== -1)
   readonly property int bassLevel: (snapshot && snapshot.bass_level !== null
     && snapshot.bass_level !== undefined) ? Number(snapshot.bass_level) : 0
+  readonly property int bassLevelMinimum: (snapshot && snapshot.bass_level_min !== null
+    && snapshot.bass_level_min !== undefined) ? Number(snapshot.bass_level_min) : 0
+  readonly property int bassLevelMaximum: (snapshot && snapshot.bass_level_max !== null
+    && snapshot.bass_level_max !== undefined) ? Number(snapshot.bass_level_max) : 0
+  readonly property bool bassLevelRangeKnown: bassLevelMinimum < bassLevelMaximum
+  readonly property bool bassLevelWritable: !!(snapshot
+    && snapshot.bass_level_writable === true && bassLevelRangeKnown)
+  readonly property bool bassToggleWritable: !!(snapshot
+    && snapshot.bass_toggle_writable === true)
+  readonly property bool bassEngineKnown: typeof featureSwitches.bass_engine === "boolean"
   readonly property bool bassEngineEnabled: featureSwitches.bass_engine === true
-  readonly property var bassLevelRange: snapshot && snapshot.bass_level_range || [-10, 10]
   readonly property var featureList: BarModel.featureList(snapshot).filter(function(feature) {
     return !(root.bassEngineAvailable && feature.name === "bass_engine")
   })
@@ -398,7 +413,10 @@ BarWidget {
 
   function setBassLevel(level) {
     if (!budsService || connection !== "connected" || pendingRequestId >= 0) return
-    var requestId = budsService.setBassLevel(Number(level))
+    var requested = Number(level)
+    if (!bassLevelWritable || requested < bassLevelMinimum || requested > bassLevelMaximum)
+      return
+    var requestId = budsService.setBassLevel(requested)
     if (requestId === null) { outcome = "Could not start request"; return }
     pendingRequestId = requestId
     pendingKind = "bass"
@@ -600,6 +618,10 @@ BarWidget {
 
   function openReportIssue() {
     Qt.openUrlExternally(reportIssueUrl)
+  }
+
+  function openPluginChanges() {
+    if (pluginUpdateAvailable) Qt.openUrlExternally(pluginUpdateUrl)
   }
 
   onLastResponseChanged: {
@@ -1209,8 +1231,8 @@ BarWidget {
 
             }
 
-            // Local fork: the phone app's BassWave control (feature switch
-            // 0x1d plus the -10..+10 level).
+            // BassWave has one model-aware surface. The on/off toggle is shown
+            // only where that write is verified; other models show status.
             Column {
               objectName: "bassWaveSection"
               width: parent.width
@@ -1233,14 +1255,29 @@ BarWidget {
                 }
 
                 ToggleSwitch {
+                  objectName: "bassWaveToggle"
                   width: Style.space(40)
+                  visible: root.bassToggleWritable
                   checked: root.bassEngineEnabled
                   busy: root.pendingRequestId >= 0
-                  enabled: root.connection === "connected" && root.pendingRequestId < 0
-                    && root.snapshot?.session_connected === true
-                    && typeof root.featureSwitches.bass_engine === "boolean"
-                    && (root.snapshot.writable_features || []).indexOf("bass_engine") !== -1
+                  interactive: root.bassToggleWritable
+                  enabled: visible && root.connection === "connected"
+                    && root.pendingRequestId < 0 && root.snapshot?.session_connected === true
+                    && root.bassEngineKnown
                   onToggled: root.toggleFeature("bass_engine", !root.bassEngineEnabled)
+                }
+
+                Text {
+                  objectName: "bassWaveStatus"
+                  width: Style.space(40)
+                  visible: !root.bassToggleWritable
+                  text: root.bassEngineKnown ? (root.bassEngineEnabled ? "On" : "Off") : "Unknown"
+                  textFormat: Text.PlainText
+                  horizontalAlignment: Text.AlignRight
+                  color: root.bar.foreground
+                  opacity: root.bassEngineKnown ? 1.0 : 0.6
+                  font.family: root.bar.fontFamily
+                  font.pixelSize: Style.font.bodySmall
                 }
               }
 
@@ -1255,15 +1292,16 @@ BarWidget {
 
               PanelSlider {
                 id: bassSlider
+                objectName: "bassLevelSlider"
                 width: parent.width
                 bar: root.bar
-                minimum: root.bassLevelRange[0]
-                maximum: root.bassLevelRange[1]
+                minimum: root.bassLevelMinimum
+                maximum: root.bassLevelMaximum
                 step: 1
                 integer: true
                 value: root.bassLevel
-                enabled: root.connection === "connected" && root.pendingRequestId < 0
-                  && root.snapshot?.session_connected === true && root.snapshot.bass_level_writable === true
+                enabled: root.bassLevelWritable && root.connection === "connected"
+                  && root.pendingRequestId < 0 && root.snapshot?.session_connected === true
                 onReleased: function(value) { root.setBassLevel(Math.round(value)) }
               }
             }
@@ -1282,7 +1320,7 @@ BarWidget {
                 + Style.space(14)
             width: parent.width
             spacing: Style.space(5)
-            visible: root.featureSwitchesAvailable
+            visible: root.featureSwitchesAvailable && root.featureList.length > 0
 
             Text {
               width: parent.width
@@ -1522,7 +1560,8 @@ BarWidget {
                   model: root.touchControls.filter(function(entry) {
                     return entry.side === touchSide.modelData && entry.button === 1
                       && !(root.holdCycleAvailable && entry.action === 4)
-                      && !(root.snapshot.status?.product_id === "067814" && entry.action === 6)
+                      && !(entry.action === 6 && (root.snapshot.hide_long_hold_controls === true
+                        || root.snapshot.status?.product_id === "067814"))
                   })
                   delegate: Column {
                     id: touchRow
@@ -1709,7 +1748,57 @@ BarWidget {
           objectName: "diagnosticReportSection"
           width: parent.width
           spacing: Style.space(3)
-          visible: root.reportAvailable
+          visible: root.reportAvailable || root.pluginUpdateAvailable
+
+          Column {
+            id: pluginUpdateNotice
+            objectName: "pluginUpdateNotice"
+            width: parent.width
+            spacing: Style.space(2)
+            visible: root.pluginUpdateAvailable
+
+            Text {
+              objectName: "pluginUpdateLabel"
+              width: parent.width
+              text: "Plugin update available"
+              textFormat: Text.PlainText
+              color: root.bar.foreground
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              font.bold: true
+            }
+
+            Text {
+              id: viewPluginChanges
+              objectName: "viewPluginChanges"
+              text: "View changes"
+              textFormat: Text.PlainText
+              color: Color.accent
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              font.underline: viewPluginChangesMouse.containsMouse
+
+              MouseArea {
+                id: viewPluginChangesMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.openPluginChanges()
+              }
+            }
+
+            Text {
+              objectName: "pluginUpdateCommand"
+              width: parent.width
+              text: "Update manually: omarchy plugin update oneplus-buds.control"
+              textFormat: Text.PlainText
+              color: root.bar.foreground
+              opacity: 0.72
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              wrapMode: Text.WrapAnywhere
+            }
+          }
 
           Text {
             id: reportAction
@@ -1924,8 +2013,10 @@ BarWidget {
         eq_writable_preset_ids: root.snapshot ? root.snapshot.eq_writable_preset_ids : null,
         eq_writable_custom_ids: root.snapshot ? root.snapshot.eq_writable_custom_ids : null,
         bass_level: root.snapshot ? root.snapshot.bass_level : null,
-        bass_level_range: root.bassLevelRange,
-        bass_level_writable: root.snapshot?.bass_level_writable === true,
+        bass_level_min: root.snapshot ? root.snapshot.bass_level_min : null,
+        bass_level_max: root.snapshot ? root.snapshot.bass_level_max : null,
+        bass_level_writable: root.snapshot ? root.snapshot.bass_level_writable : false,
+        bass_toggle_writable: root.snapshot ? root.snapshot.bass_toggle_writable : false,
         feature_switches: root.snapshot ? root.snapshot.feature_switches : null,
         touch_controls: root.touchControls,
         hold_cycle: root.holdCycle,
@@ -1935,6 +2026,8 @@ BarWidget {
         compatibility_notice: root.compatibilityNoticeShown,
         report_available: root.reportAvailable,
         report_action: reportAction.visible,
+        plugin_update_available: root.pluginUpdateAvailable,
+        plugin_update_url: root.pluginUpdateUrl,
         panel_geometry: JSON.stringify({
           popup_x: root.popupX,
           popup_width: root.popupWidth,
