@@ -153,6 +153,18 @@ var FEATURE_TOOLTIPS = {
   high_quality_audio: "Enable high-resolution audio with a compatible audio host. Changing this mode may briefly disconnect and reconnect the earbuds."
 }
 
+// These values remain in snapshots and diagnostic reports, but setup belongs
+// in the phone app or their Linux-host effect still needs independent evidence.
+// BassWave has one dedicated, model-aware section instead of a duplicate row.
+var HIDDEN_PANEL_FEATURES = {
+  personal_noise: true,
+  click_to_take_photo: true,
+  hearing_enhancement: true,
+  low_latency: true,
+  high_quality_audio: true,
+  bass_engine: true
+}
+
 function featureList(snapshot) {
   var switches = snapshot && snapshot.feature_switches
   if (!switches || typeof switches !== "object") return []
@@ -162,6 +174,7 @@ function featureList(snapshot) {
   var result = []
   for (var i = 0; i < FEATURE_ORDER.length; i++) {
     var name = FEATURE_ORDER[i]
+    if (HIDDEN_PANEL_FEATURES[name]) continue
     if (labels && typeof labels[name] !== "string") continue
     if (typeof switches[name] === "boolean")
       result.push({ name: name, label: (labels && labels[name]) || FEATURE_LABELS[name] || titleCase(name),

@@ -32,6 +32,15 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
     profile = profile_for_product(snapshot.status.product_id) if snapshot.status else None
     capabilities = set(profile.capabilities) if profile else set()
     capabilities.update(feature_capabilities(profile, snapshot.feature_switches))
+    bass_range = profile.bass_level_range if profile else None
+    bass_level_writable = bool(
+        profile and profile.can_write("bass_level")
+        and "bass_engine" in profile.capabilities and bass_range is not None
+    )
+    bass_toggle_writable = bool(
+        profile and profile.can_write("feature_switch")
+        and "bass_engine" in profile.writable_features
+    )
     return {
         "status": snapshot.status.to_dict() if snapshot.status is not None else None,
         "compatibility": compatibility_for_product(
@@ -69,11 +78,16 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
         "reconnect_count": snapshot.reconnect_count,
         "generation": snapshot.generation,
         "bass_level": snapshot.bass_level,
+        "bass_level_min": bass_range[0] if bass_range else None,
+        "bass_level_max": bass_range[1] if bass_range else None,
+        "bass_level_writable": bass_level_writable,
+        "bass_toggle_writable": bass_toggle_writable,
         "find_state": snapshot.find_state,
         "find_device_id": snapshot.find_device_id,
         "touch_controls": serialize_touch_controls(
             snapshot.touch_bindings, profile.touch_functions if profile else {},
             bool(profile and profile.can_write("touch") and snapshot.session_connected)),
+        "hide_long_hold_controls": bool(profile and profile.hide_long_hold_controls),
         "hold_cycle": serialize_hold_cycle(
             snapshot.hold_cycle_mask if profile and profile.hold_cycle_supported else None,
             bool(profile and profile.can_write("hold_cycle")

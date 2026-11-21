@@ -18,6 +18,7 @@ from oneplus_buds.protocol import (
     QUERY_EQ, QUERY_EQ_ALL, QUERY_BASS_ENGINE, RESPONSE_EQ, RESPONSE_EQ_ALL,
     RESPONSE_SET_EQ, RESPONSE_SET_EQ_DETAIL, RESPONSE_SET_BASS_ENGINE,
     RESPONSE_BASS_ENGINE, SET_EQ, SET_EQ_DETAIL, Frame,
+    SET_BASS_ENGINE,
 )
 from oneplus_buds.session import OpoSession
 from oneplus_buds.touch import TouchBinding
@@ -125,6 +126,35 @@ class RestoreBestEffortTests(unittest.TestCase):
 
 
 class BassVerificationTests(unittest.TestCase):
+    def test_pro2_accepts_endpoints_and_rejects_outside_verified_range(self):
+        s = session("062014")
+        s._transport.request.return_value = Frame(RESPONSE_SET_BASS_ENGINE, 1, b"\x00")
+        for level, payload in ((-5, bytes.fromhex("fb 05 fb")),
+                               (5, bytes.fromhex("fb 05 05"))):
+            with self.subTest(level=level):
+                s._transport.request.reset_mock()
+                self.assertEqual(s.set_bass_level(level), (0, True))
+                call = s._transport.request.call_args
+                self.assertEqual(call.args[:3], (SET_BASS_ENGINE, payload,
+                                                  RESPONSE_SET_BASS_ENGINE))
+        for level in (-6, 6):
+            with self.subTest(level=level):
+                s._transport.request.reset_mock()
+                with self.assertRaisesRegex(ValueError, "between -5 and 5"):
+                    s.set_bass_level(level)
+                s._transport.request.assert_not_called()
+
+    def test_nord_preserves_verified_ten_step_range(self):
+        s = session("064414")
+        s._transport.request.return_value = Frame(RESPONSE_SET_BASS_ENGINE, 1, b"\x00")
+        for level, payload in ((-10, bytes.fromhex("f6 0a f6")),
+                               (10, bytes.fromhex("f6 0a 0a"))):
+            with self.subTest(level=level):
+                s._transport.request.reset_mock()
+                self.assertEqual(s.set_bass_level(level), (0, True))
+                self.assertEqual(s._transport.request.call_args.args[:3],
+                                 (SET_BASS_ENGINE, payload, RESPONSE_SET_BASS_ENGINE))
+
     def test_rejected_bass_write_is_not_published_as_device_state(self):
         sess = MagicMock()
         sess.set_bass_level.return_value = (14, True)        # ACK 0x0e

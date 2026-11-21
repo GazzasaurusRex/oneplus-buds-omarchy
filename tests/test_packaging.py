@@ -20,6 +20,8 @@ class PackagingTests(unittest.TestCase):
             exporter.export(destination)
             self.assertTrue(os.access(destination / "oneplus-buds", os.X_OK))
             self.assertTrue(os.access(destination / "oneplus-buds-bridge", os.X_OK))
+            self.assertTrue(os.access(
+                destination / "scripts/check_plugin_update.py", os.X_OK))
             self.assertTrue((destination / "src/oneplus_buds/cli.py").is_file())
             self.assertTrue((destination / "EqCurveEditor.qml").is_file())
             self.assertTrue((destination / "EqCurve.js").is_file())

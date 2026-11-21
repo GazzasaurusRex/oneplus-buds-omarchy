@@ -66,6 +66,21 @@ class BridgeTests(unittest.TestCase):
         self.assertIn("anc", payload["capabilities"])
         self.assertIn("multipoint", payload["capabilities"])
         self.assertIn("transparency", payload["anc_modes"])
+        self.assertEqual((payload["bass_level_min"], payload["bass_level_max"]), (-5, 5))
+        self.assertTrue(payload["bass_level_writable"])
+        self.assertFalse(payload["bass_toggle_writable"])
+
+    def test_panel_hidden_switches_remain_available_to_diagnostics(self):
+        switches = {
+            "personal_noise": True,
+            "click_to_take_photo": False,
+            "hearing_enhancement": True,
+            "low_latency": False,
+            "high_quality_audio": False,
+        }
+        payload = serialize_snapshot(replace(SNAPSHOT, feature_switches=switches))
+        self.assertEqual(payload["feature_switches"], switches)
+        self.assertTrue(set(switches).issubset(payload["capabilities"]))
 
     def test_only_two_reference_models_are_hardware_verified(self):
         self.assertEqual(PROFILES["060C14"].compatibility, "verified")
@@ -146,6 +161,9 @@ class BridgeTests(unittest.TestCase):
             touch_bindings=(TouchBinding(1, 1, 2, 6),), hold_cycle_mask=6))
         self.assertTrue(nord["touch_controls"][0]["writable"])
         self.assertTrue(nord["hold_cycle"]["writable"])
+        self.assertEqual((nord["bass_level_min"], nord["bass_level_max"]), (-10, 10))
+        self.assertTrue(nord["bass_level_writable"])
+        self.assertTrue(nord["bass_toggle_writable"])
         self.assertEqual(nord["custom_eq_max"], 3)
         self.assertIn("wear_detection", nord["writable_features"])
         self.assertEqual(nord["feature_labels"]["bass_engine"], "BassWave")

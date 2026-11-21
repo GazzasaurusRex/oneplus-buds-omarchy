@@ -59,7 +59,6 @@ from .protocol import (
     QUERY_STATUS, SET_FEATURE_SWITCH, RESPONSE_SET_FEATURE_SWITCH,
     SET_FIND_MODE, RESPONSE_SET_FIND_MODE,
     QUERY_BASS_ENGINE, RESPONSE_BASS_ENGINE, SET_BASS_ENGINE, RESPONSE_SET_BASS_ENGINE,
-    BASS_LEVEL_MIN, BASS_LEVEL_MAX, BASS_LEVEL_RANGE,
     EQ_ACTION_CREATE, EQ_ACTION_UPDATE, EQ_ACTION_DELETE,
 )
 from .touch import (
@@ -774,14 +773,12 @@ class OpoSession:
     def set_bass_level(self, level: int) -> tuple[int | None, bool]:
         """Set the bass engine level ("BassWave"); the device echoes [min, max, value]."""
         self._require_connected()
-        if not self.profile.can_write("bass_level") or "bass_engine" not in self.profile.capabilities:
+        if (not self.profile.can_write("bass_level")
+                or "bass_engine" not in self.profile.capabilities
+                or self.profile.bass_level_range is None):
             raise ValueError("bass level writes are not supported by this device profile")
-        if self.profile.product_id == "062014":
-            minimum, maximum = -5, 5
-            level_range = bytes((minimum & 0xFF, maximum & 0xFF))
-        else:
-            minimum, maximum = BASS_LEVEL_MIN, BASS_LEVEL_MAX
-            level_range = BASS_LEVEL_RANGE
+        minimum, maximum = self.profile.bass_level_range
+        level_range = bytes((minimum & 0xFF, maximum & 0xFF))
         if not minimum <= level <= maximum:
             raise ValueError(f"bass level must be between {minimum} and {maximum}")
         payload = level_range + bytes((level & 0xFF,))
