@@ -80,7 +80,7 @@ class HoldCycleTests(unittest.TestCase):
             self.assertEqual(peer.requests, [])
         peer = CyclePeer()
         with self.assertRaises(ValueError):
-            session_for(peer, "062014").set_hold_cycle(("anc", "off"))
+            session_for(peer, "060C14").set_hold_cycle(("anc", "off"))
         session = session_for(peer)
         session.profile = replace(session.profile,
                                   community_write_permissions=frozenset({"anc"}))

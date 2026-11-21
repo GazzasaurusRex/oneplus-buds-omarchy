@@ -7,7 +7,11 @@ from unittest.mock import patch
 from oneplus_buds.availability import Availability, BlueZAvailability
 from oneplus_buds.bluez import DEVICE_INTERFACE
 from oneplus_buds.controller import BudsController
-from oneplus_buds.protocol import FrameStream, QUERY_PRODUCT_ID, QUERY_BATTERY, QUERY_ANC, QUERY_REMOTE_VERSION
+from oneplus_buds.protocol import (
+    Frame, FrameStream, QUERY_PRODUCT_ID, QUERY_BATTERY, QUERY_ANC,
+    QUERY_REMOTE_VERSION, QUERY_STATUS, QUERY_BASS_ENGINE, RESPONSE_STATUS,
+    RESPONSE_BASS_ENGINE,
+)
 from oneplus_buds.session import OpoSession
 from test_controller import DEVICE
 
@@ -49,6 +53,10 @@ class StartupTransport:
             return frame(FIXTURES['buds_pro']['rx_battery'])
         if command == QUERY_ANC:
             return frame(self.fixture.get('rx_anc_off', self.fixture.get('rx_anc_transparency')))
+        if command == QUERY_STATUS:
+            return Frame(RESPONSE_STATUS, 1, bytes.fromhex("00 02 04 01 11 01"))
+        if command == QUERY_BASS_ENGINE:
+            return Frame(RESPONSE_BASS_ENGINE, 1, bytes.fromhex("00 fb 05 02"))
         raise AssertionError(command)
 
     def send_query(self, command):

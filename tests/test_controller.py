@@ -170,6 +170,12 @@ class FakeSession:
             raise item
         return item
 
+    def feature_switches(self, _ids=None):
+        return {0x04: True, 0x11: True}
+
+    def bass_engine_status(self):
+        return (-5, 5, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

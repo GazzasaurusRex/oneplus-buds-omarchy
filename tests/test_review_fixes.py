@@ -231,8 +231,15 @@ class OperationGateTests(unittest.TestCase):
     def test_buds4_refuses_every_new_write_before_io(self):
         self._assert_all_refused(session("065414"))
 
-    def test_pro2_refuses_new_writes_without_support_data(self):
-        self._assert_all_refused(session("062014"))
+    def test_pro2_refuses_unverified_follow_up_writes_before_io(self):
+        s = session("062014")
+        with self.assertRaises(ValueError):
+            s.set_touch_binding(TouchBinding(1, 1, 1, 6))
+        with self.assertRaises(ValueError):
+            s.set_feature_switch(0x18, True)
+        with self.assertRaises(ValueError):
+            s.find_earbuds(True)
+        s._transport.request.assert_not_called()
 
     def test_nord_with_stripped_permission_refuses(self):
         s = session()

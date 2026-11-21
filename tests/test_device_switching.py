@@ -91,7 +91,11 @@ class SwitchingTests(unittest.TestCase):
                         self.assertEqual(status['battery'], second.battery)
                         self.assertEqual(status['anc'], second.anc)
                         self.assertEqual(status['firmware_version'], second.firmware_version)
-                        self.assertEqual(snapshot['feature_switches'], {'multipoint': True})
+                        switches = snapshot['feature_switches']
+                        self.assertTrue(switches['multipoint'])
+                        self.assertNotIn('low_latency', switches)
+                        self.assertLessEqual(set(switches),
+                                             {'multipoint', 'wear_detection'})
                         self.assertEqual(snapshot['notification_event_codes'], [4])
                         self.assertEqual(snapshot['ignored_frames'], 1)
                         cancelled.set()
