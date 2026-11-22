@@ -43,9 +43,11 @@ BarWidget {
   readonly property var pluginUpdate: budsService && budsService.pluginUpdate
     ? budsService.pluginUpdate : ({available:false, view_url:""})
   readonly property bool pluginUpdateAvailable: pluginUpdate.available === true
-    && String(pluginUpdate.view_url || "").indexOf("https://github.com/") === 0
-  readonly property string pluginUpdateUrl: pluginUpdateAvailable
-    ? String(pluginUpdate.view_url) : ""
+  readonly property string pluginUpdateUrl:
+    String(pluginUpdate.view_url || "").indexOf("https://github.com/") === 0
+      ? String(pluginUpdate.view_url) : ""
+  readonly property bool pluginUpdateViewAvailable: pluginUpdateAvailable
+    && pluginUpdateUrl.length > 0
   readonly property var selectedCustom: customEqEntries.length > 0
     ? customEqEntries[Math.max(0, Math.min(customSlotIndex, customEqEntries.length - 1))] : null
   readonly property bool eqAvailable: !!(snapshot && snapshot.capabilities
@@ -605,7 +607,7 @@ BarWidget {
   }
 
   function openPluginChanges() {
-    if (pluginUpdateAvailable) Qt.openUrlExternally(pluginUpdateUrl)
+    if (pluginUpdateViewAvailable) Qt.openUrlExternally(pluginUpdateUrl)
   }
 
   onLastResponseChanged: {
@@ -1720,6 +1722,7 @@ BarWidget {
             Text {
               id: viewPluginChanges
               objectName: "viewPluginChanges"
+              visible: root.pluginUpdateViewAvailable
               text: "View changes"
               textFormat: Text.PlainText
               color: Color.accent

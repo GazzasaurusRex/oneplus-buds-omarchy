@@ -12,7 +12,6 @@ import sys
 
 PLUGIN_ID = "oneplus-buds.control"
 UPDATE_COMMAND = f"omarchy plugin update {PLUGIN_ID}"
-OFFICIAL_REPOSITORY = "https://github.com/GazzasaurusRex/oneplus-buds-omarchy"
 GIT_TIMEOUT_SECONDS = 20
 
 
@@ -42,7 +41,7 @@ def _git(checkout: Path, *args: str, check: bool = True) -> subprocess.Completed
     )
 
 
-def _github_repository(remote: str) -> str:
+def _github_repository(remote: str) -> str | None:
     value = remote.strip()
     patterns = (
         r"https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$",
@@ -53,7 +52,7 @@ def _github_repository(remote: str) -> str:
         match = re.fullmatch(pattern, value)
         if match:
             return f"https://github.com/{match.group(1)}/{match.group(2)}"
-    return OFFICIAL_REPOSITORY
+    return None
 
 
 def check_checkout(checkout: Path, *, home: Path | None = None) -> dict[str, object]:
@@ -74,7 +73,10 @@ def check_checkout(checkout: Path, *, home: Path | None = None) -> dict[str, obj
         if _git(checkout, "status", "--porcelain").stdout:
             return hidden(eligible=True)
 
-        remote = _git(checkout, "remote", "get-url", "origin").stdout.strip()
+        # Read the configured URL rather than `remote get-url`, which can apply
+        # url.*.insteadOf rewriting and stop the comparison link representing
+        # the origin that is actually recorded in this installed checkout.
+        remote = _git(checkout, "config", "--get", "remote.origin.url").stdout.strip()
         _git(checkout, "fetch", "--quiet", "origin", "HEAD")
         head = _git(checkout, "rev-parse", "HEAD").stdout.strip()
         fetched = _git(checkout, "rev-parse", "FETCH_HEAD").stdout.strip()
@@ -92,7 +94,9 @@ def check_checkout(checkout: Path, *, home: Path | None = None) -> dict[str, obj
         return {
             "eligible": True,
             "available": True,
-            "view_url": f"{repository}/compare/{head}...{fetched}",
+            "view_url": (
+                f"{repository}/compare/{head}...{fetched}" if repository else ""
+            ),
             "manual_command": UPDATE_COMMAND,
             "commits_behind": max(1, behind),
         }
