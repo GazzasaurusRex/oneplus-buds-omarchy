@@ -69,13 +69,13 @@ Item {
       var url = String(value.view_url || "")
       var command = String(value.manual_command || "")
       var safe = value.available === true
-        && url.indexOf("https://github.com/") === 0
-        && url.length <= 500
         && command === "omarchy plugin update oneplus-buds.control"
+      var safeUrl = url.indexOf("https://github.com/") === 0
+        && url.length <= 500
       pluginUpdate = {
         eligible: value.eligible === true,
         available: safe,
-        view_url: safe ? url : "",
+        view_url: safe && safeUrl ? url : "",
         manual_command: "omarchy plugin update oneplus-buds.control",
         commits_behind: safe ? Math.max(1, Math.min(9999, Number(value.commits_behind) || 1)) : 0
       }

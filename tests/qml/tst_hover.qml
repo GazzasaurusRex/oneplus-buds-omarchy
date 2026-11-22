@@ -162,8 +162,16 @@ TestCase {
   verify(notice.visible)
   compare(findChild(widget, "pluginUpdateLabel").text, "Plugin update available")
   compare(findChild(widget, "viewPluginChanges").text, "View changes")
+  verify(findChild(widget, "viewPluginChanges").visible)
   verify(findChild(widget, "pluginUpdateCommand").text.indexOf(
    "omarchy plugin update oneplus-buds.control") !== -1)
+
+  service.pluginUpdate = ({available:true,view_url:"",
+   manual_command:"omarchy plugin update oneplus-buds.control"})
+  wait(0)
+  verify(notice.visible)
+  verify(!findChild(widget, "viewPluginChanges").visible)
+  verify(findChild(widget, "pluginUpdateCommand").visible)
 
   service.pluginUpdate = ({available:false,eligible:false,view_url:""}) // local test build
   wait(0)

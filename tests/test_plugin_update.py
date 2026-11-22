@@ -67,12 +67,12 @@ class PluginUpdateTests(unittest.TestCase):
         self.assertTrue(result["eligible"])
         self.assertFalse(result["available"])
 
-    def test_notice_appears_only_when_origin_can_fast_forward(self) -> None:
+    def test_local_origin_shows_notice_without_comparison_when_fast_forwardable(self) -> None:
         self.publish("upstream change")
         result = UPDATE.check_checkout(self.install, home=self.home)
         self.assertTrue(result["available"])
         self.assertEqual(result["commits_behind"], 1)
-        self.assertIn("/compare/", result["view_url"])
+        self.assertEqual(result["view_url"], "")
         self.assertEqual(result["manual_command"],
                          "omarchy plugin update oneplus-buds.control")
 
@@ -82,6 +82,39 @@ class PluginUpdateTests(unittest.TestCase):
         git(self.install, "add", "local.txt")
         git(self.install, "commit", "-m", "local divergence")
         self.assertFalse(UPDATE.check_checkout(self.install, home=self.home)["available"])
+
+    def test_github_fork_comparison_uses_configured_origin_and_commit_hashes(self) -> None:
+        installed = git(self.install, "rev-parse", "HEAD")
+        self.publish("fork change")
+        fetched = git(self.publisher, "rev-parse", "HEAD")
+        github_origin = "https://github.com/fork-owner/custom-buds.git"
+        git(self.install, "remote", "set-url", "origin", github_origin)
+        git(self.install, "config", f"url.{self.origin.as_uri()}.insteadOf", github_origin)
+
+        result = UPDATE.check_checkout(self.install, home=self.home)
+
+        self.assertTrue(result["available"])
+        self.assertEqual(
+            result["view_url"],
+            f"https://github.com/fork-owner/custom-buds/compare/{installed}...{fetched}",
+        )
+
+    def test_github_https_and_ssh_origin_formats(self) -> None:
+        expected = "https://github.com/fork-owner/custom-buds"
+        for origin in (
+            "https://github.com/fork-owner/custom-buds",
+            "https://github.com/fork-owner/custom-buds.git",
+            "https://github.com/fork-owner/custom-buds.git/",
+            "git@github.com:fork-owner/custom-buds.git",
+            "ssh://git@github.com/fork-owner/custom-buds.git",
+            "ssh://git@github.com/fork-owner/custom-buds.git/",
+        ):
+            with self.subTest(origin=origin):
+                self.assertEqual(UPDATE._github_repository(origin), expected)
+
+        for origin in (str(self.origin), "https://gitlab.example/fork/custom-buds.git"):
+            with self.subTest(origin=origin):
+                self.assertIsNone(UPDATE._github_repository(origin))
 
     def test_temporary_export_and_development_clone_are_skipped(self) -> None:
         export = Path(self.temporary.name) / "temporary-export"
