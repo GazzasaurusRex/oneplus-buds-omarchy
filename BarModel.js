@@ -77,10 +77,19 @@ function ancGroups(snapshot) {
   var groups = [
     { title: "Noise control", options: [] },
     { title: "ANC strength", options: [] },
-    { title: "Other modes", options: [] }
+    { title: "Other modes", options: [] },
+    { title: "Adaptive", options: [] }
   ]
+  var adaptiveLevels = ["adaptive-less-noise", "adaptive", "adaptive-more-noise"]
+  if (modes.some(function(option) { return option.value === "adaptive-less-noise" })) {
+    adaptiveLevels.forEach(function(value) {
+      var option = modes.find(function(item) { return item.value === value })
+      if (option) groups[3].options.push(option)
+    })
+  }
   for (var i = 0; i < modes.length; i++) {
     var option = modes[i]
+    if (groups[3].options.length && adaptiveLevels.indexOf(option.value) !== -1) continue
     if (["off", "transparency", "on", "adaptive"].indexOf(option.value) !== -1) {
       groups[0].options.push({value: option.value,
         label: option.value === "on" ? "Noise cancellation" : option.label})
@@ -96,7 +105,8 @@ function ancGroups(snapshot) {
 function currentAncMode(snapshot) {
   var status = snapshot && snapshot.status
   if (!status || !status.anc) return ""
-  if (status.anc === "on" && status.anc_level) return String(status.anc_level)
+  if ((status.anc === "on" || status.anc === "adaptive") && status.anc_level)
+    return String(status.anc_level)
   return String(status.anc)
 }
 

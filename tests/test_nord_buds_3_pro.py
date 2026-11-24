@@ -71,8 +71,20 @@ class NordBuds3ProProfileTests(unittest.TestCase):
 
     def test_other_profiles_keep_empty_level_labels(self) -> None:
         for product_id, profile in PROFILES.items():
-            if product_id != PRODUCT_ID:
+            if product_id not in (PRODUCT_ID, "067814"):
                 self.assertEqual(profile.anc.level_labels, {}, product_id)
+
+    def test_pro4_adaptive_writes_match_level_specific_readback(self) -> None:
+        profile = PROFILES["067814"]
+        self.assertTrue(profile.can_write("anc"))
+        self.assertFalse(profile.can_write("eq_preset"))
+        expected = {"transparency": "010104", "adaptive-less-noise": "01010010",
+                    "adaptive": "01010020", "adaptive-more-noise": "01010040"}
+        self.assertEqual(set(profile.anc.write_indices), set(expected))
+        for mode, payload in expected.items():
+            self.assertEqual(profile.anc.payload_for(mode).hex(), payload)
+            target = ("transparency", None) if mode == "transparency" else ("adaptive", mode)
+            self.assertEqual(profile.anc.expected_state(mode), target)
 
     def test_native_eq_presets_and_measured_custom_range(self) -> None:
         eq = self.profile.eq

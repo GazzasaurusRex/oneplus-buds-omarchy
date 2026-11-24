@@ -8,7 +8,7 @@ from .bluez import Device
 from .lifecycle_trace import mark, span
 from .models import ControlResult, EqControlResult, EqStatusResult, EventBatch, SafeEvent, StatusResult
 from .timing import AncRequestError, PhaseTimer
-from .profiles import MAIN_ANC_MODES, DeviceProfile, WriteOperation, profile_for_product
+from .profiles import DeviceProfile, WriteOperation, profile_for_product
 from .protocol import (
     HELLO,
     NOTIFY_STATE,
@@ -232,8 +232,7 @@ class OpoSession:
                 # a fresh query is still the only success criterion.
                 acknowledgement = None
             timer.mark("set_response")
-            expected_mode = mode if mode in MAIN_ANC_MODES else "on"
-            expected_level = None if mode in MAIN_ANC_MODES else mode
+            expected_mode, expected_level = self.profile.anc.expected_state(mode)
 
             def confirmed_auto() -> AncState | None:
                 if (mode == "auto" and selected_notification is not None

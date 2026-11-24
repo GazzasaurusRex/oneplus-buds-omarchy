@@ -23,6 +23,12 @@ class AncProfile:
     # intensities differently per model (Low/Moderate/High/Auto on the Nord
     # Buds 3 Pro), so the labels belong to the device profile.
     level_labels: dict[str, str] = field(default_factory=dict)
+    write_targets: dict[str, tuple[str, str | None]] = field(default_factory=dict)
+
+    def expected_state(self, mode: str) -> tuple[str, str | None]:
+        if mode in self.write_targets:
+            return self.write_targets[mode]
+        return (mode, None) if mode in MAIN_ANC_MODES else ("on", mode)
 
     def payload_for(self, mode: str) -> bytes:
         try:
@@ -127,6 +133,7 @@ class DeviceProfile:
     # Remember the last usable case level and poll it in the background. Only
     # the Nord has this evidence; other case-capable models show live values.
     case_battery_cached: bool = False
+    anc_write_verified: bool = False
 
     @property
     def verified(self) -> bool:
@@ -135,13 +142,43 @@ class DeviceProfile:
 
     def can_write(self, operation: WriteOperation) -> bool:
         """Authorize a specific write class without broadening compatibility."""
-        return self.verified or (
+        return self.verified or (operation == "anc" and self.anc_write_verified) or (
             self.compatibility == "community_tested"
             and operation in self.community_write_permissions
         )
 
 
 PROFILES = {
+    "067814": DeviceProfile(
+        product_id="067814",
+        name="OnePlus Buds Pro 4",
+        service_uuid="0000079a-d102-11e1-9b23-00025b00a5a5",
+        anc=AncProfile(
+            write_indices={"transparency": 2, "adaptive": 13,
+                           "adaptive-less-noise": 12, "adaptive-more-noise": 14},
+            read_modes={8: "transparency", 12: "adaptive", 13: "adaptive", 14: "adaptive"},
+            read_levels={12: "adaptive-less-noise", 13: "adaptive", 14: "adaptive-more-noise"},
+            sequences={},
+            level_labels={"adaptive": "Standard", "adaptive-less-noise": "Less noise",
+                          "adaptive-more-noise": "More noise"},
+            write_targets={mode: ("adaptive", mode) for mode in
+                           ("adaptive", "adaptive-less-noise", "adaptive-more-noise")},
+        ),
+        eq=EqProfile(
+            (
+                EqPresetProfile(0, "balanced", "Balanced"),
+                EqPresetProfile(1, "bold", "Bold"),
+                EqPresetProfile(2, "serenade", "Serenade"),
+                EqPresetProfile(3, "bass", "Bass"),
+                EqPresetProfile(7, "dynaudio-featured", "Dynaudio Featured"),
+            ),
+            supports_custom=True, write_verified=False, custom_write_verified=False,
+        ),
+        capabilities=frozenset({"battery", "case_battery", "firmware", "anc", "eq"}),
+        compatibility="experimental",
+        feature_labels={},
+        anc_write_verified=True,
+    ),
     "060C14": DeviceProfile(
         product_id="060C14",
         name="OnePlus Buds Pro",

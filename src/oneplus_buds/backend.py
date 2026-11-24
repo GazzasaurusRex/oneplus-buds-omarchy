@@ -7,7 +7,7 @@ from dataclasses import replace
 from .lifecycle_trace import mark
 from .bluez import Device, select_device
 from .models import CapabilityResult, ControlResult, EqControlResult, EqStatusResult, StatusResult
-from .profiles import MAIN_ANC_MODES, DeviceProfile, compatibility_for_product, feature_capabilities, profile_for_product
+from .profiles import DeviceProfile, compatibility_for_product, feature_capabilities, profile_for_product
 from .report import build_status_report
 from .protocol import (
     HELLO,
@@ -224,8 +224,7 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
         [frame for frame in state_frames if frame.sequence == verify_sequence],
         lambda frame: parse_anc_state(frame, profile.anc),
     )
-    expected_mode = mode if mode in MAIN_ANC_MODES else "on"
-    expected_level = mode if mode not in MAIN_ANC_MODES else None
+    expected_mode, expected_level = profile.anc.expected_state(mode)
     if mode == "auto" and (
         not isinstance(observed, AncState)
         or observed.mode != expected_mode
