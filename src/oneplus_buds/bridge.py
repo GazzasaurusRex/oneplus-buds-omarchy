@@ -59,6 +59,7 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
         "custom_eq_max": profile.eq.custom_max if profile and profile.eq else None,
         "custom_eq_managed_ids": profile.eq.managed_custom_ids if profile and profile.eq else None,
         "custom_eq_empty_create": bool(profile and profile.eq and profile.eq.empty_create_layout),
+        "custom_eq_keep_last": bool(profile and profile.eq and profile.eq.custom_keep_last),
         "custom_eq_slots": len(snapshot.eq_status.custom_entries)
         if snapshot.eq_status else 0,
         "writable_features": sorted(profile.writable_features)

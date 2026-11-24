@@ -551,6 +551,8 @@ class OpoSession:
         entry = next((item for item in before.custom_entries if item.eq_id == entry_id), None)
         if entry is None:
             raise ValueError("custom EQ id was not declared by the connected earbuds")
+        if self.profile.eq.custom_keep_last and len(before.custom_entries) == 1:
+            raise ValueError("Keep one custom EQ profile on these earbuds. You can rename it.")
         gains = tuple(band.gain_db for band in entry.bands)
 
         def expect(entries: tuple[EqEntry, ...]) -> bool:

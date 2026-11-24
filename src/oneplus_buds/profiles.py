@@ -78,6 +78,8 @@ class EqProfile:
     writable_custom_ids: tuple[int, ...] | None = None
     managed_custom_ids: tuple[int, ...] | None = None
     empty_create_layout: EqCreateLayout | None = None
+    # These models need an existing curve as a creation template.
+    custom_keep_last: bool = False
 
     def preset_for(self, value: str) -> EqPresetProfile | None:
         normalized = value.strip().lower()
@@ -332,7 +334,7 @@ PROFILES = {
         eq=EqProfile(NORD_BUDS_3_PRO_EQ_PRESETS, supports_custom=True,
                      write_verified=True, custom_write_verified=True,
                      custom_manage_verified=True, custom_base=7, custom_max=3,
-                     custom_select_via_write=True),
+                     custom_select_via_write=True, custom_keep_last=True),
         capabilities=frozenset(
             {
                 "battery",

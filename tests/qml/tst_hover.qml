@@ -849,7 +849,7 @@ TestCase {
  function test_custom_eq_dropdown_keeps_the_selection_and_delete_asks_first() {
   var state = {status:{model:"Nord",battery:{}}, anc_modes:[], capabilities:["eq"],
    session_connected:true, eq_write_verified:true, custom_eq_write_verified:true, custom_eq_manage_verified:true,
-   custom_eq_max:3, custom_eq_slots:2,
+   custom_eq_keep_last:true, custom_eq_max:3, custom_eq_slots:2,
    eq:{current_id:7,current_name:"Test eq",gain_step_db:1,presets:[],
     custom_entries:[{eq_id:7,name:"Test eq",min_gain_db:-6,max_gain_db:6,
      bands:[{frequency_hz:62,gain_db:3},{frequency_hz:250,gain_db:1}]},
@@ -868,6 +868,7 @@ TestCase {
   var hint = findChild(widget, "customEqSlotsHint")
   var rename = findChild(widget, "customEqFirstAction")
   verify(selector !== null && plus !== null && trash !== null)
+  verify(trash.visible && trash.enabled)
   verify(plus.enabled)
   verify(!hint.visible)
   // The trash button sits at the far right, after the pencil and the plus.
@@ -947,5 +948,12 @@ TestCase {
   verify(plus.enabled)
   verify(rename.enabled)
   verify(del.enabled)
+  state.custom_eq_keep_last = true
+  service.snapshot = JSON.parse(JSON.stringify(state))
+  wait(0)
+  verify(rename.visible && rename.enabled)
+  verify(!del.visible && !del.enabled)
+  widget.askDeleteCustomProfile(widget.selectedCustom)
+  verify(!widget.deleteConfirmOpen)
  }
 }

@@ -157,6 +157,8 @@ BarWidget {
     && snapshot.custom_eq_manage_verified === true)
   readonly property bool customEqSectionAvailable: customEqEntries.length > 0
     || !!(eqStatus && snapshot && snapshot.custom_eq_empty_create === true && customEqManageVerified)
+  readonly property bool keepLastCustomEq: !!(snapshot
+    && snapshot.custom_eq_keep_last === true && customEqEntries.length <= 1)
   // Local fork: the earbuds hold a fixed number of custom profiles. The plus
   // button is greyed out when every slot is taken.
   readonly property int customEqMax: snapshot && snapshot.custom_eq_max
@@ -516,7 +518,7 @@ BarWidget {
   // Local fork: deleting a custom profile frees a slot for a new one, so the
   // panel asks before it removes a profile from the earbuds.
   function askDeleteCustomProfile(entry) {
-    if (!canManageCustomEntry(entry)) return
+    if (keepLastCustomEq || !canManageCustomEntry(entry)) return
     pendingDeleteEntryId = entry.eq_id
     pendingDeleteName = String(entry.name || "")
     deleteConfirmOpen = true
@@ -533,7 +535,7 @@ BarWidget {
     var entryId = pendingDeleteEntryId
     cancelDeleteCustomProfile()
     if (!budsService || connection !== "connected" || pendingRequestId >= 0) return
-    if (entryId < 0) return
+    if (entryId < 0 || keepLastCustomEq) return
     var requestId = budsService.deleteCustomEq(entryId, customEqDeviceKey)
     if (requestId === null) { outcome = "Could not start request"; return }
     pendingRequestId = requestId
@@ -1137,12 +1139,13 @@ BarWidget {
                 Button {
                   id: customEqDeleteAction
                   objectName: "customEqDeleteAction"
+                  visible: !root.keepLastCustomEq
                   width: parent.actionWidth
                   height: Style.space(28)
                   text: "\uF1F8"
                   bordered: false
                   enabled: root.profileNameMode === ""
-                    && root.canManageCustomEntry(root.selectedCustom)
+                    && !root.keepLastCustomEq && root.canManageCustomEntry(root.selectedCustom)
                   opacity: enabled ? 1.0 : 0.5
                   foreground: root.bar.foreground
                   background: root.bar.background

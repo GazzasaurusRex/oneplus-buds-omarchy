@@ -30,12 +30,12 @@ FREQUENCIES = (62, 250, 1000, 4000, 8000, 16000)
 GAINS = (4, 6, 1, 0, 4, 6)
 
 
-def entry_payload(selected, eq_id, name, gains=GAINS):
+def entry_payload(selected, eq_id, name, gains=GAINS, frequencies=FREQUENCIES):
     encoded = name.encode("utf-8")
     payload = bytearray((selected, 0xFA, 6, eq_id, len(encoded)))
     payload.extend(encoded)
-    payload.append(len(FREQUENCIES))
-    for frequency, gain in zip(FREQUENCIES, gains, strict=True):
+    payload.append(len(frequencies))
+    for frequency, gain in zip(frequencies, gains, strict=True):
         payload.extend(frequency.to_bytes(2, "little"))
         payload.append(gain & 0xFF)
     return bytes(payload)
@@ -225,17 +225,46 @@ class EqProfileSessionTests(unittest.TestCase):
         session = self.session()
         session._transport.request.side_effect = [
             Frame(RESPONSE_EQ, 1, b"\x00\x07"),
-            Frame(RESPONSE_EQ_ALL, 2, CATALOGUE_789),
+            Frame(RESPONSE_EQ_ALL, 2, CATALOGUE_78),
             Frame(RESPONSE_SET_EQ_DETAIL, 3, b"\x00"),
-            Frame(RESPONSE_EQ_ALL, 4, CATALOGUE_78),
+            Frame(RESPONSE_EQ_ALL, 4, catalogue(ENTRY_7)),
             Frame(RESPONSE_EQ, 5, b"\x00\x07"),
         ]
-        result, _batch = session.delete_custom_eq(9)
+        result, _batch = session.delete_custom_eq(8)
         self.assertTrue(result.verified)
         payloads = self.detail_payloads(session)
         self.assertEqual(len(payloads), 1)
         self.assertEqual(payloads[0][0], 3)  # delete
-        self.assertEqual(payloads[0][3], 9)
+        self.assertEqual(payloads[0][3], 8)
+
+    def test_nord_cannot_delete_its_last_custom_profile(self):
+        session = self.session()
+        session._transport.request.side_effect = [
+            Frame(RESPONSE_EQ, 1, b"\x00\x07"),
+            Frame(RESPONSE_EQ_ALL, 2, catalogue(ENTRY_7)),
+        ]
+        with self.assertRaisesRegex(ValueError, "Keep one custom EQ profile"):
+            session.delete_custom_eq(7)
+        self.assertEqual(
+            [call.args[0] for call in session._transport.request.call_args_list],
+            [QUERY_EQ, QUERY_EQ_ALL],
+        )
+
+    def test_pro4_creates_from_empty_catalogue(self):
+        session = self.session("067814")
+        frequencies = (31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000)
+        created = catalogue(entry_payload(0, 4, "Custom1", (0,) * 10, frequencies))
+        current = Frame(RESPONSE_EQ, 1, b"\x00\x07")
+        session._transport.request.side_effect = [
+            current, Frame(RESPONSE_EQ_ALL, 2, catalogue()),
+            Frame(RESPONSE_SET_EQ_DETAIL, 3, b"\x00"),
+            Frame(RESPONSE_EQ_ALL, 4, created), current,
+            current, Frame(RESPONSE_EQ_ALL, 7, created),
+        ]
+        result, _batch = session.create_custom_eq("Custom1")
+        self.assertTrue(result.verified)
+        self.assertEqual(result.current_id, 4)
+        self.assertEqual(len(self.detail_payloads(session)), 1)
 
     def test_empty_name_is_refused_before_any_write(self):
         session = self.session()
