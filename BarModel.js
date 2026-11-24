@@ -100,6 +100,12 @@ function ancGroups(snapshot) {
       groups[2].options.push(option)
     }
   }
+  if (groups[3].options.length) {
+    var strengths = ["deep", "medium", "light", "auto"]
+    groups[1].options.sort(function(a, b) {
+      return strengths.indexOf(a.value) - strengths.indexOf(b.value)
+    })
+  }
   return groups.filter(function(group) { return group.options.length > 0 })
 }
 

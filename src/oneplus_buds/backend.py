@@ -225,7 +225,7 @@ def _write_anc(mode: str, address: str | None, timer: PhaseTimer) -> ControlResu
         lambda frame: parse_anc_state(frame, profile.anc),
     )
     expected_mode, expected_level = profile.anc.expected_state(mode)
-    if mode == "auto" and (
+    if product_id == "064414" and mode == "auto" and (
         not isinstance(observed, AncState)
         or observed.mode != expected_mode
         or observed.level != expected_level

@@ -42,6 +42,8 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
         if profile and profile.can_write("anc") else [],
         "anc_labels": dict(profile.anc.level_labels) if profile else {},
         "eq": snapshot.eq_status.to_dict() if snapshot.eq_status else None,
+        "eq_writable_preset_ids": profile.eq.writable_preset_ids if profile and profile.eq else None,
+        "eq_writable_custom_ids": profile.eq.writable_custom_ids if profile and profile.eq else None,
         "eq_write_verified": bool(
             profile and profile.can_write("eq_preset")
             and profile.eq and profile.eq.write_verified
@@ -55,6 +57,8 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
             and profile.eq and profile.eq.custom_manage_verified
         ),
         "custom_eq_max": profile.eq.custom_max if profile and profile.eq else None,
+        "custom_eq_managed_ids": profile.eq.managed_custom_ids if profile and profile.eq else None,
+        "custom_eq_empty_create": bool(profile and profile.eq and profile.eq.empty_create_layout),
         "custom_eq_slots": len(snapshot.eq_status.custom_entries)
         if snapshot.eq_status else 0,
         "writable_features": sorted(profile.writable_features)

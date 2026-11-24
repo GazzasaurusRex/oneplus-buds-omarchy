@@ -155,14 +155,24 @@ BarWidget {
     && connection === "connected" && pendingRequestId < 0)
   readonly property bool customEqManageVerified: !!(snapshot
     && snapshot.custom_eq_manage_verified === true)
+  readonly property bool customEqSectionAvailable: customEqEntries.length > 0
+    || !!(eqStatus && snapshot && snapshot.custom_eq_empty_create === true && customEqManageVerified)
   // Local fork: the earbuds hold a fixed number of custom profiles. The plus
   // button is greyed out when every slot is taken.
   readonly property int customEqMax: snapshot && snapshot.custom_eq_max
     ? Number(snapshot.custom_eq_max) : 0
   readonly property int customEqSlots: snapshot && snapshot.custom_eq_slots !== undefined
     ? Number(snapshot.custom_eq_slots) : customEqEntries.length
-  readonly property bool customEqSlotsFull: customEqMax > 0
-    && customEqSlots >= customEqMax
+  readonly property bool customEqSlotsFull: snapshot && Array.isArray(snapshot.custom_eq_managed_ids)
+    ? snapshot.custom_eq_managed_ids.every(function(id) {
+        return root.customEqEntries.some(function(entry) { return entry.eq_id === id })
+      })
+    : customEqMax > 0 && customEqSlots >= customEqMax
+  function canManageCustomEntry(entry) {
+    return !!(customEqWritable && customEqManageVerified && entry
+      && (!Array.isArray(snapshot.custom_eq_managed_ids)
+        || snapshot.custom_eq_managed_ids.indexOf(entry.eq_id) !== -1))
+  }
   property bool touchControlsExpanded: false
   property bool reportDetailsOpen: false
   property bool reportSaved: false
@@ -409,7 +419,9 @@ BarWidget {
     if (!selectedCustom || selectedCustom.eq_id !== entryId || !customEqExpanded
         || !budsService || connection !== "connected" || pendingRequestId >= 0
         || !snapshot || snapshot.session_connected !== true
-        || snapshot.custom_eq_write_verified !== true || deviceKey !== customEqDeviceKey) return
+        || snapshot.custom_eq_write_verified !== true || deviceKey !== customEqDeviceKey
+        || (Array.isArray(snapshot.eq_writable_custom_ids)
+            && snapshot.eq_writable_custom_ids.indexOf(entryId) === -1)) return
     var requestId = budsService.setCustomEq(entryId, gains.slice(), deviceKey)
     if (requestId === null) {
       outcome = "Could not start request"
@@ -444,7 +456,7 @@ BarWidget {
 
   // Local fork: rename the profile that is selected in the dropdown.
   function startProfileRename() {
-    if (!customEqWritable || !customEqManageVerified || !selectedCustom) return
+    if (!canManageCustomEntry(selectedCustom)) return
     profileNameMode = "rename"
     profileRenameEntryId = selectedCustom.eq_id
     profileNameDraft = String(selectedCustom.name || "")
@@ -504,7 +516,7 @@ BarWidget {
   // Local fork: deleting a custom profile frees a slot for a new one, so the
   // panel asks before it removes a profile from the earbuds.
   function askDeleteCustomProfile(entry) {
-    if (!customEqWritable || !customEqManageVerified || !entry) return
+    if (!canManageCustomEntry(entry)) return
     pendingDeleteEntryId = entry.eq_id
     pendingDeleteName = String(entry.name || "")
     deleteConfirmOpen = true
@@ -968,6 +980,8 @@ BarWidget {
                   leftAlign: true
                   enabled: root.connection === "connected" && root.pendingRequestId < 0
                     && root.snapshot.eq_write_verified === true
+                    && (!Array.isArray(root.snapshot.eq_writable_preset_ids)
+                      || root.snapshot.eq_writable_preset_ids.indexOf(modelData.id) !== -1)
                   opacity: enabled ? 1.0 : 0.5
                   foreground: root.bar.foreground
                   background: root.bar.background
@@ -982,12 +996,12 @@ BarWidget {
               objectName: "customEqSection"
               width: parent.width
               spacing: Style.space(5)
-              visible: root.customEqEntries.length > 0
+              visible: root.customEqSectionAvailable
 
               Button {
                 objectName: "customEqDisclosure"
                 width: parent.width
-                visible: root.customEqEntries.length > 0
+                visible: root.customEqSectionAvailable
                 text: (root.customEqExpanded ? "▾  " : "▸  ") + "Custom EQ"
                 leftAlign: true
                 bordered: true
@@ -1005,7 +1019,7 @@ BarWidget {
                 objectName: "customEqProfileRow"
                 width: parent.width
                 spacing: Style.space(4)
-                visible: root.customEqExpanded && root.customEqEntries.length > 0
+                visible: root.customEqExpanded && root.customEqSectionAvailable
 
                 readonly property real actionWidth: Style.space(28)
                 readonly property real fieldWidth: Math.max(0, width
@@ -1020,7 +1034,7 @@ BarWidget {
                   showLabel: false
                   foreground: root.bar.foreground
                   fontFamily: root.bar.fontFamily
-                  visible: root.profileNameMode === ""
+                  visible: root.profileNameMode === "" && root.customEqEntries.length > 0
                   options: root.customEqEntries.map(function(entry, index) {
                     return {value: String(index), label: entry.name}
                   })
@@ -1055,7 +1069,7 @@ BarWidget {
                   text: root.profileNameMode === "" ? "\uF040" : "✕"
                   bordered: false
                   enabled: root.profileNameMode === ""
-                    ? root.customEqWritable && root.customEqManageVerified && !!root.selectedCustom
+                    ? root.canManageCustomEntry(root.selectedCustom)
                     : root.pendingRequestId < 0
                   opacity: enabled ? 1.0 : 0.5
                   foreground: root.bar.foreground
@@ -1128,7 +1142,7 @@ BarWidget {
                   text: "\uF1F8"
                   bordered: false
                   enabled: root.profileNameMode === ""
-                    && root.customEqWritable && root.customEqManageVerified && !!root.selectedCustom
+                    && root.canManageCustomEntry(root.selectedCustom)
                   opacity: enabled ? 1.0 : 0.5
                   foreground: root.bar.foreground
                   background: root.bar.background
@@ -1172,6 +1186,9 @@ BarWidget {
                 enabled: root.customEqExpanded && root.connection === "connected"
                   && root.snapshot && root.snapshot.session_connected === true
                   && root.snapshot.custom_eq_write_verified === true && root.pendingRequestId < 0
+                  && (!Array.isArray(root.snapshot.eq_writable_custom_ids)
+                    || (root.selectedCustom
+                      && root.snapshot.eq_writable_custom_ids.indexOf(root.selectedCustom.eq_id) !== -1))
                 entry: root.selectedCustom
                 contextKey: root.customEqDeviceKey
                 step: root.eqStatus && root.eqStatus.gain_step_db ? root.eqStatus.gain_step_db : 1
@@ -1848,6 +1865,11 @@ BarWidget {
         find_state: root.findState,
         pending: root.pendingRequestId >= 0,
         eq: root.eqStatus,
+        eq_write_verified: !!(root.snapshot && root.snapshot.eq_write_verified),
+        custom_eq_write_verified: !!(root.snapshot && root.snapshot.custom_eq_write_verified),
+        custom_eq_manage_verified: root.customEqManageVerified,
+        eq_writable_preset_ids: root.snapshot ? root.snapshot.eq_writable_preset_ids : null,
+        eq_writable_custom_ids: root.snapshot ? root.snapshot.eq_writable_custom_ids : null,
         bass_level: root.snapshot ? root.snapshot.bass_level : null,
         feature_switches: root.snapshot ? root.snapshot.feature_switches : null,
         touch_controls: root.touchControls,

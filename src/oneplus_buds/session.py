@@ -42,6 +42,7 @@ from .protocol import (
     AncState,
     FEATURE_SWITCH_NAMES,
     EQ_ALL_QUERY_PAYLOAD,
+    EqBand,
     EqEntry,
     encode_eq_detail_payload,
     parse_anc_state,
@@ -235,7 +236,8 @@ class OpoSession:
             expected_mode, expected_level = self.profile.anc.expected_state(mode)
 
             def confirmed_auto() -> AncState | None:
-                if (mode == "auto" and selected_notification is not None
+                if (self.profile.product_id == "064414" and mode == "auto"
+                        and selected_notification is not None
                         and selected_notification.mode == "on"
                         and selected_notification.level == "auto"):
                     return selected_notification
@@ -321,6 +323,9 @@ class OpoSession:
         timer.mark("preserve_read")
         target_id, target_name, write_operation = self._resolve_eq_target(preset, before)
         self._require_eq_session(write=write_operation)
+        if (write_operation == "eq_preset" and eq.writable_preset_ids is not None
+                and target_id not in eq.writable_preset_ids):
+            raise ValueError("factory EQ target has not been write-tested")
         # Some device families select a custom curve by writing it, not with
         # the plain preset command: writing the unchanged curve back selects
         # the custom entry without altering the sound.
@@ -383,6 +388,9 @@ class OpoSession:
     def set_custom_eq(self, entry_id: int, gains_db: tuple[int, ...]) -> tuple[EqControlResult, EventBatch]:
         """Update an existing device-declared custom curve; never invent a layout."""
         self._require_eq_session(write="custom_eq")
+        eq = self.profile.eq
+        if eq.writable_custom_ids is not None and entry_id not in eq.writable_custom_ids:
+            raise ValueError("custom EQ slot has not been write-tested")
         timer = PhaseTimer()
         before, initial = self.eq_status()
         timer.mark("preserve_read")
@@ -450,15 +458,26 @@ class OpoSession:
         before, initial = self.eq_status()
         timer.mark("preserve_read")
         template = before.custom_entries[0] if before.custom_entries else None
-        if template is None:
-            raise RuntimeError("the earbuds did not declare a custom EQ layout")
         used = {item.eq_id for item in before.custom_entries}
-        slot = self._next_custom_slot(used)
-        entry = EqEntry(slot, label, False, template.min_gain_db, template.max_gain_db,
-                        template.bands)
-        gains = tuple(0 for _ in template.bands)
+        if template is None:
+            layout = self.profile.eq.empty_create_layout
+            if layout is None:
+                raise RuntimeError("the earbuds did not declare a custom EQ layout")
+            slot = layout.slot_id
+            entry = EqEntry(slot, label, False, layout.min_gain_db, layout.max_gain_db,
+                            tuple(EqBand(frequency, 0) for frequency in layout.frequencies_hz))
+        else:
+            slot = self._next_custom_slot(used)
+            entry = EqEntry(slot, label, False, template.min_gain_db, template.max_gain_db,
+                            template.bands)
+        gains = tuple(0 for _ in entry.bands)
 
         def expect(entries: tuple[EqEntry, ...]) -> bool:
+            if template is None:
+                return any(item.eq_id == slot and item.name == label
+                           and item.bands == entry.bands
+                           and item.min_gain_db == entry.min_gain_db
+                           and item.max_gain_db == entry.max_gain_db for item in entries)
             return any(item.eq_id not in used for item in entries)
 
         acknowledgement, entries, _current_id, query_count, events, ignored = (
@@ -469,7 +488,7 @@ class OpoSession:
             fresh = [item for item in entries if item.eq_id not in used]
             if len(fresh) == 1:
                 created = fresh[0]
-        if created is None:
+        if created is None or (template is None and not expect(entries or ())):
             raise RuntimeError(
                 "custom EQ verification failed: the earbuds did not store the new profile")
         events = list(initial.events) + list(events)
@@ -486,6 +505,9 @@ class OpoSession:
         self._require_eq_session(write="custom_eq")
         if self.profile.eq is None or not self.profile.eq.custom_manage_verified:
             raise ValueError("custom EQ management is not tested for this device profile")
+        if (self.profile.eq.managed_custom_ids is not None
+                and entry_id not in self.profile.eq.managed_custom_ids):
+            raise ValueError("custom EQ slot has not been rename-tested")
         label = validate_eq_profile_name(name)
         timer = PhaseTimer()
         before, initial = self.eq_status()
@@ -520,6 +542,9 @@ class OpoSession:
         self._require_eq_session(write="custom_eq")
         if self.profile.eq is None or not self.profile.eq.custom_manage_verified:
             raise ValueError("custom EQ management is not tested for this device profile")
+        if (self.profile.eq.managed_custom_ids is not None
+                and entry_id not in self.profile.eq.managed_custom_ids):
+            raise ValueError("custom EQ slot has not been delete-tested")
         timer = PhaseTimer()
         before, initial = self.eq_status()
         timer.mark("preserve_read")
@@ -548,6 +573,11 @@ class OpoSession:
     def _next_custom_slot(self, used: set[int]) -> int:
         """Return the next free custom profile id of the connected earbuds."""
         eq = self.profile.eq
+        if eq is not None and eq.managed_custom_ids is not None:
+            for slot in eq.managed_custom_ids:
+                if slot not in used:
+                    return slot
+            raise RuntimeError("no tested custom EQ slot is free")
         base = eq.custom_base if eq is not None else None
         maximum = eq.custom_max if eq is not None else None
         if base is not None and maximum:

@@ -52,6 +52,14 @@ class EqPresetProfile:
 
 
 @dataclass(frozen=True)
+class EqCreateLayout:
+    slot_id: int
+    frequencies_hz: tuple[int, ...]
+    min_gain_db: int
+    max_gain_db: int
+
+
+@dataclass(frozen=True)
 class EqProfile:
     presets: tuple[EqPresetProfile, ...]
     supports_custom: bool
@@ -66,6 +74,10 @@ class EqProfile:
     # Some devices ignore the plain preset command for custom entries and
     # select them only by writing the unchanged curve back (Nord Buds 3 Pro).
     custom_select_via_write: bool = False
+    writable_preset_ids: tuple[int, ...] | None = None
+    writable_custom_ids: tuple[int, ...] | None = None
+    managed_custom_ids: tuple[int, ...] | None = None
+    empty_create_layout: EqCreateLayout | None = None
 
     def preset_for(self, value: str) -> EqPresetProfile | None:
         normalized = value.strip().lower()
@@ -142,6 +154,11 @@ class DeviceProfile:
 
     def can_write(self, operation: WriteOperation) -> bool:
         """Authorize a specific write class without broadening compatibility."""
+        if self.compatibility == "experimental" and self.eq is not None:
+            if operation == "eq_preset":
+                return self.eq.write_verified and bool(self.eq.writable_preset_ids)
+            if operation == "custom_eq":
+                return self.eq.custom_write_verified and bool(self.eq.writable_custom_ids)
         return self.verified or (operation == "anc" and self.anc_write_verified) or (
             self.compatibility == "community_tested"
             and operation in self.community_write_permissions
@@ -156,14 +173,15 @@ PROFILES = {
         anc=AncProfile(
             write_indices={"off": 0, "transparency": 2, "adaptive": 13,
                            "adaptive-less-noise": 12, "adaptive-more-noise": 14,
-                           "deep": 4},
+                           "deep": 4, "medium": 5, "light": 6, "auto": 7},
             read_modes={3: "off", 8: "transparency", 12: "adaptive",
                         13: "adaptive", 14: "adaptive"},
-            read_levels={4: "deep", 12: "adaptive-less-noise", 13: "adaptive",
-                         14: "adaptive-more-noise"},
+            read_levels={4: "deep", 5: "medium", 6: "light", 7: "auto",
+                         12: "adaptive-less-noise", 13: "adaptive", 14: "adaptive-more-noise"},
             sequences={},
             level_labels={"adaptive": "Standard", "adaptive-less-noise": "Less noise",
-                          "adaptive-more-noise": "More noise", "deep": "High"},
+                          "adaptive-more-noise": "More noise", "deep": "High",
+                          "medium": "Moderate", "light": "Low", "auto": "Auto"},
             write_targets={mode: ("adaptive", mode) for mode in
                            ("adaptive", "adaptive-less-noise", "adaptive-more-noise")},
         ),
@@ -175,7 +193,13 @@ PROFILES = {
                 EqPresetProfile(3, "bass", "Bass"),
                 EqPresetProfile(7, "dynaudio-featured", "Dynaudio Featured"),
             ),
-            supports_custom=True, write_verified=False, custom_write_verified=False,
+            supports_custom=True, write_verified=True, custom_write_verified=True,
+            custom_select_via_write=True, writable_preset_ids=(0, 1, 2, 3, 7),
+            writable_custom_ids=(4,), custom_manage_verified=True,
+            custom_base=4, custom_max=2, managed_custom_ids=(5,),
+            empty_create_layout=EqCreateLayout(
+                4, (31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000), -6, 6,
+            ),
         ),
         capabilities=frozenset({"battery", "case_battery", "firmware", "anc", "eq"}),
         compatibility="experimental",

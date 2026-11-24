@@ -77,16 +77,22 @@ class NordBuds3ProProfileTests(unittest.TestCase):
     def test_pro4_adaptive_writes_match_level_specific_readback(self) -> None:
         profile = PROFILES["067814"]
         self.assertTrue(profile.can_write("anc"))
-        self.assertFalse(profile.can_write("eq_preset"))
+        self.assertTrue(profile.can_write("eq_preset"))
+        self.assertTrue(profile.can_write("custom_eq"))
+        self.assertEqual(profile.eq.writable_preset_ids, (0, 1, 2, 3, 7))
+        self.assertEqual(profile.eq.writable_custom_ids, (4,))
+        self.assertTrue(profile.eq.custom_manage_verified)
+        self.assertEqual(profile.eq.managed_custom_ids, (5,))
         expected = {"off": "010101", "transparency": "010104", "adaptive-less-noise": "01010010",
                     "adaptive": "01010020", "adaptive-more-noise": "01010040",
-                    "deep": "010110"}
+                    "deep": "010110", "medium": "010120", "light": "010140",
+                    "auto": "010180"}
         self.assertEqual(set(profile.anc.write_indices), set(expected))
         for mode, payload in expected.items():
             self.assertEqual(profile.anc.payload_for(mode).hex(), payload)
             target = (mode, None) if mode in ("off", "transparency") else ("adaptive", mode)
-            if mode == "deep":
-                target = ("on", "deep")
+            if mode in ("deep", "medium", "light", "auto"):
+                target = ("on", mode)
             self.assertEqual(profile.anc.expected_state(mode), target)
 
     def test_native_eq_presets_and_measured_custom_range(self) -> None:

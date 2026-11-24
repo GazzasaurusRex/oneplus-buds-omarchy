@@ -190,6 +190,136 @@ reconnect opened a fresh panel session, which read and displayed Adaptive /
 Standard without another write. Generic Noise cancellation, Moderate,
 Low, and Auto remain disabled pending separate tests.
 
+## Remaining Noise cancellation strengths
+
+Starting Adaptive / Standard read back as index 13, payload
+`00 01 01 00 20`. Phone-selected Moderate returned response `0x810c`,
+payload `00 01 01 20 00`, bitmap read index 5. The Pro 2 and Buds 4
+explicit Moderate write uses index 5, yielding candidate payload
+`01 01 20`. The read and candidate write mappings are independent.
+
+From verified Standard (`00 01 01 00 20`), one Linux Moderate SET
+(`0x0404`, sequence `0x42`, payload `01 01 20`) received matching
+`0x8404` status `00`. A fresh session returned `00 01 01 20 00`
+(Moderate, index 5). The wearer confirmed the sound and restored Adaptive
+in the app. Fresh readback confirmed Standard (index 13, payload
+`00 01 01 00 20`) before Moderate was enabled in the local profile.
+
+Phone-selected Low returned `0x810c` payload `00 01 01 40 00`, read
+index 6. The explicit Pro 2 and Buds 4 Low write independently supplies
+candidate write index 6, payload `01 01 40`.
+
+From verified Standard, one Linux Low SET (`0x0404`, sequence `0x42`,
+payload `01 01 40`) received matching `0x8404` status `00`. A fresh
+session returned `00 01 01 40 00` (Low, index 6). The wearer confirmed
+the sound and restored Adaptive in the app. Fresh readback confirmed
+Standard at index 13, payload `00 01 01 00 20`, before Low was enabled.
+
+Phone-selected Noise cancellation / Auto returned `0x810c` payload
+`00 01 01 80 00`, read index 7. The Nord's explicit Auto and the
+Pro 2 and Buds 4 Smart writes use write index 7, yielding candidate
+payload `01 01 80`. This is distinct from the Adaptive settings at
+indices 12–14.
+
+From verified Standard, one Linux Auto SET (`0x0404`, sequence `0x42`,
+payload `01 01 80`) received matching `0x8404` status `00`. A fresh
+session returned `00 01 01 80 00` (Noise cancellation / Auto, index 7).
+The wearer confirmed the sound and restored Adaptive in the app. Fresh
+readback confirmed Standard at index 13, payload `00 01 01 00 20`, before
+Auto was enabled under Noise cancellation. Pro 4 Auto uses query readback
+and remains separate from Adaptive and from the Nord notification fallback.
+
+## Linux EQ write trials
+
+Baseline: Dynaudio Featured (ID 7) selected. Custom1 (ID 4) was inactive
+with all ten gains at 0 dB (31, 62, 125, 250, 500, 1000, 2000, 4000,
+8000, and 16000 Hz), limits −6 to +6 dB, and a 1 dB step.
+
+- Factory SET EQ (`0x0406`): selected Balanced (ID 0), then restored
+  Dynaudio Featured (ID 7). Both writes returned status 00. Separate
+  Bluetooth sessions confirmed both selections and the unchanged curve.
+- Custom SET EQ detail (`0x0418`): raised only 1 kHz to +1 dB. The write
+  returned status 00 and selected Custom1. A separate session confirmed
+  the full curve. Restoring the original gains and then Dynaudio Featured
+  both returned status 00. A final separate session confirmed all ten
+  gains at 0 dB and Dynaudio Featured active.
+
+Initially only Balanced and Dynaudio Featured were enabled for factory
+writes. In subsequent standalone Linux trials, Bold (ID 1), Serenade
+(ID 2), and Bass (ID 3) each returned status 00 and were verified in an
+independent Bluetooth session. Each trial restored Dynaudio Featured
+(ID 7), also acknowledged and verified in a fresh session. Custom1
+matched the baseline after every selection and restoration. All five
+factory presets are now write-enabled. Curve writes are limited to
+Custom1, and slot management remains disabled.
+
+Live panel EQ trial: Balanced (ID 0) was selected from Dynaudio Featured.
+The panel write returned status 00 and verified Balanced by readback.
+Selecting Dynaudio Featured next returned status 00 and verified ID 7.
+The panel's curve readback still showed all ten Custom1 bands at 0 dB.
+Editing Custom1 in the panel returned status 00 and verified active ID 4.
+The full readback showed 1 kHz at +1 dB and all nine other bands at 0 dB.
+After restoring 1 kHz in the panel and selecting Dynaudio Featured, the
+final panel readback confirmed ID 7 active and all ten Custom1 gains at
+their original 0 dB. The final preset write returned status 00.
+
+Follow-up panel trial: selecting Bold (ID 1) returned status 00 and
+verified Bold by readback. Selecting Serenade (ID 2) also returned
+status 00 and verified Serenade by readback. Selecting Bass (ID 3)
+returned status 00 and verified Bass by readback.
+The final Dynaudio Featured selection returned status 00. Panel readback
+confirmed ID 7 active and all ten Custom1 gains still at 0 dB.
+
+## Custom profile creation investigation
+
+Before creation, live Linux catalogue for product 067814 showed Dynaudio
+Featured (ID 7) active and only Custom1 (ID 4), inactive. Its bands at
+31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, and 16000 Hz were all
+0 dB, with limits −6 to +6 dB and a 1 dB step.
+
+The official app added Temp in slot 5 and made it active. A fresh Linux
+session confirmed both slots. Temp matched Custom1's ten frequencies and
+gain limits, with every band at 0 dB. Custom1 was unchanged. Slot 5 is
+the only additional slot observed so far.
+
+After removing Temp in the app, a fresh read confirmed the exact baseline.
+The existing Linux create path then created LinuxTemp in slot 5 with status
+00. An independent session verified the new flat curve, untouched Custom1,
+and Dynaudio Featured still active. Separate Linux rename to LinuxRenamed
+and delete each returned status 00. Fresh reads verified the name change
+without curve changes, then removal and exact baseline restoration.
+Panel creation, rename, and delete are limited to slot 5. Editing remains
+limited to Custom1, which is protected from rename and delete.
+
+The panel Add profile trial created PanelTemp in slot 5 with status 00.
+Panel readback confirmed both flat curves and Dynaudio Featured active.
+Panel deletion of PanelTemp returned status 00 and verified slot 5 absent.
+A separate authenticated Linux session then confirmed Dynaudio Featured
+(ID 7) active and only Custom1 (ID 4) remaining, with its original ten
+frequencies, 0 dB gains and −6 to +6 dB limits. The panel was re-enabled
+in its original position after the independent read.
+
+Last-profile test: with the owner's expendable Custom1 backed by a flat
+baseline read, an isolated Linux delete of slot 4 returned status 00.
+A fresh session found an empty catalogue and Dynaudio Featured (ID 7)
+still active. The standard Linux create path then stopped before sending
+a write because no existing curve supplied a layout. The panel also
+hides its custom EQ section when the catalogue is empty. This reproduces
+the Linux recovery problem. Firmware creation from an empty catalogue
+had not yet been tested at that point.
+The official app recovered the empty catalogue by creating Custom1 in
+slot 4. Fresh Linux readback confirmed the original flat ten-band layout
+and gain limits. The recreated Custom1 was active at verification.
+
+Linux recovery follow-up: restored Dynaudio Featured, then deleted the
+expendable Custom1 in an isolated trial. A separate session confirmed the
+empty catalogue. A Pro 4-only local layout template supplied the ten
+frequencies and gain limits to the existing create path for slot 4.
+Creation returned status 00. Another session confirmed the exact original
+Custom1 entry and Dynaudio Featured active. The template is not exposed in
+the catalogue. The panel keeps Add profile visible on an empty catalogue
+for profiles with a tested template. No Nord template was inferred.
+
 ## Hardware validation order
 
 1. In the phone app, record the original ANC mode and strength, active EQ
