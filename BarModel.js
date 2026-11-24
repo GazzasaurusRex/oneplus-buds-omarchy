@@ -82,6 +82,7 @@ function ancGroups(snapshot) {
   ]
   var adaptiveLevels = ["adaptive-less-noise", "adaptive", "adaptive-more-noise"]
   if (modes.some(function(option) { return option.value === "adaptive-less-noise" })) {
+    groups[1].title = "Noise cancellation"
     adaptiveLevels.forEach(function(value) {
       var option = modes.find(function(item) { return item.value === value })
       if (option) groups[3].options.push(option)

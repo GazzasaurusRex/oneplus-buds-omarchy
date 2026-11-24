@@ -147,6 +147,49 @@ disconnect and reconnect, the panel opened a fresh session and again
 reported Adaptive / Standard without another write. Other Pro 4 ANC modes
 remain disabled pending separate write tests.
 
+## Off and fixed Noise cancellation trials
+
+Starting baseline: a fresh authenticated Linux query returned Adaptive /
+Standard, index 13, response `0x810c`, payload `00 01 01 00 20`.
+The panel was temporarily disabled to release its RFCOMM session.
+
+The official app selected Off and the wearer noticed a change. A fresh
+Linux reply (`0x810c`) carried `00 01 01 08 00`, bitmap index 3.
+The Pro 2 and Buds 4 use write index 0 for Off, making `01 01 01` the
+candidate SET payload. Read index 3 is a separate observation.
+
+Linux Off trial: after confirming Standard (`00 01 01 00 20`), sent one
+`0x0404` SET, sequence `0x42`, payload `01 01 01`. The matching
+`0x8404` response carried status `00`. A fresh session returned
+`00 01 01 08 00` (Off, index 3). The wearer confirmed it sounded correct
+and restored Adaptive in the phone app. Fresh Linux readback returned
+`00 01 01 00 20` (Standard, index 13).
+
+The official app lists High, Moderate, Low, and Auto under Noise
+cancellation. With High selected, a fresh Linux reply (`0x810c`) carried
+`00 01 01 10 00`, bitmap index 4. The Pro 2 and Buds 4 have a distinct
+explicit High write (index 4, payload `01 01 10`), which is the candidate
+for this trial. Their generic Noise cancellation write uses index 1 and
+does not specify a strength. The Pro 4 read index is independent evidence.
+
+Linux High trial: the fresh baseline was Standard (`00 01 01 00 20`).
+One `0x0404` SET (sequence `0x42`, payload `01 01 10`) got matching
+`0x8404` status `00`. A separate session read `00 01 01 10 00`
+(Noise cancellation / High, index 4). The wearer confirmed it sounded
+correct and restored Adaptive in the app. Fresh readback confirmed Standard
+at index 13 (`00 01 01 00 20`). Only Off and explicit High were added to
+the panel for these two trials.
+
+Live panel trial: selecting Off returned status `00` and verified Off
+by readback. The panel showed Off selected. Selecting Adaptive / Standard
+next returned status `00` and verified Standard before the High trial.
+Selecting High returned status `00` and verified Noise cancellation /
+High (`on` / `deep`). The final Standard selection returned status `00`
+and verified Adaptive / Standard. A deliberate Bluetooth disconnect and
+reconnect opened a fresh panel session, which read and displayed Adaptive /
+Standard without another write. Generic Noise cancellation, Moderate,
+Low, and Auto remain disabled pending separate tests.
+
 ## Hardware validation order
 
 1. In the phone app, record the original ANC mode and strength, active EQ
