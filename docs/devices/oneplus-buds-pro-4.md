@@ -320,6 +320,31 @@ Custom1 entry and Dynaudio Featured active. The template is not exposed in
 the catalogue. The panel keeps Add profile visible on an empty catalogue
 for profiles with a tested template. No Nord template was inferred.
 
+## Wear detection investigation
+
+Starting Linux read (2026-11-25), firmware previously recorded as
+`116.116.100`: an authenticated feature-status reply (`0x810d`) reported
+candidate switch `0x04` as true. Other true IDs were `0x05, 0x06, 0x11,
+0x13`; false IDs were `0x0b, 0x18, 0x27, 0x28`. The app's starting
+setting was On, labeled In-ear detection. After the wearer disabled it in
+the app, a fresh Linux reply reported `0x04=false`. All other reported
+switches matched the baseline. Turning it back on in the app returned
+`0x04=true` with the rest unchanged.
+
+Linux then sent one feature SET (`0x0403`, payload `04 00`) from the
+confirmed On state. The matching `0x8403` acknowledgement was `00`.
+An independent session read `0x04=false`; every other switch still
+matched the baseline. Playback continued on removal with detection Off.
+With detection On, removal paused playback. The app detected reinsertion,
+but playback did not automatically resume in this trial. A fresh Linux
+read verified original On restored, with all other switches unchanged.
+Only In-ear detection is enabled for feature writes in the local panel.
+The panel Off trial returned status `00` and verified `0x04=false`.
+The panel On write also returned status `00` and verified `0x04=true`.
+A separate authenticated Linux session confirmed the original On setting
+and all other reported switches matched the baseline. The widget was
+re-enabled in its original bar position after the independent read.
+
 ## Hardware validation order
 
 1. In the phone app, record the original ANC mode and strength, active EQ

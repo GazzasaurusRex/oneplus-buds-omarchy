@@ -182,7 +182,9 @@ function featureList(snapshot) {
     if (labels && typeof labels[name] !== "string") continue
     if (typeof switches[name] === "boolean")
       result.push({ name: name, label: (labels && labels[name]) || FEATURE_LABELS[name] || titleCase(name),
-        tooltip: FEATURE_TOOLTIPS[name] || "",
+        tooltip: name === "wear_detection" && snapshot.status
+          && snapshot.status.product_id === "067814"
+          ? "Remove an earbud to pause playback." : (FEATURE_TOOLTIPS[name] || ""),
         enabled: switches[name],
         writable: writable.indexOf(name) !== -1 })
   }

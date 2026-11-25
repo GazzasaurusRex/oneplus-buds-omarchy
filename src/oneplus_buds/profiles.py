@@ -156,6 +156,8 @@ class DeviceProfile:
 
     def can_write(self, operation: WriteOperation) -> bool:
         """Authorize a specific write class without broadening compatibility."""
+        if self.compatibility == "experimental" and operation == "feature_switch":
+            return bool(self.writable_features)
         if self.compatibility == "experimental" and self.eq is not None:
             if operation == "eq_preset":
                 return self.eq.write_verified and bool(self.eq.writable_preset_ids)
@@ -203,9 +205,11 @@ PROFILES = {
                 4, (31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000), -6, 6,
             ),
         ),
-        capabilities=frozenset({"battery", "case_battery", "firmware", "anc", "eq"}),
+        capabilities=frozenset({"battery", "case_battery", "firmware", "anc", "eq",
+                                "feature_switches"}),
         compatibility="experimental",
-        feature_labels={},
+        feature_labels={"wear_detection": "In-ear detection"},
+        writable_features=frozenset({"wear_detection"}),
         anc_write_verified=True,
     ),
     "060C14": DeviceProfile(
