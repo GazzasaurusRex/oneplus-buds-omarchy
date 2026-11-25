@@ -140,6 +140,7 @@ class DeviceProfile:
     writable_features: frozenset[str] = frozenset()
     # Wire action -> allowed function IDs. Empty means no touch writes.
     touch_functions: dict[int, tuple[int, ...]] = field(default_factory=dict)
+    touch_binding_functions: dict[tuple[int, int, int], tuple[int, ...]] = field(default_factory=dict)
     hold_cycle_supported: bool = False
     # None preserves generic discovery for unaudited models. An audited map
     # lists only audited model switches and their app labels.
@@ -158,6 +159,8 @@ class DeviceProfile:
         """Authorize a specific write class without broadening compatibility."""
         if self.compatibility == "experimental" and operation == "feature_switch":
             return bool(self.writable_features)
+        if self.compatibility == "experimental" and operation == "touch":
+            return bool(self.touch_binding_functions)
         if self.compatibility == "experimental" and self.eq is not None:
             if operation == "eq_preset":
                 return self.eq.write_verified and bool(self.eq.writable_preset_ids)
@@ -206,10 +209,14 @@ PROFILES = {
             ),
         ),
         capabilities=frozenset({"battery", "case_battery", "firmware", "anc", "eq",
-                                "feature_switches"}),
+                                "feature_switches", "touch_controls"}),
         compatibility="experimental",
         feature_labels={"wear_detection": "In-ear detection"},
         writable_features=frozenset({"wear_detection"}),
+        touch_binding_functions={(1, 1, 1): (0,), (1, 1, 3): (6,),
+                                 (1, 1, 2): (5, 6), (2, 1, 2): (5, 6),
+                                 (2, 1, 3): (5, 6), (2, 1, 1): (0, 1),
+                                 (1, 1, 5): (7, 10), (2, 1, 5): (7, 10)},
         anc_write_verified=True,
     ),
     "060C14": DeviceProfile(

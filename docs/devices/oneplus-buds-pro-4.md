@@ -345,6 +345,219 @@ A separate authenticated Linux session confirmed the original On setting
 and all other reported switches matched the baseline. The widget was
 re-enabled in its original bar position after the independent read.
 
+## Touch controls investigation
+
+Fresh authenticated baseline for product `067814` (2026-11-25). The
+`0x8108` response reported these function IDs by (button, action):
+
+| Button | Action | Left | Right |
+|---:|---:|---:|---:|
+| 1 | 1 | 34 | 1 |
+| 1 | 2 | 6 | 6 |
+| 1 | 3 | 35 | 5 |
+| 1 | 4 | 8 | 8 |
+| 1 | 5 | 7 | 7 |
+| 1 | 6 | 18 | 18 |
+| 6 | 1 | 29 | 29 |
+| 6 | 2 | 28 | 28 |
+| 6 | 3 | 0 | 0 |
+
+Both double presses report function 6, the existing Next track mapping.
+Other IDs are recorded as observations and do not authorize any writes.
+
+The official app changed Left double press to Previous track. A fresh
+Linux read showed only (left, button 1, action 2) changed, from function
+6 to 5. Right double press remained 6 and the other 16 entries matched.
+
+The wearer restored Next track in the app. A fresh Linux read matched
+all 18 baseline entries. A single Linux touch SET with payload
+`01 01 01 02 05` was acknowledged. A separate authenticated session
+confirmed Left double press at function 5 and the other 17 entries
+unchanged. The wearer confirmed the gesture selected the previous track.
+Linux restored Next track with payload `01 01 01 02 06` and acknowledgement
+`00`; an independent read matched all 18 original entries. Only Left
+double press, with Previous track and Next track, is enabled for panel
+writes. The right side, other actions, and shared ANC hold cycle still
+require separate validation.
+The panel Previous track trial returned status `00` and verified the
+Left double-press assignment at function 5. The panel readback matched
+the other 17 baseline entries. Restoring Next track in the panel also
+returned status `00`. Both the panel readback and a separate Linux
+session matched all 18 original entries.
+
+Right double-press app trial: selecting Previous track changed only
+(right, button 1, action 2), from 6 to 5. All other 17 entries matched
+the baseline. A fresh read after app restoration matched all 18 baseline
+entries. Linux then sent one SET `0x0401`, payload `01 02 01 02 05`,
+and received acknowledgement `00`. An independent session confirmed
+Right double press at function 5 and the other 17 entries unchanged.
+The wearer confirmed that the gesture selected the previous track.
+Linux restored Next track using `01 02 01 02 06` with status `00`, and
+a fresh session matched all 18 baseline entries. The right-side double
+press is enabled for the same two choices. The panel Previous track write
+returned status `00`; readback verified function 5 and confirmed the
+other 17 entries were unchanged. Restoring Next track in the panel returned
+status `00`. Panel readback and a separate Bluetooth session both matched
+all 18 original assignments.
+
+Right triple-press app trial: selecting Next track changed only (right,
+button 1, action 3) from function 5 to 6. The other 17 entries matched the
+baseline. The app offers additional gesture choices; only separately
+tested assignments are candidates for the panel.
+The phone-app restore matched all 18 baseline entries. One Linux SET
+(`0x0401`, payload `01 02 01 03 06`) received status `00`. A separate
+session confirmed function 6 and the other 17 entries unchanged.
+The wearer confirmed that the gesture advanced the track. Linux restored
+Previous track with payload `01 02 01 03 05` and status `00`. A fresh
+session matched all 18 baseline entries. Right triple press is enabled
+for Previous track and Next track in the local panel. The panel Next track
+write returned status `00`. Readback verified function 6 and all other
+17 entries matched the baseline. Restoring Previous track in the panel
+returned status `00`. Panel readback and a fresh independent Linux
+session each matched all 18 original assignments.
+
+Left triple-press app trial: the wearer identified the original function
+35 as Gemini. Selecting Next track changed (left, button 1, action 3)
+from 35 to 6. Left single press also changed from 34 to 1. The other
+16 entries matched the baseline. No Linux write was attempted.
+After restoring Gemini, the app showed a combined single-press option
+“Play / pause / stop Gemini” and the alternative “None”. A fresh Linux
+read matched all 18 baseline entries, including left single press 34
+and left triple press 35. Treat those assignments as coupled and leave
+their panel writes disabled pending separate validation.
+
+Right single-press app trial: the options were “Play / pause / stop
+Gemini” and “None”. Selecting None changed only (right, button 1, action
+1) from function 1 to 0. The other 17 entries matched the baseline.
+After the app re-enabled Right single press, Linux reported right single
+press 34 and right triple press 35, instead of the original 1 and 5.
+The other 16 entries matched. The baseline check stopped the trial
+before any Linux write. Restore the right triple-press assignment in
+the app and both values return to baseline: 1 for right single press
+and 5 for right triple press. A fresh query matched all 18 entries.
+From that exact baseline, one Linux SET (`0x0401`, payload
+`01 02 01 01 00`) returned status `00`. A separate session verified
+right single press 0 and the other 17 assignments unchanged.
+The wearer confirmed playback continued on Right single press. Linux
+restored function 1 with payload `01 02 01 01 01` and status `00`.
+An independent session matched all 18 baseline entries, including
+Right triple press at function 5. Right single press is enabled for
+None and Play / pause only. The panel None write returned status `00`
+and verified function 0. All other 17 assignments matched the baseline.
+Restoring Play / pause in the panel returned status `00`. Panel and
+independent Linux reads both matched all 18 original assignments.
+
+Shared ANC hold-cycle baseline: authenticated query `0x010c` with
+payload `02 01` returned `0x810c` payload `00 02 01 06 00`.
+Active ANC was Adaptive / Standard (`00 01 01 00 20`). The hold-cycle
+reply has an extra byte compared with the existing Nord parser. Phone-app
+labels include Noise cancellation, Adaptive, Transparency, and Off. The
+earbud-specific app screen showed Noise cancellation + Transparency.
+After the wearer changed both sides to Noise cancellation + Off, a fresh
+reply was `00 02 01 03 00`. All 18 gesture entries and active Adaptive /
+Standard matched baseline. Whether the cycle is shared remains unverified.
+After the reported left-only return to Transparency, a fresh query still
+returned `00 02 01 03 00`. The 18 gesture entries and active ANC matched
+baseline. The wearer checked both app screens: left showed Noise
+control with Noise cancellation + Transparency, and right showed Noise
+control with Noise cancellation + Off. The reply matched the right
+selection in this split state. The app supports per-earbud cycles;
+the query's addressing and any write scope are still unverified.
+Restoring the right side to Transparency returned the original
+`00 02 01 06 00`. Re-establishing the split with both earbuds out
+(left Cancellation + Transparency, right Cancellation + Off)
+again returned `00 02 01 03 00`, the baseline for the isolation trial.
+With the right bud in the closed case and the left out, a fresh session
+still returned `00 02 01 03 00` and all 18 gesture entries. Active ANC
+reported Transparency (`00 01 01 00 01`) during this trial. Casing the
+right bud did not expose the left cycle through this query. No cycle
+write was sent.
+After taking the right bud out and restoring its original cycle in the
+official app, a fresh session returned the baseline hold reply
+`00 02 01 06 00`, active Adaptive / Standard (`00 01 01 00 20`), and all
+18 original gesture assignments. The panel was re-enabled. Pro 4 hold
+cycle writes remain disabled pending a side-addressing test.
+
+### Left gesture and volume-slide follow-up
+
+Saved a fresh `0x8108` baseline before any changes. All 18 tuples matched
+the original table above, including left single press 34, left triple
+press 35, and function 7 on button 1/action 5 on both sides.
+App selection of None for left single press changed function 34 to 0
+and left triple press 35 to 5. The wearer reported that this disables
+Gemini integration in the app. All other 16 entries matched baseline.
+After the app restore, a fresh authenticated query matched all 18
+baseline entries, including left single 34 and left triple 35.
+Repeating the separate Left triple press → Next track app trial reproduced
+both changes: left triple 35 → 6 and left single 34 → 1. All 16 other
+entries matched baseline.
+
+After restoring the app baseline, one Linux SET `0x0401` with payload
+`01 01 01 01 00` returned status `00`. A separate session showed only
+Left single press changed to 0. Left triple press remained 35 and the
+other 16 entries also matched. The phone app showed None and Gemini
+respectively, and a left single press did not pause music. Linux restored
+34 with `01 01 01 01 22`, status `00`; a fresh session confirmed the
+full baseline before the next write.
+
+One Linux Left triple-press SET (`01 01 01 03 06`) returned status
+`00`. A separate session found only triple press changed, to 6, while
+single press stayed 34. The app showed Play / pause / stop Gemini for
+single and Next track for triple. The wearer confirmed that a triple
+press advanced playback. Linux restored Gemini (35) with payload
+`01 01 01 03 23` and status `00`. A separate session matched all 18
+original entries.
+
+The phone app offered Volume control and Switch track for the left slide.
+Selecting Switch track changed only left button 1/action 5, function
+7 → 10. Right slide stayed at 7 and the other 16 entries matched.
+Restoring left Volume control matched all 18 baseline entries.
+The right slide offered the same choices. Selecting Switch track
+changed only right button 1/action 5 from 7 to 10. This confirms the
+same mapping independently on both earbuds. No slide writes were sent.
+Restoring right Volume control matched all 18 baseline entries in a
+fresh session. The panel labels Slide read-only, hides Long hold on
+both sides, and leaves Touch & hold read-only. The complete raw gesture
+table is retained in panel status diagnostics. The left Gemini-related
+assignments are labeled but remain read-only in the panel.
+
+Follow-up panel build keeps the Gemini assignments visible as current
+values and offers only None for left single or Next track for left
+triple. Restoring Gemini is an app operation. The panel None write
+returned status `00`; its readback matched all other 17 entries,
+including Gemini (35) on left triple press.
+The wearer reported Gemini integration stayed enabled after the panel
+write, so the app could directly restore Play / pause / stop Gemini.
+A separate Bluetooth session verified all 18 original entries.
+The panel Left triple-press Next track write also returned status
+`00`. Readback confirmed function 6, single press still 34, and all
+other 16 entries unchanged. The wearer restored Gemini in the app and
+confirmed the menus still appeared. Live readback matched all 18 original
+assignments and both menus still advertised their verified targets.
+The wearer reported neither panel change disabled Gemini integration.
+
+Left Slide Linux trial: from the full original table, SET `0x0401`
+payload `01 01 01 05 0a` returned status `00`. A separate session
+confirmed only Left Slide changed to 10. The wearer confirmed the app
+setting and the gesture: down advanced tracks and up went back. The
+first pre-restore read already showed 7, so no write was sent at that
+point. A repeat Linux write to 10 and explicit restore to 7 both
+received status `00` and matched their expected full tables in fresh
+sessions. The cause of the initial return to 7 was not established.
+
+Right Slide trial: SET `0x0401`, payload `01 02 01 05 0a`,
+received status `00`. Fresh readback verified Right Slide 10 and
+the other 17 entries unchanged. The wearer confirmed the app setting
+and track switching. Linux restored right Volume control with payload
+`01 02 01 05 07` and status `00`. A separate session verified all 18
+original entries. Both Slide menus now offer the two verified functions.
+Touch & hold stays read-only and Long hold remains hidden.
+
+Follow-up: per-earbud squeeze-and-hold editing. Identify side-addressed
+reads and writes, then verify each side independently against the app,
+fresh readback, and the physical cycle. Check that the opposite earbud
+stays unchanged and restore both original cycles before enabling editing.
+
 ## Hardware validation order
 
 1. In the phone app, record the original ANC mode and strength, active EQ

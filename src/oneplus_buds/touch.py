@@ -11,6 +11,7 @@ FUNCTION_LABELS = {
     5: "Previous track", 6: "Next track", 8: "Switch noise control",
     11: "Volume up", 12: "Volume down", 17: "Game mode",
 }
+SLIDE_FUNCTION_LABELS = {7: "Volume control", 10: "Switch track"}
 
 HOLD_CYCLE_QUERY = b"\x02\x01"
 HOLD_CYCLE_OPTIONS = (
@@ -75,11 +76,15 @@ def parse_touch_bindings(frame: Frame) -> tuple[TouchBinding, ...]:
 
 def serialize_touch_controls(bindings: tuple[TouchBinding, ...],
                              functions: dict[int, tuple[int, ...]],
-                             writable: bool) -> list[dict[str, object]]:
+                             writable: bool, *,
+                             binding_functions: dict[tuple[int, int, int], tuple[int, ...]] | None = None
+                             ) -> list[dict[str, object]]:
     controls = []
     for binding in bindings:
-        allowed = functions.get(binding.action, ()) if (
+        allowed = (binding_functions or {}).get(binding.key, functions.get(binding.action, ())) if (
             writable and binding.device_type in (1, 2) and binding.button == 1) else ()
+        labels = (SLIDE_FUNCTION_LABELS if binding.action == 5
+                  and binding.key in (binding_functions or {}) else FUNCTION_LABELS)
         controls.append({
             "side": binding.device_type,
             "side_label": {1: "Left", 2: "Right", 4: "Both"}[binding.device_type],
@@ -88,7 +93,7 @@ def serialize_touch_controls(bindings: tuple[TouchBinding, ...],
             "action_label": ACTION_LABELS.get(binding.action, f"Gesture {binding.action}"),
             "function": binding.function,
             "function_label": FUNCTION_LABELS.get(binding.function, f"Unknown ({binding.function})"),
-            "options": [{"value": value, "label": FUNCTION_LABELS[value]} for value in allowed],
+            "options": [{"value": value, "label": labels[value]} for value in allowed],
             "writable": bool(allowed),
         })
     return controls

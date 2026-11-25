@@ -1515,15 +1515,30 @@ BarWidget {
                   model: root.touchControls.filter(function(entry) {
                     return entry.side === touchSide.modelData && entry.button === 1
                       && !(root.holdCycleAvailable && entry.action === 4)
+                      && !(root.snapshot.status?.product_id === "067814" && entry.action === 6)
                   })
                   delegate: Column {
                     id: touchRow
                     required property var modelData
                     width: touchSide.width
                     spacing: Style.space(2)
+                    readonly property bool pro4: root.snapshot.status?.product_id === "067814"
+                    readonly property bool appRestore: pro4 && modelData.side === 1
+                      && (modelData.action === 1 || modelData.action === 3)
+                    readonly property string assignmentLabel: {
+                      var entry = modelData
+                      if (pro4) {
+                        if (entry.action === 5 && entry.function === 7) return "Volume control"
+                        if (entry.action === 5 && entry.function === 10) return "Switch track"
+                        if (entry.action === 1 && entry.function === 34) return "Play / pause / stop Gemini"
+                        if (entry.action === 3 && entry.function === 35) return "Gemini"
+                      }
+                      return entry.function_label
+                    }
                     Text {
                       width: parent.width
-                      text: touchRow.modelData.action_label
+                      text: root.snapshot.status?.product_id === "067814" && touchRow.modelData.action === 5
+                        ? "Slide" : touchRow.modelData.action_label
                       color: root.bar.foreground
                       opacity: 0.72
                       font.family: root.bar.fontFamily
@@ -1539,7 +1554,7 @@ BarWidget {
                       property var choices: {
                         var options = touchRow.modelData.options || []
                         if (!options.some(function(o) { return o.value === touchRow.modelData.function }))
-                          return [{value: touchRow.modelData.function, label: touchRow.modelData.function_label}].concat(options)
+                          return [{value: touchRow.modelData.function, label: touchRow.assignmentLabel}].concat(options)
                         return options
                       }
                       options: choices
@@ -1548,7 +1563,10 @@ BarWidget {
                         && snapshot && snapshot.session_connected === true
                       onChanged: function(selectedValue) {
                         var selectedFunction = Number(selectedValue)
-                        if (selectedFunction !== touchRow.modelData.function)
+                        if (selectedFunction !== touchRow.modelData.function
+                            && touchRow.modelData.options.some(function(option) {
+                              return option.value === selectedFunction
+                            }))
                           root.setTouchControl(touchRow.modelData.side, touchRow.modelData.action, selectedFunction)
                         // Keep showing confirmed state until readback arrives,
                         // including when validation or transmission fails.
@@ -1558,8 +1576,18 @@ BarWidget {
                     Text {
                       width: parent.width
                       visible: !touchRow.modelData.writable
-                      text: touchRow.modelData.function_label
+                      text: touchRow.assignmentLabel
                       color: root.bar.foreground
+                      font.family: root.bar.fontFamily
+                      font.pixelSize: Style.font.bodySmall
+                      wrapMode: Text.Wrap
+                    }
+                    Text {
+                      width: parent.width
+                      visible: touchRow.appRestore
+                      text: "Use the phone app to restore the Gemini assignment."
+                      color: root.bar.foreground
+                      opacity: 0.65
                       font.family: root.bar.fontFamily
                       font.pixelSize: Style.font.bodySmall
                       wrapMode: Text.Wrap

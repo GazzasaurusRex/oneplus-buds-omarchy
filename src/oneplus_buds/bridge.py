@@ -78,7 +78,8 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
         "find_device_id": snapshot.find_device_id,
         "touch_controls": serialize_touch_controls(
             snapshot.touch_bindings, profile.touch_functions if profile else {},
-            bool(profile and profile.can_write("touch") and snapshot.session_connected)),
+            bool(profile and profile.can_write("touch") and snapshot.session_connected),
+            binding_functions=profile.touch_binding_functions if profile else None),
         "hold_cycle": serialize_hold_cycle(
             snapshot.hold_cycle_mask if profile and profile.hold_cycle_supported else None,
             bool(profile and profile.can_write("hold_cycle") and snapshot.session_connected)),

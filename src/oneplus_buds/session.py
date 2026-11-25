@@ -704,7 +704,7 @@ class OpoSession:
 
     def touch_bindings(self) -> tuple[TouchBinding, ...]:
         self._require_connected()
-        if not self.profile.touch_functions:
+        if not (self.profile.touch_functions or self.profile.touch_binding_functions):
             raise ValueError("touch controls are not supported by this device profile")
         frame = self._transport.request(QUERY_TOUCH, b"", RESPONSE_TOUCH,
                                         on_frames=self._defer_frames)
@@ -719,7 +719,8 @@ class OpoSession:
             raise RuntimeError("session authentication has not completed")
         if (not self.profile.can_write("touch") or binding.device_type not in (1, 2)
                 or binding.button != 1
-                or binding.function not in self.profile.touch_functions.get(binding.action, ())):
+                or binding.function not in self.profile.touch_binding_functions.get(
+                    binding.key, self.profile.touch_functions.get(binding.action, ()))):
             raise ValueError("touch assignment is not allowed for this device profile")
         if not any(item.key == binding.key for item in self.touch_bindings()):
             raise ValueError("touch gesture was not reported by this device")
