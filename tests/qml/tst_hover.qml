@@ -89,6 +89,7 @@ TestCase {
  Component { id: anotherWidget; BarWidget { bar: host } }
  function test_features_use_model_labels_and_hide_unadvertised_raw_switches() {
   var features = BarModel.featureList({
+   status:{product_id:"062014"},
    feature_switches:{multipoint:true, wear_detection:true, low_latency:false,
     game_equalizer:true, high_quality_audio:false, hearing_enhancement:false,
     spatial_sound:false},
@@ -98,10 +99,15 @@ TestCase {
   compare(features[0].label, "Auto play/pause")
   compare(features[1].label, "Dual connection")
   verify(!features[0].writable)
-  compare(BarModel.featureList({feature_switches:{low_latency:false}}).length, 0)
-  compare(BarModel.featureList({feature_switches:{personal_noise:true,
+  compare(BarModel.featureList({status:{product_id:"062014"},feature_switches:{low_latency:false}}).length, 0)
+  compare(BarModel.featureList({status:{product_id:"062014"},feature_switches:{personal_noise:true,
    click_to_take_photo:true, hearing_enhancement:true, high_quality_audio:true,
    bass_engine:true}}).length, 0)
+  var nord = BarModel.featureList({status:{product_id:"064414"},
+   feature_switches:{personal_noise:true}, feature_labels:{personal_noise:"Personalized noise"},
+   writable_features:["personal_noise"]})
+  compare(nord.length, 1)
+  verify(nord[0].writable)
  }
  function init() {
   service.connection = "connected"
@@ -179,6 +185,7 @@ TestCase {
  }
  function test_auto_play_pause_waits_for_readback_and_explains_function_on_hover() {
   var state = findSnapshot("stopped")
+  state.status.product_id = "062014"
   state.capabilities = ["feature_switches"]
   state.feature_switches = {wear_detection:false, high_quality_audio:false}
   state.feature_labels = {wear_detection:"Auto play/pause", high_quality_audio:"Hi-Res mode"}

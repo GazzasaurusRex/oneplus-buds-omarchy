@@ -812,7 +812,7 @@ class OpoSession:
         minimum, maximum = self.profile.bass_level_range
         if not minimum <= level <= maximum:
             raise ValueError(f"bass level must be between {minimum} and {maximum}")
-        if self.bass_engine_status()[:2] != (minimum, maximum):
+        if self.profile.product_id == "067814" and self.bass_engine_status()[:2] != (minimum, maximum):
             raise ValueError("earbuds reported a different BassWave range")
         payload = bytes(value & 0xFF for value in (minimum, maximum, level))
         try:
