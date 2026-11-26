@@ -60,7 +60,7 @@ from .protocol import (
     QUERY_STATUS, SET_FEATURE_SWITCH, RESPONSE_SET_FEATURE_SWITCH,
     SET_FIND_MODE, RESPONSE_SET_FIND_MODE,
     QUERY_BASS_ENGINE, RESPONSE_BASS_ENGINE, SET_BASS_ENGINE, RESPONSE_SET_BASS_ENGINE,
-    BASS_LEVEL_MIN, BASS_LEVEL_MAX, BASS_LEVEL_RANGE,
+    BASS_LEVEL_MIN, BASS_LEVEL_MAX,
     EQ_ACTION_CREATE, EQ_ACTION_UPDATE, EQ_ACTION_DELETE,
 )
 from .touch import (
@@ -802,9 +802,12 @@ class OpoSession:
         self._require_connected()
         if not self.profile.can_write("bass_level") or "bass_engine" not in self.profile.capabilities:
             raise ValueError("bass level writes are not supported by this device profile")
-        if not BASS_LEVEL_MIN <= level <= BASS_LEVEL_MAX:
-            raise ValueError(f"bass level must be between {BASS_LEVEL_MIN} and {BASS_LEVEL_MAX}")
-        payload = BASS_LEVEL_RANGE + bytes((level & 0xFF,))
+        minimum, maximum = self.profile.bass_level_range or (BASS_LEVEL_MIN, BASS_LEVEL_MAX)
+        if not minimum <= level <= maximum:
+            raise ValueError(f"bass level must be between {minimum} and {maximum}")
+        if self.profile.bass_level_range is not None and self.bass_engine_status()[:2] != (minimum, maximum):
+            raise ValueError("earbuds reported a different BassWave range")
+        payload = bytes(value & 0xFF for value in (minimum, maximum, level))
         try:
             ack = self._transport.request(SET_BASS_ENGINE, payload, RESPONSE_SET_BASS_ENGINE,
                                           on_frames=self._defer_frames)

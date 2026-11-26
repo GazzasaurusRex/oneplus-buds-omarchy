@@ -74,6 +74,9 @@ def serialize_snapshot(snapshot: ControllerSnapshot) -> JsonObject:
         "reconnect_count": snapshot.reconnect_count,
         "generation": snapshot.generation,
         "bass_level": snapshot.bass_level,
+        "bass_level_range": profile.bass_level_range if profile else None,
+        "bass_level_writable": bool(profile and "bass_engine" in profile.capabilities
+                                    and profile.can_write("bass_level")),
         "find_state": snapshot.find_state,
         "find_device_id": snapshot.find_device_id,
         "touch_controls": serialize_touch_controls(

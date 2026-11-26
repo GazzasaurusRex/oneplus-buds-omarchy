@@ -95,6 +95,7 @@ BarWidget {
   readonly property int bassLevel: (snapshot && snapshot.bass_level !== null
     && snapshot.bass_level !== undefined) ? Number(snapshot.bass_level) : 0
   readonly property bool bassEngineEnabled: featureSwitches.bass_engine === true
+  readonly property var bassLevelRange: snapshot && snapshot.bass_level_range || [-10, 10]
   readonly property var featureList: BarModel.featureList(snapshot)
   readonly property bool useTwoColumnLayout: eqAvailable
     && popup.availableCardWidth >= Style.space(560)
@@ -1234,6 +1235,9 @@ BarWidget {
                   checked: root.bassEngineEnabled
                   busy: root.pendingRequestId >= 0
                   enabled: root.connection === "connected" && root.pendingRequestId < 0
+                    && root.snapshot?.session_connected === true
+                    && typeof root.featureSwitches.bass_engine === "boolean"
+                    && (root.snapshot.writable_features || []).indexOf("bass_engine") !== -1
                   onToggled: root.toggleFeature("bass_engine", !root.bassEngineEnabled)
                 }
               }
@@ -1251,12 +1255,13 @@ BarWidget {
                 id: bassSlider
                 width: parent.width
                 bar: root.bar
-                minimum: -10
-                maximum: 10
+                minimum: root.bassLevelRange[0]
+                maximum: root.bassLevelRange[1]
                 step: 1
                 integer: true
                 value: root.bassLevel
                 enabled: root.connection === "connected" && root.pendingRequestId < 0
+                  && root.snapshot?.session_connected === true && root.snapshot.bass_level_writable === true
                 onReleased: function(value) { root.setBassLevel(Math.round(value)) }
               }
             }
@@ -1902,6 +1907,8 @@ BarWidget {
         eq_writable_preset_ids: root.snapshot ? root.snapshot.eq_writable_preset_ids : null,
         eq_writable_custom_ids: root.snapshot ? root.snapshot.eq_writable_custom_ids : null,
         bass_level: root.snapshot ? root.snapshot.bass_level : null,
+        bass_level_range: root.bassLevelRange,
+        bass_level_writable: root.snapshot?.bass_level_writable === true,
         feature_switches: root.snapshot ? root.snapshot.feature_switches : null,
         touch_controls: root.touchControls,
         hold_cycle: root.holdCycle,

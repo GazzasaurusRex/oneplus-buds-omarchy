@@ -558,6 +558,44 @@ reads and writes, then verify each side independently against the app,
 fresh readback, and the physical cycle. Check that the opposite earbud
 stays unchanged and restore both original cycles before enabling editing.
 
+## BassWave investigation
+
+Read-only baseline (2026-11-26, product `067814`): `0x0124` returned
+`00 fb 05 00`, consistent with signed minimum −5, maximum +5, level 0.
+The `0x810d` batch reply did not report the existing BassWave candidate
+switch `0x1d`. Reported true IDs were `04 05 06 11 13`; false IDs were
+`0b 18 27 28`. The wearer confirmed BassWave was Off in the phone app.
+The original stored level is 0 by Linux readback.
+With BassWave On, the app showed 0 and endpoints −5/+5, matching Linux.
+The legacy batch request does not ask for switch `0x1d`. A targeted
+`0x010d` request (`01 1d`) returned `00 01 1d 01` while On.
+Turning BassWave Off in the app returned `00 01 1d 00` while the
+stored level and range stayed unchanged (`00 fb 05 00`).
+With BassWave On and the app at −2, a fresh read reported switch
+`0x1d=true` and level reply `00 fb 05 fe`, confirming signed level
+encoding and the same −5 to +5 range.
+From verified On at 0, Linux sent one toggle SET `0x0403` with
+payload `1d 00`. The matching acknowledgement was `00`; a separate
+session confirmed Off and stored level 0 with the same range.
+The wearer confirmed Off in the app and turned it back On. From a
+fresh On-at-0 baseline, Linux SET `0x041b` with payload `fb 05 fe`
+received status `00`. Another session confirmed level −2 and the
+toggle still On. The app confirmed On at −2. Linux separately restored
+level 0 (`fb 05 00`) and toggle Off (`1d 00`), with status `00` and
+fresh readback after each. A separate Linux On → Off round trip verified
+both toggle directions while leaving level 0 unchanged. The local panel
+uses the Pro 4 range −5 to +5. The live panel On write returned status
+`00`, verified switch `0x1d=true`, and left level 0 unchanged.
+Moving the panel slider to −2 returned status `00` and verified the
+level while BassWave remained On.
+Returning the panel slider to 0 also received status `00` and
+verified the level with BassWave still On.
+The panel Off write returned status `00` and verified switch off.
+A separate authenticated session confirmed Off (`00 01 1d 00`),
+level 0 and range −5 to +5 (`00 fb 05 00`). The panel was restored
+to its original bar placement.
+No write was sent.
+
 ## Hardware validation order
 
 1. In the phone app, record the original ANC mode and strength, active EQ

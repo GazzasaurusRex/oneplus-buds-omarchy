@@ -149,6 +149,7 @@ class DeviceProfile:
     # the Nord has this evidence; other case-capable models show live values.
     case_battery_cached: bool = False
     anc_write_verified: bool = False
+    bass_level_range: tuple[int, int] | None = None
 
     @property
     def verified(self) -> bool:
@@ -159,6 +160,8 @@ class DeviceProfile:
         """Authorize a specific write class without broadening compatibility."""
         if self.compatibility == "experimental" and operation == "feature_switch":
             return bool(self.writable_features)
+        if self.compatibility == "experimental" and operation == "bass_level":
+            return self.bass_level_range is not None
         if self.compatibility == "experimental" and operation == "touch":
             return bool(self.touch_binding_functions)
         if self.compatibility == "experimental" and self.eq is not None:
@@ -209,10 +212,11 @@ PROFILES = {
             ),
         ),
         capabilities=frozenset({"battery", "case_battery", "firmware", "anc", "eq",
-                                "feature_switches", "touch_controls"}),
+                                "feature_switches", "touch_controls", "bass_engine"}),
         compatibility="experimental",
-        feature_labels={"wear_detection": "In-ear detection"},
-        writable_features=frozenset({"wear_detection"}),
+        feature_labels={"wear_detection": "In-ear detection", "bass_engine": "BassWave"},
+        writable_features=frozenset({"wear_detection", "bass_engine"}),
+        bass_level_range=(-5, 5),
         touch_binding_functions={(1, 1, 1): (0,), (1, 1, 3): (6,),
                                  (1, 1, 2): (5, 6), (2, 1, 2): (5, 6),
                                  (2, 1, 3): (5, 6), (2, 1, 1): (0, 1),
