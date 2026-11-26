@@ -676,6 +676,13 @@ TestCase {
   verify(widget.reportActionShown)
   compare(widget.reportActionLabel, "Report a problem")
 
+  service.snapshot = ({status:{model:"OnePlus Buds Pro 4",product_id:"067814",battery:{}},
+   compatibility:"experimental", anc_modes:["off","transparency"], capabilities:[], session_connected:true})
+  wait(0)
+  verify(!widget.experimentalDevice)
+  verify(!widget.compatibilityNoticeShown)
+  compare(widget.reportActionLabel, "Report a problem")
+
   service.snapshot = ({status:{model:null,product_id:"A1B2C3",battery:{}},
    compatibility:"experimental", anc_modes:[], capabilities:[], session_connected:false})
   wait(0)

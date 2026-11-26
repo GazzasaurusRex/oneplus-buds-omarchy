@@ -193,6 +193,8 @@ function featureList(snapshot) {
 
 function compatibility(snapshot) {
   var value = snapshot ? String(snapshot.compatibility || "") : ""
+  // Pro 4 has operation-specific write permissions but is hardware tested.
+  if (value === "experimental" && snapshot.status?.product_id === "067814") return "verified"
   if (value === "verified" || value === "community_tested") return value
   return value ? "experimental" : ""
 }

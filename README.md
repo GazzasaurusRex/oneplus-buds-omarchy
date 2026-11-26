@@ -3,6 +3,8 @@
 A native Omarchy bar widget and Linux backend for OnePlus earbuds. Check battery
 levels and change noise control from a compact, theme-aware panel.
 
+![OnePlus Buds Pro 4 panel on Omarchy](preview.png)
+
 **Status: 0.1.0 release candidate.** Buds Pro and Buds Pro 2 have
 maintainer-verified basic controls and native EQ. Buds Pro 4 has hardware-tested
 ANC and EQ. Buds 4 and Nord Buds 3 Pro
@@ -25,7 +27,7 @@ yet. This is an independent project, unaffiliated with OnePlus or OPPO.
 |---|---|---|---|
 | OnePlus Buds Pro | Verified on hardware | 541.541.510 | Light, Deep, Smart |
 | OnePlus Buds Pro 2 | Verified on hardware | 196.196.101 | Light, Medium, Deep, Smart |
-| OnePlus Buds Pro 4 (`067814`) | Hardware tested for ANC and EQ. Earbud controls and wear detection pending. | 116.116.100 | Off, Transparency, Noise cancellation (High, Moderate, Low, Auto), Adaptive (Less noise, Standard, More noise) |
+| OnePlus Buds Pro 4 (`067814`) | Hardware tested for ANC, EQ, In-ear detection, supported tap and slide assignments, and BassWave | 116.116.100 | Off, Transparency, Noise cancellation (High, Moderate, Low, Auto), Adaptive (Less noise, Standard, More noise) |
 | OnePlus Buds 4 | Community tested on contributor hardware | 138.138.105 | Light, Medium, Deep, Smart; Adaptive mode |
 | OnePlus Nord Buds 3 Pro | Community tested on contributor hardware | 155.155.101 | Low, Moderate, High, Auto |
 | Other compatible OnePlus/OPO devices | Experimental if recognised; no verified controls | Unknown | Not exposed |
@@ -63,7 +65,8 @@ Transparency and EQ are welcome even when everything works.
 
 ## Requirements
 
-Live-tested with Omarchy **4.0.2-1** and **4.0.3-1**, its
+Live-tested with Omarchy **4.5.0-3** for Buds Pro 4, and earlier with
+Omarchy **4.0.2-1** and **4.0.3-1**, its
 Quickshell/Quattro shell, BlueZ 5.87 and Python 3.14.7. Python 3.11+ is required;
 older Python releases have not been tested here.
 The native widget needs Omarchy's `qs.Ui` and `qs.Commons` modules, not a standalone
@@ -163,6 +166,12 @@ Linux also recreated Custom1 in slot 4 from an empty catalogue using the
 tested layout (31 Hz to 16 kHz, −6 to +6 dB). A fresh session verified the
 restored curve and Dynaudio Featured selection. Slot 4 stays protected
 from panel rename and delete. See the [Pro 4 test notes](docs/devices/oneplus-buds-pro-4.md).
+
+Pro 4 also supports the verified BassWave toggle and level from −5 to +5,
+and In-ear detection that pauses playback on removal. The tap menus offer
+tested assignments for both single, double, and triple presses. Both slide
+menus offer Volume control and Switch track. Squeeze-and-hold editing remains
+read-only. Use the official phone app to restore Gemini assignments.
 
 The Nord Buds 3 Pro exposes Balanced (Default), Serenade and Bass.
 The Nord Buds 3 Pro also edits custom curves and manages profiles (create/

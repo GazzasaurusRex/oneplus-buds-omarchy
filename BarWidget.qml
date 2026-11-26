@@ -96,7 +96,9 @@ BarWidget {
     && snapshot.bass_level !== undefined) ? Number(snapshot.bass_level) : 0
   readonly property bool bassEngineEnabled: featureSwitches.bass_engine === true
   readonly property var bassLevelRange: snapshot && snapshot.bass_level_range || [-10, 10]
-  readonly property var featureList: BarModel.featureList(snapshot)
+  readonly property var featureList: BarModel.featureList(snapshot).filter(function(feature) {
+    return !(root.bassEngineAvailable && feature.name === "bass_engine")
+  })
   readonly property bool useTwoColumnLayout: eqAvailable
     && popup.availableCardWidth >= Style.space(560)
   readonly property int panelHeight: popup.contentHeight
