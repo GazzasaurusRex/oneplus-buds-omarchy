@@ -75,7 +75,7 @@ write controls. Spatial audio, gestures, finding earbuds and phone-side sound
 features are not implemented. Unknown feature IDs and notification schemas remain
 unnamed. Physical earbud changes are not guaranteed to update the UI immediately.
 
-Experimental devices show their status and **Report compatibility** in the panel.
+Experimental devices show their status and **Help add support** in the panel.
 Verified and Community Tested devices omit the Experimental warning and offer
 **Report a problem** instead. Both labels open the same workflow: review the
 collection/privacy explanation, choose where to save the `.txt` report, then

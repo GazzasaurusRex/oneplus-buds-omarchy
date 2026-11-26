@@ -207,7 +207,7 @@ function compatibilityLabel(snapshot) {
 
 function reportActionLabel(snapshot) {
   return compatibility(snapshot) === "experimental"
-    ? "Report compatibility" : "Report a problem"
+    ? "Help add support" : "Report a problem"
 }
 
 var COMPATIBILITY_ISSUE_URL = "https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md"

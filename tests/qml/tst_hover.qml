@@ -662,6 +662,11 @@ TestCase {
   verify(!widget.compatibilityNoticeShown)
   verify(widget.reportActionShown)
   compare(widget.reportActionLabel, "Report a problem")
+  var instructions = findChild(widget, "compatibilityReportInstructions")
+  verify(instructions !== null)
+  widget.reportDetailsOpen = true
+  verify(!instructions.visible)
+  widget.reportDetailsOpen = false
 
   service.snapshot = ({status:{model:"OnePlus Buds Pro 2",product_id:"062014",battery:{}},
    compatibility:"verified", anc_modes:["off","on"], capabilities:[], session_connected:true})
@@ -677,8 +682,15 @@ TestCase {
   verify(widget.experimentalDevice)
   verify(widget.compatibilityNoticeShown)
   verify(widget.reportActionShown)
-  compare(widget.reportActionLabel, "Report compatibility")
+  compare(widget.reportActionLabel, "Help add support")
   verify(widget.panelHeight <= 560)
+  verify(!instructions.visible)
+  widget.reportDetailsOpen = true
+  tryCompare(instructions, "visible", true)
+  verify(instructions.text.indexOf("Save and review the diagnostic report") !== -1)
+  verify(instructions.text.indexOf("attach the report") !== -1)
+  verify(instructions.text.indexOf("exact earbud model") !== -1)
+  verify(instructions.text.indexOf("which controls it shows") !== -1)
 
   service.snapshot = ({status:null, anc_modes:[], capabilities:[], session_connected:false,
    compatibility:""})
@@ -693,6 +705,9 @@ TestCase {
   verify(widget.compatibilityNoticeShown)
   verify(widget.reportActionShown)
   compare(widget.reportActionLabel, "Report a problem")
+  widget.reportDetailsOpen = true
+  verify(!instructions.visible)
+  widget.reportDetailsOpen = false
   verify(widget.panelHeight <= 560)
   widget.popupOpen = false
  }

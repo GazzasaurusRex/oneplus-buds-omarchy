@@ -11,11 +11,12 @@ command-line knowledge to complete this report.
 
 ## What are you testing, or what went wrong?
 
-Briefly describe the problem or the compatibility check you performed.
+Include the exact model name and briefly describe the problem or compatibility
+check you performed. If you use the phone app, mention which controls it shows.
 
 ## Attach the diagnostic report
 
-In the earbuds panel, choose **Report compatibility** or **Report a problem**, save
+In the earbuds panel, choose **Help add support** or **Report a problem**, save
 the generated `.txt` file, then drag that file here to attach it.
 
 <!-- Drag the diagnostic .txt file below this line. -->

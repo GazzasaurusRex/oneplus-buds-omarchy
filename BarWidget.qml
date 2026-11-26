@@ -1691,7 +1691,7 @@ BarWidget {
           Text {
             width: parent.width
             visible: root.experimentalDevice
-            text: "This model has not been hardware verified."
+            text: "Your earbuds were detected. A compatibility report helps us add controls for this model."
             textFormat: Text.PlainText
             color: root.bar.foreground
             opacity: 0.72
@@ -1734,6 +1734,20 @@ BarWidget {
             width: parent.width
             spacing: Style.space(3)
             visible: root.reportDetailsOpen
+
+            Text {
+              objectName: "compatibilityReportInstructions"
+              width: parent.width
+              visible: root.experimentalDevice
+              text: "1. Save and review the diagnostic report.\n"
+                + "2. Open the GitHub form and attach the report.\n"
+                + "3. Include the exact earbud model. If you use the phone app, mention which controls it shows."
+              textFormat: Text.PlainText
+              color: root.bar.foreground
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              wrapMode: Text.Wrap
+            }
 
             Text {
               width: parent.width
@@ -1804,6 +1818,7 @@ BarWidget {
 
               Text {
                 width: parent.width
+                visible: !root.experimentalDevice
                 text: "Open a GitHub issue and manually attach the report file so the problem can be investigated. Nothing is uploaded automatically."
                 textFormat: Text.PlainText
                 color: root.bar.foreground

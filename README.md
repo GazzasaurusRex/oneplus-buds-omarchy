@@ -53,8 +53,9 @@ permissions. See its
 
 Every connected device has a quiet reporting link at the bottom of the control
 panel. Verified and Community Tested devices show **Report a problem**;
-Experimental devices show **Report compatibility** beneath their compatibility
-notice. All use the same workflow: the panel explains the report contents, proposes
+Experimental devices show **Help add support** with instructions for sharing the
+exact model, the diagnostic report, and any controls visible in the phone app.
+The panel explains the report contents, proposes
 a safe `.txt` filename, lets you choose where to save it, and never uploads it.
 After saving, open the [compatibility report template](https://github.com/GazzasaurusRex/oneplus-buds-omarchy/issues/new?template=compatibility.md)
 and attach the reviewed report yourself. Reports covering detection, battery, ANC,

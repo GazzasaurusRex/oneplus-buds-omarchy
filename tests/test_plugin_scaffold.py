@@ -136,7 +136,7 @@ if (model.compatibilityLabel({compatibility:"community_tested"}) !== "Community 
 if (model.compatibility({compatibility:"something-new"}) !== "experimental") process.exit(16);
 if (model.reportActionLabel({compatibility:"verified"}) !== "Report a problem") process.exit(17);
 if (model.reportActionLabel({compatibility:"community_tested"}) !== "Report a problem") process.exit(18);
-if (model.reportActionLabel({compatibility:"experimental"}) !== "Report compatibility") process.exit(19);
+if (model.reportActionLabel({compatibility:"experimental"}) !== "Help add support") process.exit(19);
 const date = new Date(2026, 8, 16);
 if (model.reportFilename(snapshot, date) !== "oneplus-buds-pro-2-report-2026-09-16.txt") process.exit(20);
 if (model.reportFilename({status:{model:"OnePlus Nord Buds 3"}}, date) !== "oneplus-nord-buds-3-report-2026-09-16.txt") process.exit(21);
